@@ -1,41 +1,44 @@
-const { Adherence, Medication, Device } = require('../models');
+const { Adherence, Medication } = require('../models');
 const logger = require('../utils/logger');
+const { Op } = require('sequelize');
 
 class AdherenceController {
   /**
-   * Get adherence records with pagination and filtering
+   * Get adherence records
+   * Route: GET /
    */
   async getAdherenceRecords(req, res) {
     try {
-      const { page = 1, limit = 20, status, medicationId, dateFrom, dateTo } = req.query;
+      const { page = 1, limit = 20, startDate, endDate, medicationId } = req.query;
       const offset = (page - 1) * limit;
 
-      // Build where clause
       const whereClause = { userId: req.user.id };
-      if (status) whereClause.status = status;
-      if (medicationId) whereClause.medicationId = medicationId;
-      if (dateFrom || dateTo) {
-        whereClause.scheduledTime = {};
-        if (dateFrom) whereClause.scheduledTime[require('sequelize').Op.gte] = new Date(dateFrom);
-        if (dateTo) whereClause.scheduledTime[require('sequelize').Op.lte] = new Date(dateTo);
+
+      if (startDate && endDate) {
+        whereClause.takenAt = {
+          [Op.between]: [new Date(startDate), new Date(endDate)]
+        };
       }
 
-      const { count, rows: adherenceRecords } = await Adherence.findAndCountAll({
+      if (medicationId) {
+        whereClause.medicationId = medicationId;
+      }
+
+      const { count, rows: records } = await Adherence.findAndCountAll({
         where: whereClause,
-        limit: parseInt(limit),
-        offset: parseInt(offset),
-        order: [['scheduledTime', 'DESC']],
         include: [{
           model: Medication,
-          as: 'medication',
           attributes: ['id', 'name', 'dosage', 'dosageUnit']
-        }]
+        }],
+        limit: parseInt(limit),
+        offset: parseInt(offset),
+        order: [['takenAt', 'DESC']]
       });
 
       res.json({
         success: true,
         data: {
-          adherenceRecords,
+          records,
           pagination: {
             currentPage: parseInt(page),
             totalPages: Math.ceil(count / limit),
@@ -51,44 +54,29 @@ class AdherenceController {
   }
 
   /**
-   * Get single adherence record
+   * Get single adherence record by ID
+   * Route: GET /:id
    */
   async getAdherenceRecord(req, res) {
     try {
       const { id } = req.params;
-
-      const adherenceRecord = await Adherence.findOne({
-        where: {
-          id,
-          userId: req.user.id
-        },
-        include: [
-          {
-            model: Medication,
-            as: 'medication',
-            attributes: ['id', 'name', 'dosage', 'dosageUnit']
-          },
-          {
-            model: Device,
-            as: 'device',
-            attributes: ['id', 'name', 'deviceType']
-          }
-        ]
+      
+      const record = await Adherence.findOne({
+        where: { id, userId: req.user.id },
+        include: [{
+          model: Medication,
+          attributes: ['id', 'name', 'dosage', 'dosageUnit']
+        }]
       });
 
-      if (!adherenceRecord) {
+      if (!record) {
         return res.status(404).json({
           success: false,
           message: 'Adherence record not found'
         });
       }
 
-      res.json({
-        success: true,
-        data: {
-          adherenceRecord
-        }
-      });
+      res.json({ success: true, data: { record } });
     } catch (error) {
       logger.error('Get adherence record error:', error);
       throw error;
@@ -96,133 +84,63 @@ class AdherenceController {
   }
 
   /**
-   * Record medication adherence
+   * Record adherence
+   * Route: POST /
    */
   async recordAdherence(req, res) {
     try {
-      const {
-        medicationId,
-        scheduledTime,
-        takenTime,
-        status,
-        dosageTaken,
-        confirmationMethod,
-        deviceId,
-        notes,
-        sideEffects,
-        location,
-        vitalSigns,
-        isEmergency
-      } = req.body;
+      const { medicationId, status, takenAt, scheduledTime } = req.body;
 
-      // Verify medication belongs to user
-      const medication = await Medication.findOne({
-        where: {
-          id: medicationId,
-          userId: req.user.id
-        }
-      });
-
-      if (!medication) {
-        return res.status(404).json({
-          success: false,
-          message: 'Medication not found'
-        });
-      }
-
-      // Verify device belongs to user if provided
-      if (deviceId) {
-        const device = await Device.findOne({
-          where: {
-            id: deviceId,
-            userId: req.user.id
-          }
-        });
-
-        if (!device) {
-          return res.status(404).json({
-            success: false,
-            message: 'Device not found'
-          });
-        }
-      }
-
-      const adherenceData = {
+      const intake = await Adherence.create({
         userId: req.user.id,
         medicationId,
-        scheduledTime: new Date(scheduledTime),
-        takenTime: takenTime ? new Date(takenTime) : null,
-        status,
-        dosageTaken,
-        confirmationMethod,
-        deviceId,
-        notes,
-        sideEffects,
-        location,
-        vitalSigns,
-        isEmergency,
-        dataSource: 'mobile_app'
-      };
-
-      const adherenceRecord = await Adherence.create(adherenceData);
-
-      // If medication was taken, update remaining quantity if needed
-      if (status === 'taken' && !isEmergency) {
-        const daysSupply = medication.frequency.timesPerDay || 1;
-        const newRemainingQuantity = Math.max(0, medication.remainingQuantity - 1);
-        
-        if (newRemainingQuantity !== medication.remainingQuantity) {
-          await medication.update({ remainingQuantity: newRemainingQuantity });
-        }
+        status: status || 'taken',
+        takenAt: takenAt || new Date(),
+        scheduledTime: scheduledTime || new Date()
+      });
+      
+      if (status === 'taken') {
+        const med = await Medication.findByPk(medicationId);
+        if (med) await med.decrement('remainingQuantity', { by: 1 });
       }
 
-      logger.info(`Adherence recorded: ${status} for medication ${medication.name} by user ${req.user.email}`);
-
-      res.status(201).json({
-        success: true,
+      res.status(201).json({ 
+        success: true, 
         message: 'Adherence recorded successfully',
-        data: {
-          adherenceRecord
-        }
+        data: { adherence: intake } 
       });
     } catch (error) {
       logger.error('Record adherence error:', error);
-      throw error;
+      res.status(500).json({ success: false, message: error.message });
     }
   }
 
   /**
    * Update adherence record
+   * Route: PUT /:id
    */
   async updateAdherenceRecord(req, res) {
     try {
       const { id } = req.params;
+      const updates = req.body;
 
-      const adherenceRecord = await Adherence.findOne({
-        where: {
-          id,
-          userId: req.user.id
-        }
+      const record = await Adherence.findOne({
+        where: { id, userId: req.user.id }
       });
 
-      if (!adherenceRecord) {
+      if (!record) {
         return res.status(404).json({
           success: false,
           message: 'Adherence record not found'
         });
       }
 
-      // Update the record
-      await adherenceRecord.update(req.body);
-
-      logger.info(`Adherence record updated: ${adherenceRecord.id} by user ${req.user.email}`);
+      await record.update(updates);
 
       res.json({
         success: true,
-        message: 'Adherence record updated successfully',
-        data: {
-          adherenceRecord
-        }
+        message: 'Adherence record updated',
+        data: { record }
       });
     } catch (error) {
       logger.error('Update adherence record error:', error);
@@ -232,111 +150,47 @@ class AdherenceController {
 
   /**
    * Get adherence statistics
+   * Route: GET /stats
    */
   async getAdherenceStats(req, res) {
     try {
-      const { period = 'month', medicationId } = req.query;
-
-      // Calculate date range based on period
-      const now = new Date();
-      let startDate;
-      switch (period) {
-        case 'week':
-          startDate = new Date(now.getTime() - (7 * 24 * 60 * 60 * 1000));
-          break;
-        case 'month':
-          startDate = new Date(now.getTime() - (30 * 24 * 60 * 60 * 1000));
-          break;
-        case 'quarter':
-          startDate = new Date(now.getTime() - (90 * 24 * 60 * 60 * 1000));
-          break;
-        case 'year':
-          startDate = new Date(now.getTime() - (365 * 24 * 60 * 60 * 1000));
-          break;
-        default:
-          startDate = new Date(now.getTime() - (30 * 24 * 60 * 60 * 1000));
+      const { startDate, endDate, period = 'month' } = req.query;
+      
+      const whereClause = { userId: req.user.id };
+      
+      if (startDate && endDate) {
+        whereClause.takenAt = {
+          [Op.between]: [new Date(startDate), new Date(endDate)]
+        };
+      } else {
+        // Default to last 30 days if no dates provided
+        const now = new Date();
+        const thirtyDaysAgo = new Date(now.getTime() - (30 * 24 * 60 * 60 * 1000));
+        whereClause.takenAt = {
+          [Op.between]: [thirtyDaysAgo, now]
+        };
       }
 
-      // Build where clause
-      const whereClause = {
-        userId: req.user.id,
-        scheduledTime: {
-          [require('sequelize').Op.gte]: startDate
-        }
-      };
-
-      if (medicationId) {
-        whereClause.medicationId = medicationId;
-      }
-
-      // Get adherence statistics
-      const stats = await Promise.all([
-        // Total scheduled doses
-        Adherence.count({ where: whereClause }),
-        
-        // Doses taken on time
-        Adherence.count({
-          where: {
-            ...whereClause,
-            status: 'taken'
-          }
-        }),
-        
-        // Missed doses
-        Adherence.count({
-          where: {
-            ...whereClause,
-            status: 'missed'
-          }
-        }),
-        
-        // Delayed doses
-        Adherence.count({
-          where: {
-            ...whereClause,
-            status: 'delayed'
-          }
-        }),
-        
-        // Skipped doses
-        Adherence.count({
-          where: {
-            ...whereClause,
-            status: 'skipped'
-          }
-        })
-      ]);
-
-      const [totalScheduled, taken, missed, delayed, skipped] = stats;
-      const totalCompleted = taken + missed + delayed + skipped;
-      const adherenceRate = totalScheduled > 0 ? (taken / totalScheduled * 100) : 0;
-
-      // Get daily adherence breakdown for charts
-      const dailyAdherence = await Adherence.findAll({
+      const adherenceRecords = await Adherence.findAll({
         where: whereClause,
-        attributes: [
-          [require('sequelize').fn('DATE', require('sequelize').col('scheduledTime')), 'date'],
-          [require('sequelize').fn('COUNT', require('sequelize').col('id')), 'total'],
-          [require('sequelize').fn('SUM', require('sequelize').case([{ when: { status: 'taken' }, then: 1 }], { else: 0 })), 'taken']
-        ],
-        group: [require('sequelize').fn('DATE', require('sequelize').col('scheduledTime'))],
-        order: [[require('sequelize').fn('DATE', require('sequelize').col('scheduledTime')), 'ASC']]
+        include: [{ model: Medication, attributes: ['name'] }]
       });
+
+      const total = adherenceRecords.length;
+      const taken = adherenceRecords.filter(r => r.status === 'taken').length;
+      const missed = adherenceRecords.filter(r => r.status === 'missed').length;
+      const skipped = adherenceRecords.filter(r => r.status === 'skipped').length;
+      const rate = total > 0 ? Math.round((taken / total) * 100) : 0;
 
       res.json({
         success: true,
         data: {
-          period,
-          statistics: {
-            totalScheduled,
-            taken,
-            missed,
-            delayed,
-            skipped,
-            totalCompleted,
-            adherenceRate: Math.round(adherenceRate * 100) / 100
-          },
-          dailyAdherence
+          rate,
+          total,
+          taken,
+          missed,
+          skipped,
+          period
         }
       });
     } catch (error) {
@@ -346,196 +200,128 @@ class AdherenceController {
   }
 
   /**
-   * Bulk record adherence from device sync
-   */
-  async bulkRecordAdherence(req, res) {
-    try {
-      const { adherenceRecords, deviceId } = req.body;
-
-      // Verify device belongs to user if provided
-      if (deviceId) {
-        const device = await Device.findOne({
-          where: {
-            id: deviceId,
-            userId: req.user.id
-          }
-        });
-
-        if (!device) {
-          return res.status(404).json({
-            success: false,
-            message: 'Device not found'
-          });
-        }
-      }
-
-      const results = [];
-      const errors_list = [];
-
-      // Process each adherence record
-      for (const record of adherenceRecords) {
-        try {
-          // Verify medication belongs to user
-          const medication = await Medication.findOne({
-            where: {
-              id: record.medicationId,
-              userId: req.user.id
-            }
-          });
-
-          if (!medication) {
-            errors_list.push({
-              medicationId: record.medicationId,
-              error: 'Medication not found'
-            });
-            continue;
-          }
-
-          const adherenceData = {
-            ...record,
-            userId: req.user.id,
-            scheduledTime: new Date(record.scheduledTime),
-            takenTime: record.takenTime ? new Date(record.takenTime) : null,
-            deviceId,
-            dataSource: deviceId ? 'carebox' : 'mobile_app'
-          };
-
-          const adherenceRecord = await Adherence.create(adherenceData);
-          results.push(adherenceRecord);
-
-        } catch (error) {
-          errors_list.push({
-            record: record,
-            error: error.message
-          });
-        }
-      }
-
-      logger.info(`Bulk adherence sync: ${results.length} records processed for user ${req.user.email}`);
-
-      res.status(201).json({
-        success: true,
-        message: 'Bulk adherence records processed',
-        data: {
-          processed: results.length,
-          errors: errors_list.length,
-          results,
-          errors_list
-        }
-      });
-    } catch (error) {
-      logger.error('Bulk record adherence error:', error);
-      throw error;
-    }
-  }
-
-  /**
    * Get adherence trends over time
+   * Route: GET /trends
    */
   async getAdherenceTrends(req, res) {
     try {
-      const { months = 6, medicationId } = req.query;
+      const { days = 30 } = req.query;
+      const startDate = new Date();
+      startDate.setDate(startDate.getDate() - parseInt(days));
 
-      // Calculate date range
-      const now = new Date();
-      const startDate = new Date(now.getTime() - (months * 30 * 24 * 60 * 60 * 1000));
+      const records = await Adherence.findAll({
+        where: {
+          userId: req.user.id,
+          takenAt: { [Op.gte]: startDate }
+        },
+        attributes: ['takenAt', 'status'],
+        order: [['takenAt', 'ASC']]
+      });
 
-      // Build where clause
-      const whereClause = {
-        userId: req.user.id,
-        scheduledTime: {
-          [require('sequelize').Op.gte]: startDate,
-          [require('sequelize').Op.lte]: now
+      // Group by date
+      const trends = records.reduce((acc, record) => {
+        const date = new Date(record.takenAt).toISOString().split('T')[0];
+        if (!acc[date]) {
+          acc[date] = { date, taken: 0, missed: 0, total: 0 };
         }
-      };
+        acc[date].total++;
+        if (record.status === 'taken') acc[date].taken++;
+        if (record.status === 'missed') acc[date].missed++;
+        return acc;
+      }, {});
 
-      if (medicationId) {
-        whereClause.medicationId = medicationId;
-      }
-
-      // Get monthly adherence trends
-      const monthlyTrends = await Adherence.findAll({
-        where: whereClause,
-        attributes: [
-          [require('sequelize').fn('DATE_FORMAT', require('sequelize').col('scheduledTime'), '%Y-%m'), 'month'],
-          [require('sequelize').fn('COUNT', require('sequelize').col('id')), 'total'],
-          [require('sequelize').fn('SUM', require('sequelize').case([{ when: { status: 'taken' }, then: 1 }], { else: 0 })), 'taken']
-        ],
-        group: [require('sequelize').fn('DATE_FORMAT', require('sequelize').col('scheduledTime'), '%Y-%m')],
-        order: [[require('sequelize').fn('DATE_FORMAT', require('sequelize').col('scheduledTime'), '%Y-%m'), 'ASC']]
-      });
-
-      // Calculate compliance rates
-      const trends = monthlyTrends.map(trend => {
-        const total = parseInt(trend.getDataValue('total'));
-        const taken = parseInt(trend.getDataValue('taken'));
-        const complianceRate = total > 0 ? (taken / total * 100) : 0;
-        
-        return {
-          month: trend.getDataValue('month'),
-          total,
-          taken,
-          complianceRate: Math.round(complianceRate * 100) / 100
-        };
-      });
+      const trendsArray = Object.values(trends).map((day) => ({
+        ...day,
+        rate: day.total > 0 ? Math.round((day.taken / day.total) * 100) : 0
+      }));
 
       res.json({
         success: true,
-        data: {
-          trends,
-          period: `${months} months`
-        }
+        data: { trends: trendsArray }
       });
     } catch (error) {
-      logger.error('Get adherence trends error:', error);
+      logger.error('Get trends error:', error);
       throw error;
     }
   }
 
   /**
-   * Get medication-specific adherence for a medication
+   * Get adherence by medication
+   * Route: GET /medication/:medicationId
    */
   async getMedicationAdherence(req, res) {
     try {
       const { medicationId } = req.params;
-      const { period = 'month' } = req.query;
+      const { startDate, endDate } = req.query;
 
-      // Verify medication belongs to user
-      const medication = await Medication.findOne({
-        where: {
-          id: medicationId,
-          userId: req.user.id
-        }
-      });
+      const whereClause = {
+        userId: req.user.id,
+        medicationId
+      };
 
-      if (!medication) {
-        return res.status(404).json({
-          success: false,
-          message: 'Medication not found'
-        });
+      if (startDate && endDate) {
+        whereClause.takenAt = {
+          [Op.between]: [new Date(startDate), new Date(endDate)]
+        };
       }
 
-      // Get adherence statistics for this specific medication
-      const stats = await this.getAdherenceStats({
-        query: { period, medicationId },
-        user: req.user
+      const records = await Adherence.findAll({
+        where: whereClause,
+        include: [{
+          model: Medication,
+          attributes: ['id', 'name', 'dosage', 'dosageUnit']
+        }],
+        order: [['takenAt', 'DESC']]
       });
+
+      const total = records.length;
+      const taken = records.filter(r => r.status === 'taken').length;
+      const rate = total > 0 ? Math.round((taken / total) * 100) : 0;
 
       res.json({
         success: true,
         data: {
-          medication: {
-            id: medication.id,
-            name: medication.name,
-            dosage: medication.dosage,
-            dosageUnit: medication.dosageUnit
-          },
-          statistics: stats.statistics,
-          dailyAdherence: stats.dailyAdherence
+          medicationId,
+          records,
+          stats: { total, taken, rate }
         }
       });
     } catch (error) {
       logger.error('Get medication adherence error:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Bulk record adherence records
+   * Route: POST /bulk
+   */
+  async bulkRecordAdherence(req, res) {
+    try {
+      const { records } = req.body;
+
+      if (!Array.isArray(records) || records.length === 0) {
+        return res.status(400).json({
+          success: false,
+          message: 'Records array is required'
+        });
+      }
+
+      const adherenceRecords = records.map(record => ({
+        ...record,
+        userId: req.user.id,
+        takenAt: record.takenAt || new Date()
+      }));
+
+      const created = await Adherence.bulkCreate(adherenceRecords);
+
+      res.status(201).json({
+        success: true,
+        message: `${created.length} records created`,
+        data: { records: created }
+      });
+    } catch (error) {
+      logger.error('Bulk record adherence error:', error);
       throw error;
     }
   }

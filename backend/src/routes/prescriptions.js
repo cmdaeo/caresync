@@ -131,6 +131,100 @@ router.get(
   })
 );
 
+/**
+ * @desc    Get daily medication schedule
+ * @route   GET /api/prescriptions/schedule
+ * @access  Private
+ */
+router.get('/schedule', 
+  authMiddleware,
+  [
+    query('date').isISO8601().withMessage('Invalid date format')
+  ],
+  async (req, res) => {
+    try {
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        return res.status(400).json({ 
+          success: false, 
+          message: 'Validation failed', 
+          errors: errors.array() 
+        });
+      }
+
+      const { date } = req.query;
+      const { Medication, Prescription } = require('../models');
+      
+      // Get all active medications for the user
+      const medications = await Medication.findAll({
+        where: {
+          userId: req.user.id,
+          isActive: true
+        }
+      });
+
+      // Generate schedule for the requested date
+      const scheduleDate = new Date(date);
+      const schedule = [];
+
+      medications.forEach(med => {
+        // Parse frequency to determine times per day
+        const timesPerDay = med.timesPerDay || 1;
+        
+        // Generate scheduled times for the day
+        const scheduleTime = (hour, minute = 0) => {
+          const time = new Date(scheduleDate);
+          time.setHours(hour, minute, 0, 0);
+          return time;
+        };
+
+        // Default schedule based on times per day
+        let scheduledTimes = [];
+        if (timesPerDay === 1) {
+          scheduledTimes = [scheduleTime(9)]; // 9 AM
+        } else if (timesPerDay === 2) {
+          scheduledTimes = [scheduleTime(9), scheduleTime(21)]; // 9 AM, 9 PM
+        } else if (timesPerDay === 3) {
+          scheduledTimes = [scheduleTime(9), scheduleTime(14), scheduleTime(21)]; // 9 AM, 2 PM, 9 PM
+        } else if (timesPerDay === 4) {
+          scheduledTimes = [scheduleTime(9), scheduleTime(13), scheduleTime(17), scheduleTime(21)]; // 9 AM, 1 PM, 5 PM, 9 PM
+        }
+
+        scheduledTimes.forEach(time => {
+          schedule.push({
+            medicationId: med.id,
+            medicationName: med.name,
+            dosage: med.dosage,
+            dosageUnit: med.dosageUnit,
+            scheduledTime: time.toISOString(),
+            instructions: med.instructions,
+            status: 'scheduled' // Default status
+          });
+        });
+      });
+
+      // Sort by scheduled time
+      schedule.sort((a, b) => new Date(a.scheduledTime) - new Date(b.scheduledTime));
+
+      res.json({
+        success: true,
+        data: {
+          schedule,
+          date: date,
+          totalDoses: schedule.length
+        }
+      });
+
+    } catch (error) {
+      console.error('Get daily schedule error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to load schedule'
+      });
+    }
+  }
+);
+
 // @desc    Get single prescription
 // @route   GET /api/prescriptions/:id
 // @access  Private

@@ -1,52 +1,77 @@
+const { Sequelize } = require('sequelize');
 const sequelize = require('../config/database');
-const User = require('./User');
-const Medication = require('./Medication');
-const Prescription = require('./Prescription');
-const Adherence = require('./Adherence');
-const Device = require('./Device');
-const CaregiverPatient = require('./CaregiverPatient');
-const Notification = require('./Notification');
+
+// Import model definitions (these are functions that define models)
+const UserModel = require('./User');
+const MedicationModel = require('./Medication');
+const PrescriptionModel = require('./Prescription');
+const AdherenceModel = require('./Adherence');
+const DeviceModel = require('./Device');
+const NotificationModel = require('./Notification');
+const CaregiverPatientModel = require('./CaregiverPatient');
+
+// Initialize models by calling the functions with sequelize
+const User = UserModel(sequelize);
+const Medication = MedicationModel(sequelize);
+const Prescription = PrescriptionModel(sequelize);
+const Adherence = AdherenceModel(sequelize);
+const Device = DeviceModel(sequelize);
+const Notification = NotificationModel(sequelize);
+const CaregiverPatient = CaregiverPatientModel(sequelize);
 
 // Define associations
-
-// User associations
 User.hasMany(Medication, { foreignKey: 'userId', as: 'medications' });
+Medication.belongsTo(User, { foreignKey: 'userId' });
+
 User.hasMany(Prescription, { foreignKey: 'userId', as: 'prescriptions' });
-User.hasMany(Adherence, { foreignKey: 'userId', as: 'adherenceRecords' });
-User.hasMany(Device, { foreignKey: 'userId', as: 'devices' });
-User.hasMany(Notification, { foreignKey: 'userId', as: 'notifications' });
-User.hasMany(Notification, { foreignKey: 'caregiverId', as: 'caregiverNotifications' });
-User.hasMany(CaregiverPatient, { foreignKey: 'caregiverId', as: 'caregiving' });
-User.hasMany(CaregiverPatient, { foreignKey: 'patientId', as: 'careReceiving' });
+Prescription.belongsTo(User, { foreignKey: 'userId' });
 
-// Medication associations
-Medication.belongsTo(User, { foreignKey: 'userId', as: 'user' });
+Medication.hasMany(Prescription, { foreignKey: 'medicationId', as: 'prescriptions' });
+Prescription.belongsTo(Medication, { foreignKey: 'medicationId' });
+
+User.hasMany(Adherence, { foreignKey: 'userId', as: 'adherence' });
+Adherence.belongsTo(User, { foreignKey: 'userId' });
+
 Medication.hasMany(Adherence, { foreignKey: 'medicationId', as: 'adherence' });
+Adherence.belongsTo(Medication, { foreignKey: 'medicationId' });
 
-// Prescription associations
-Prescription.belongsTo(User, { foreignKey: 'userId', as: 'user' });
-Prescription.belongsTo(User, { foreignKey: 'reviewedBy', as: 'reviewer' });
+User.hasMany(Device, { foreignKey: 'userId', as: 'devices' });
+Device.belongsTo(User, { foreignKey: 'userId' });
 
-// Adherence associations
-Adherence.belongsTo(User, { foreignKey: 'userId', as: 'user' });
-Adherence.belongsTo(Medication, { foreignKey: 'medicationId', as: 'medication' });
-Adherence.belongsTo(Device, { foreignKey: 'deviceId', as: 'device' });
+User.hasMany(Notification, { foreignKey: 'userId', as: 'notifications' });
+Notification.belongsTo(User, { foreignKey: 'userId' });
 
-// Device associations
-Device.belongsTo(User, { foreignKey: 'userId', as: 'user' });
-Device.hasMany(Adherence, { foreignKey: 'deviceId', as: 'adherenceRecords' });
+// ADD THESE MISSING ASSOCIATIONS:
+// CaregiverPatient belongs to User (for both caregiver and patient)
+CaregiverPatient.belongsTo(User, { 
+  foreignKey: 'caregiverId', 
+  as: 'caregiver' 
+});
 
-// Notification associations
-Notification.belongsTo(User, { foreignKey: 'userId', as: 'patient' });
-Notification.belongsTo(User, { foreignKey: 'caregiverId', as: 'caregiver' });
+CaregiverPatient.belongsTo(User, { 
+  foreignKey: 'patientId', 
+  as: 'patient' 
+});
 
-// CaregiverPatient associations
-CaregiverPatient.belongsTo(User, { foreignKey: 'caregiverId', as: 'caregiver' });
-CaregiverPatient.belongsTo(User, { foreignKey: 'patientId', as: 'patient' });
+// Caregiver-Patient relationship (many-to-many through junction table)
+User.belongsToMany(User, {
+  through: CaregiverPatient,
+  as: 'caregivers',
+  foreignKey: 'patientId',
+  otherKey: 'caregiverId'
+});
+
+User.belongsToMany(User, {
+  through: CaregiverPatient,
+  as: 'patients',
+  foreignKey: 'caregiverId',
+  otherKey: 'patientId'
+});
 
 // Export models and sequelize instance
 module.exports = {
   sequelize,
+  Sequelize,
   User,
   Medication,
   Prescription,
@@ -55,12 +80,3 @@ module.exports = {
   Notification,
   CaregiverPatient
 };
-
-// Export individual models for use in routes and services
-module.exports.User = User;
-module.exports.Medication = Medication;
-module.exports.Prescription = Prescription;
-module.exports.Adherence = Adherence;
-module.exports.Device = Device;
-module.exports.Notification = Notification;
-module.exports.CaregiverPatient = CaregiverPatient;

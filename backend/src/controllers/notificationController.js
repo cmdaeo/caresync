@@ -6,57 +6,51 @@ class NotificationController {
    * Get all notifications for user with pagination
    */
   async getNotifications(req, res) {
-    try {
-      const { page = 1, limit = 20, read, type } = req.query;
-      const offset = (page - 1) * limit;
+  try {
+    const { page = 1, limit = 20, read, type } = req.query;
+    const offset = (page - 1) * limit;
 
-      // Build where clause
-      const whereClause = { 
-        [require('sequelize').Op.or]: [
-          { userId: req.user.id },
-          { caregiverId: req.user.id }
-        ]
-      };
+    // Build where clause
+    const whereClause = {
+      [require('sequelize').Op.or]: [
+        { userId: req.user.id },
+        { caregiverId: req.user.id }
+      ]
+    };
 
-      if (read !== undefined) whereClause.isRead = read === 'true';
-      if (type) whereClause.type = type;
-
-      const { count, rows: notifications } = await Notification.findAndCountAll({
-        where: whereClause,
-        limit: parseInt(limit),
-        offset: parseInt(offset),
-        order: [['createdAt', 'DESC']],
-        include: [
-          {
-            model: User,
-            as: 'patient',
-            attributes: ['id', 'firstName', 'lastName']
-          },
-          {
-            model: User,
-            as: 'caregiver',
-            attributes: ['id', 'firstName', 'lastName']
-          }
-        ]
-      });
-
-      res.json({
-        success: true,
-        data: {
-          notifications,
-          pagination: {
-            currentPage: parseInt(page),
-            totalPages: Math.ceil(count / limit),
-            totalItems: count,
-            itemsPerPage: parseInt(limit)
-          }
-        }
-      });
-    } catch (error) {
-      logger.error('Get notifications error:', error);
-      throw error;
+    if (read !== undefined) {
+      whereClause.isRead = read === 'true';
     }
+
+    if (type) {
+      whereClause.type = type;
+    }
+
+    const { count, rows: notifications } = await Notification.findAndCountAll({
+      where: whereClause,
+      limit: parseInt(limit),
+      offset: parseInt(offset),
+      order: [['createdAt', 'DESC']]
+      // REMOVED: include associations that don't exist
+    });
+
+    res.json({
+      success: true,
+      data: {
+        notifications,
+        pagination: {
+          currentPage: parseInt(page),
+          totalPages: Math.ceil(count / limit),
+          totalItems: count,
+          itemsPerPage: parseInt(limit)
+        }
+      }
+    });
+  } catch (error) {
+    logger.error('Get notifications error:', error);
+    throw error;
   }
+}
 
   /**
    * Mark notification as read
