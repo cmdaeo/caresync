@@ -17,6 +17,7 @@ import DeviceDetailsPage from './pages/DeviceDetailsPage';
 import NotificationsPage from './pages/NotificationsPage';
 import ProfilePage from './pages/ProfilePage';
 import DevicesPage from './pages/DevicesPage';
+import NFCTransferPage from './pages/NFCTransferPage';
 
 // This component protects routes that require authentication
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
@@ -45,6 +46,7 @@ function App() {
         <Route path="/dashboard/devices/:id" element={<DeviceDetailsPage />} />
         <Route path="/dashboard/notifications" element={<NotificationsPage />} />
         <Route path="/dashboard/profile" element={<ProfilePage />} />
+        <Route path="/dashboard/nfc" element={<ProtectedRoute><NFCTransferPage /></ProtectedRoute>} />
 
         {/* Catch all */}
         <Route path="*" element={<Navigate to="/" replace />} />

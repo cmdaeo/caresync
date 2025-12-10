@@ -1,13 +1,15 @@
 import React, { useEffect, useState } from 'react';
-import { Plus, Pill, AlertCircle, Edit, Trash2, RefreshCw, X } from 'lucide-react';
+import { Plus, Pill, AlertCircle, Edit, Trash2, RefreshCw, X, UploadCloud } from 'lucide-react';
 import DashboardLayout from '../components/DashboardLayout';
 import { getMedications, deleteMedication, addMedication } from '../api/services';
+import PdfImportModal from '../components/PdfImportModal';
 
 const MedicationsPage = () => {
   const [meds, setMeds] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showImportModal, setShowImportModal] = useState(false);
 
   // Form State
   const [newMed, setNewMed] = useState({
@@ -62,13 +64,22 @@ const MedicationsPage = () => {
     <DashboardLayout>
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold text-gray-900">My Medications</h1>
-        <button 
-          onClick={() => setShowAddModal(true)}
-          className="flex items-center gap-2 bg-teal-700 text-white px-4 py-2 rounded-lg hover:bg-teal-800 transition-colors"
-        >
-          <Plus size={18} />
-          <span>Add Medication</span>
-        </button>
+        <div className="flex gap-2">
+          <button 
+            onClick={() => setShowImportModal(true)}
+            className="flex items-center gap-2 bg-white text-teal-700 border border-teal-200 px-4 py-2 rounded-lg hover:bg-teal-50 transition-colors"
+          >
+            <UploadCloud size={18} />
+            <span>Import from SNS PDF</span>
+          </button>
+          <button 
+            onClick={() => setShowAddModal(true)}
+            className="flex items-center gap-2 bg-teal-700 text-white px-4 py-2 rounded-lg hover:bg-teal-800 transition-colors"
+          >
+            <Plus size={18} />
+            <span>Add Medication</span>
+          </button>
+        </div>
       </div>
 
       {loading ? <div className="text-center py-10">Loading...</div> : (
@@ -87,6 +98,16 @@ const MedicationsPage = () => {
           ))}
         </div>
       )}
+
+      <PdfImportModal
+        open={showImportModal}
+        onClose={() => setShowImportModal(false)}
+        onImported={loadMeds}
+        onFallbackToManual={() => {
+          setShowImportModal(false);
+          setShowAddModal(true);
+        }}
+      />
 
       {/* Add Medication Modal */}
       {showAddModal && (

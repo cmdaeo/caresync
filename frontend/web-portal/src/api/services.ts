@@ -174,3 +174,13 @@ export const generatePDFReport = async (startDate: string, endDate: string) => {
   });
   return response;
 };
+
+// --- SNS Parser Proxy ---
+export const parseSnsPdf = async (file: File) => {
+  const formData = new FormData();
+  formData.append('file', file);
+  const response = await client.post('/sns/parse-pdf', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
+  return response.data;
+};

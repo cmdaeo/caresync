@@ -11,11 +11,13 @@ import {
   Users,       // Add this
   Bell,        // Add this
   FileText,    // Add this
-  User         // Add this
+  User,         // Add this
+  Radio
 } from 'lucide-react';
 import { useState } from 'react';
 import useAuthStore from '../store/useAuthStore';
 import NotificationCenter from './NotificationCenter';
+import PwaInstallBanner from './PwaInstallBanner';
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -34,6 +36,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
     { icon: <Users size={20} />, label: 'Caregivers', path: '/dashboard/caregivers' },
     { icon: <Bell size={20} />, label: 'Notifications', path: '/dashboard/notifications' },
     { icon: <FileText size={20} />, label: 'Reports', path: '/dashboard/reports' },
+    { icon: <Radio size={20} />, label: 'NFC Transfer', path: '/dashboard/nfc' },
     { icon: <User size={20} />, label: 'Profile', path: '/dashboard/profile' },
     { icon: <Settings size={20} />, label: 'Settings', path: '/dashboard/settings' },
   ];
@@ -104,6 +107,9 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
         {/* ----------------------------- */}
 
         <main className="flex-1 overflow-y-auto p-4 sm:p-8">
+          <div className="mb-4">
+            <PwaInstallBanner />
+          </div>
           {children}
         </main>
       </div>
