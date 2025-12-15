@@ -1,11 +1,11 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Bell, X, Check } from 'lucide-react';
 import { getAllNotifications, markNotificationAsRead } from '../api/services';
 
 const NotificationCenter = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [notifications, setNotifications] = useState<any[]>([]);
-  const [unreadCount, setUnreadCount] = useState(0);
+  const [unreadCount, _] = useState(0);
 
   useEffect(() => {
     fetchNotifications();

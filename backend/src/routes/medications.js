@@ -10,8 +10,10 @@ const validateMedicationCreation = [
   body('name').notEmpty().trim().withMessage('Medication name is required'),
   body('dosage').notEmpty().trim().withMessage('Dosage is required'),
   body('dosageUnit').isIn(['mg', 'ml', 'tablets', 'capsules', 'drops', 'units', 'puffs']).withMessage('Invalid dosage unit'),
-  body('frequency.timesPerDay').isInt({ min: 1, max: 24 }).withMessage('Times per day must be between 1 and 24'),
-  body('frequency.times').isArray().withMessage('Times must be an array'),
+  // Support both formats: frequency.timesPerDay OR timesPerDay
+  body('frequency.timesPerDay').optional().isInt({ min: 1, max: 24 }).withMessage('Times per day must be between 1 and 24'),
+  body('frequency.times').optional().isArray().withMessage('Times must be an array'),
+  body('timesPerDay').optional().isInt({ min: 1, max: 24 }).withMessage('Times per day must be between 1 and 24'),
   body('startDate').isISO8601().withMessage('Invalid start date'),
   body('totalQuantity').isInt({ min: 1 }).withMessage('Total quantity must be a positive integer'),
   body('remainingQuantity').optional().isInt({ min: 0 }).withMessage('Remaining quantity must be non-negative')
@@ -50,6 +52,23 @@ const validateUpcomingDoses = [
 
 const validatePatientAccess = [
   requirePatientAccess
+];
+
+const validatePatientId = [
+  param('patientId').isUUID().withMessage('Invalid patient ID')
+];
+
+const validateMedicationForPatient = [
+  body('patientId').isUUID().withMessage('Invalid patient ID'),
+  body('name').notEmpty().trim().withMessage('Medication name is required'),
+  body('dosage').notEmpty().trim().withMessage('Dosage is required'),
+  body('dosageUnit').isIn(['mg', 'ml', 'tablets', 'capsules', 'drops', 'units', 'puffs']).withMessage('Invalid dosage unit'),
+  body('frequency.timesPerDay').isInt({ min: 1, max: 24 }).withMessage('Times per day must be between 1 and 24'),
+  body('frequency.times').isArray().withMessage('Times must be an array'),
+  body('startDate').isISO8601().withMessage('Invalid start date'),
+  body('totalQuantity').isInt({ min: 1 }).withMessage('Total quantity must be a positive integer'),
+  body('remainingQuantity').optional().isInt({ min: 0 }).withMessage('Remaining quantity must be non-negative'),
+  body('compartment').optional().isInt({ min: 1, max: 12 }).withMessage('Compartment must be between 1 and 12')
 ];
 
 // Validation handler
@@ -118,5 +137,36 @@ router.get('/schedule', authMiddleware, [
   query('days').optional().isInt({ min: 1, max: 30 }).withMessage('Days must be between 1 and 30'),
   query('startDate').optional().isISO8601().withMessage('Invalid start date')
 ], handleValidationErrors, asyncHandler(medicationController.generateSchedule.bind(medicationController)));
+
+// @desc    Get available compartments for medication scheduling
+// @route   GET /api/medications/compartments/available
+// @access  Private
+router.get('/compartments/available', authMiddleware, [
+  query('patientId').optional().isUUID().withMessage('Invalid patient ID')
+], handleValidationErrors, asyncHandler(medicationController.getAvailableCompartments.bind(medicationController)));
+
+// @desc    Create medication for a patient (caregiver endpoint)
+// @route   POST /api/medications/patient
+// @access  Private
+router.post('/patient', authMiddleware, validateMedicationForPatient, handleValidationErrors,
+  asyncHandler(medicationController.createMedicationForPatient.bind(medicationController)));
+
+// @desc    Get all medications for a specific patient (caregiver endpoint)
+// @route   GET /api/medications/patient/:patientId
+// @access  Private
+router.get('/patient/:patientId', authMiddleware, validatePatientId, handleValidationErrors,
+  asyncHandler(medicationController.getPatientMedications.bind(medicationController)));
+
+// @desc    Update medication for a patient (caregiver endpoint)
+// @route   PUT /api/medications/patient/:medicationId
+// @access  Private
+router.put('/patient/:medicationId', authMiddleware, validatePatientId, handleValidationErrors,
+  asyncHandler(medicationController.updatePatientMedication.bind(medicationController)));
+
+// @desc    Delete medication for a patient (caregiver endpoint)
+// @route   DELETE /api/medications/patient/:medicationId
+// @access  Private
+router.delete('/patient/:medicationId', authMiddleware, validatePatientId, handleValidationErrors,
+  asyncHandler(medicationController.deletePatientMedication.bind(medicationController)));
 
 module.exports = router;

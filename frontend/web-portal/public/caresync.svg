@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!-- Created with Inkscape (http://www.inkscape.org/) -->
-
 <svg
    width="152.66457mm"
    height="114.3mm"
@@ -10,7 +9,18 @@
    xml:space="preserve"
    xmlns="http://www.w3.org/2000/svg"
    xmlns:svg="http://www.w3.org/2000/svg"><defs
-     id="defs1" /><g
+     id="defs1" />
+     <defs>
+  <filter id="smooth-edges">
+    <!-- Blurs the shape slightly -->
+    <feGaussianBlur in="SourceGraphic" stdDeviation="1.5" result="blur" />
+    <!-- Sharpens the blur to create a smooth, rounded edge -->
+    <feColorMatrix in="blur" mode="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 19 -9" result="goo" />
+    <feComposite in="SourceGraphic" in2="goo" operator="atop"/>
+  </filter>
+</defs>
+     
+     <g filter="url(#smooth-edges)"
      id="layer1"
      transform="translate(-32.094364,-85.793754)"><g
        id="g264"

@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { FileText, Download, Calendar } from 'lucide-react';
+import { useState } from 'react';
+import {Download, Calendar } from 'lucide-react';
 import DashboardLayout from '../components/DashboardLayout';
 import { generatePDFReport } from '../api/services';
 import { format, subDays } from 'date-fns';

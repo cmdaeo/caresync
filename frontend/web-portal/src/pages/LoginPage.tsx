@@ -1,12 +1,15 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { login as apiLogin } from '../api/auth';
+import { useTranslation } from 'react-i18next';
 import useAuthStore from '../store/useAuthStore';
+import { motion, fadeIn, PageTransition } from '../animations';
 
 const LoginPage = () => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const setAuth = useAuthStore((state) => state.setAuth); // Changed from 'login' to 'setAuth'
-  
+
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -37,11 +40,17 @@ const LoginPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-teal-50 to-blue-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-8">
+    <PageTransition>
+      <div className="min-h-screen bg-gradient-to-br from-teal-50 to-blue-50 flex items-center justify-center p-4">
+        <motion.div
+          initial="hidden"
+          animate="visible"
+          variants={fadeIn}
+          className="bg-white rounded-2xl shadow-xl w-full max-w-md p-8"
+        >
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-teal-700 mb-2">CareSync</h1>
-          <p className="text-gray-600">Sign in to your account</p>
+          <p className="text-gray-600">{t('sign_in_to_account')}</p>
         </div>
 
         {error && (
@@ -53,7 +62,7 @@ const LoginPage = () => {
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Email Address
+              {t('email')}
             </label>
             <input
               type="email"
@@ -67,14 +76,14 @@ const LoginPage = () => {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Password
+              {t('password')}
             </label>
             <input
               type="password"
               value={formData.password}
               onChange={(e) => setFormData({ ...formData, password: e.target.value })}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
-              placeholder="Enter your password"
+              placeholder={t('enter_password')}
               required
             />
           </div>
@@ -84,26 +93,27 @@ const LoginPage = () => {
             disabled={loading}
             className="w-full bg-teal-600 text-white py-3 rounded-lg font-medium hover:bg-teal-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
           >
-            {loading ? 'Signing in...' : 'Sign In'}
+            {loading ? t('signing_in') : t('sign_in')}
           </button>
         </form>
 
         <div className="mt-6 text-center">
           <p className="text-sm text-gray-600">
-            Don't have an account?{' '}
+            {t('no_account')}{' '}
             <Link to="/register" className="text-teal-600 hover:text-teal-700 font-medium">
-              Sign up
+              {t('sign_up')}
             </Link>
           </p>
         </div>
 
         <div className="mt-4 text-center">
           <Link to="/" className="text-sm text-gray-500 hover:text-gray-700">
-            ← Back to home
+            ← {t('back_to_home')}
           </Link>
         </div>
+      </motion.div>
       </div>
-    </div>
+    </PageTransition>
   );
 };
 

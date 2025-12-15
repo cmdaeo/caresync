@@ -30,7 +30,7 @@ const SchedulePage = () => {
     }
   };
 
-  const handleMarkAsTaken = async (medicationId: string, scheduledTime: string) => {
+  const handleMarkAsTaken = async (medicationId: string) => {
     try {
       await logAdherenceRecord({
         medicationId,
@@ -43,7 +43,7 @@ const SchedulePage = () => {
     }
   };
 
-  const handleSkip = async (medicationId: string, scheduledTime: string) => {
+  const handleSkip = async (medicationId: string) => {
     try {
       await logAdherenceRecord({
         medicationId,
@@ -291,14 +291,14 @@ const SchedulePage = () => {
                         {!taken && !skipped && (
                           <>
                             <button
-                              onClick={() => handleMarkAsTaken(dose.medicationId, dose.scheduledTime)}
+                              onClick={() => handleMarkAsTaken(dose.medicationId)}
                               className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
                             >
                               <CheckCircle size={18} />
                               <span>Taken</span>
                             </button>
                             <button
-                              onClick={() => handleSkip(dose.medicationId, dose.scheduledTime)}
+                              onClick={() => handleSkip(dose.medicationId)}
                               className="flex items-center gap-2 px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors"
                             >
                               <XCircle size={18} />

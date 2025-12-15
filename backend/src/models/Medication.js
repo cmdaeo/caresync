@@ -60,6 +60,14 @@ module.exports = (sequelize) => {
       type: DataTypes.INTEGER,
       allowNull: true
     },
+    compartment: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      validate: {
+        min: 1,
+        max: 12
+      }
+    },
     refillReminder: {
       type: DataTypes.BOOLEAN,
       defaultValue: true

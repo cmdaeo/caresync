@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Pill, Clock, Calendar, TrendingUp, Package } from 'lucide-react';
+import { ArrowLeft, Pill, Clock, Calendar, Package } from 'lucide-react';
 import DashboardLayout from '../components/DashboardLayout';
 import { getMedicationById, refillMedication } from '../api/services';
 

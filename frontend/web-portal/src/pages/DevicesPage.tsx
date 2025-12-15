@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Plus, Smartphone, Wifi, Battery, AlertTriangle, Trash2 } from 'lucide-react';
 import DashboardLayout from '../components/DashboardLayout';
 import { getDevices, registerDevice, deleteDevice } from '../api/services';
+import { motion, fadeIn, PageTransition } from '../animations';
 
 const DevicesPage = () => {
   const [devices, setDevices] = useState<any[]>([]);
@@ -59,8 +60,16 @@ const DevicesPage = () => {
 
   return (
     <DashboardLayout>
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">My Devices</h1>
+      <PageTransition>
+        <div className="flex justify-between items-center mb-6">
+          <motion.h1
+            initial="hidden"
+            animate="visible"
+            variants={fadeIn}
+            className="text-2xl font-bold text-gray-900"
+          >
+            My Devices
+          </motion.h1>
         <button 
           onClick={() => setShowAddModal(true)}
           className="flex items-center gap-2 bg-teal-700 text-white px-4 py-2 rounded-lg hover:bg-teal-800 transition-colors"
@@ -181,6 +190,7 @@ const DevicesPage = () => {
           </div>
         </div>
       )}
+      </PageTransition>
     </DashboardLayout>
   );
 };

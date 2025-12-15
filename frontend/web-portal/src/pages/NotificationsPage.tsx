@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { Bell, Check, Trash2, Filter } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Bell, Check, Filter } from 'lucide-react';
 import DashboardLayout from '../components/DashboardLayout';
 import { getAllNotifications, markNotificationAsRead } from '../api/services';
 

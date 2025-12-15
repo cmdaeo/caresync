@@ -18,6 +18,7 @@ const caregiverRoutes = require('./routes/caregivers');
 const patientRoutes = require('./routes/patients');
 const deviceRoutes = require('./routes/devices');
 const notificationRoutes = require('./routes/notifications');
+const calendarRoutes = require('./routes/calendar');
 
 const reportsRoutes = require('./routes/reports');
 
@@ -117,6 +118,7 @@ app.use('/api/caregivers', authMiddleware, caregiverRoutes);
 app.use('/api/patients', authMiddleware, patientRoutes);
 app.use('/api/devices', authMiddleware, deviceRoutes);
 app.use('/api/notifications', authMiddleware, notificationRoutes);
+app.use('/api/calendar', authMiddleware, calendarRoutes);
 app.use('/api/adherence',authMiddleware, reportsRoutes);
 
 // Socket.IO connection handling

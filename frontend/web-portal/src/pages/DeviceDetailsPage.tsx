@@ -1,8 +1,8 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Smartphone, Battery, Wifi, Activity, AlertTriangle, CheckCircle } from 'lucide-react';
 import DashboardLayout from '../components/DashboardLayout';
-import { getDeviceById, updateDevice } from '../api/services';
+import { getDeviceById } from '../api/services';
 
 const DeviceDetailsPage = () => {
   const { id } = useParams<{ id: string }>();

@@ -85,4 +85,9 @@ router.post('/refresh', validateRefreshToken, handleValidationErrors, asyncHandl
 // @access  Private
 router.post('/logout', authMiddleware, asyncHandler(authController.logout.bind(authController)));
 
+// @desc    Delete user account
+// @route   DELETE /api/auth/account
+// @access  Private
+router.delete('/account', authMiddleware, asyncHandler(authController.deleteAccount.bind(authController)));
+
 module.exports = router;

@@ -52,6 +52,14 @@ module.exports = (sequelize) => {
       type: DataTypes.DATE,
       allowNull: true
     },
+    devicePublicKey: {
+      type: DataTypes.TEXT,
+      allowNull: true
+    },
+    registrationSignature: {
+      type: DataTypes.TEXT,
+      allowNull: true
+    },
     registrationDate: {
       type: DataTypes.DATE,
       allowNull: false,

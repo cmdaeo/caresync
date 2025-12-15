@@ -11,6 +11,7 @@ import {
   getPatients
 } from '../api/services';
 import useAuthStore from '../store/useAuthStore';
+import { motion, fadeIn, PageTransition } from '../animations';
 
 const CaregiversPage = () => {
   const [caregivers, setCaregivers] = useState<any[]>([]);
@@ -103,22 +104,29 @@ const CaregiversPage = () => {
 
   return (
     <DashboardLayout>
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">
-          {user?.role === 'caregiver' ? 'My Patients' : 'My Caregivers'}
-        </h1>
-        {user?.role === 'patient' && (
-          <button
-            onClick={() => setShowInviteModal(true)}
-            className="flex items-center gap-2 bg-teal-600 text-white px-4 py-2 rounded-lg hover:bg-teal-700 transition-colors"
+      <PageTransition>
+        <div className="flex justify-between items-center mb-6">
+          <motion.h1
+            initial="hidden"
+            animate="visible"
+            variants={fadeIn}
+            className="text-2xl font-bold text-gray-900"
           >
-            <UserPlus size={18} />
-            <span>Invite Caregiver</span>
-          </button>
-        )}
-      </div>
-
-      {/* PENDING INVITATIONS (for caregivers) */}
+            {user?.role === 'caregiver' ? 'My Patients' : 'My Caregivers'}
+          </motion.h1>
+          {user?.role === 'patient' && (
+            <motion.button
+              initial="hidden"
+              animate="visible"
+              variants={fadeIn}
+              onClick={() => setShowInviteModal(true)}
+              className="flex items-center gap-2 bg-teal-600 text-white px-4 py-2 rounded-lg hover:bg-teal-700 transition-colors"
+            >
+              <UserPlus size={18} />
+              <span>Invite Caregiver</span>
+            </motion.button>
+          )}
+        </div>
       {user?.role === 'caregiver' && pendingInvites.length > 0 && (
         <div className="bg-yellow-50 border-2 border-yellow-200 rounded-xl p-5 mb-6">
           <h2 className="text-lg font-bold text-yellow-900 mb-4">Pending Invitations</h2>
@@ -248,6 +256,7 @@ const CaregiversPage = () => {
           </div>
         </div>
       )}
+      </PageTransition>
     </DashboardLayout>
   );
 };

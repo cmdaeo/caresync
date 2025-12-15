@@ -77,6 +77,56 @@ export const getDailySchedule = async (date: string) => {
   return response.data;
 };
 
+// --- Calendar ---
+export const getCalendarData = async (startDate?: string, endDate?: string, patientId?: string) => {
+  const params = new URLSearchParams();
+  if (startDate) params.append('startDate', startDate);
+  if (endDate) params.append('endDate', endDate);
+  if (patientId) params.append('patientId', patientId);
+  
+  const response = await client.get(`/calendar?${params.toString()}`);
+  return response.data;
+};
+
+export const getMedicationCalendarData = async (medicationId: string, startDate?: string, endDate?: string, patientId?: string) => {
+  const params = new URLSearchParams();
+  if (startDate) params.append('startDate', startDate);
+  if (endDate) params.append('endDate', endDate);
+  if (patientId) params.append('patientId', patientId);
+  
+  const response = await client.get(`/calendar/medication/${medicationId}?${params.toString()}`);
+  return response.data;
+};
+
+// --- Caregiver Medication Management ---
+export const getAvailableCompartments = async (patientId?: string) => {
+  const params = new URLSearchParams();
+  if (patientId) params.append('patientId', patientId);
+  
+  const response = await client.get(`/medications/compartments/available?${params.toString()}`);
+  return response.data;
+};
+
+export const createMedicationForPatient = async (patientId: string, medData: any) => {
+  const response = await client.post('/medications/patient', { patientId, ...medData });
+  return response.data;
+};
+
+export const getPatientMedications = async (patientId: string) => {
+  const response = await client.get(`/medications/patient/${patientId}`);
+  return response.data;
+};
+
+export const updatePatientMedication = async (medicationId: string, medData: any) => {
+  const response = await client.put(`/medications/patient/${medicationId}`, medData);
+  return response.data;
+};
+
+export const deletePatientMedication = async (medicationId: string) => {
+  const response = await client.delete(`/medications/patient/${medicationId}`);
+  return response.data;
+};
+
 // --- Notifications ---
 export const getAllNotifications = async (read: boolean = false) => {
   const response = await client.get(`/notifications?read=${read}`);
@@ -145,6 +195,19 @@ export const registerDevice = async (deviceData: any) => {
   return response.data;
 };
 
+export const registerDeviceWithSignature = async (deviceData: {
+  deviceId: string;
+  devicePublicKey: string;
+  signature: string;
+  name?: string;
+  deviceType?: string;
+  model?: string;
+  serialNumber?: string;
+}) => {
+  const response = await client.post('/devices/register-with-signature', deviceData);
+  return response.data;
+};
+
 export const updateDevice = async (id: string, deviceData: any) => {
   const response = await client.put(`/devices/${id}`, deviceData);
   return response.data;
@@ -152,6 +215,27 @@ export const updateDevice = async (id: string, deviceData: any) => {
 
 export const deleteDevice = async (id: string) => {
   const response = await client.delete(`/devices/${id}`);
+  return response.data;
+};
+
+// --- Device Caregiver Management ---
+export const inviteDeviceCaregiver = async (deviceId: string, email: string, accessLevel: 'read_only' | 'full_access' = 'read_only') => {
+  const response = await client.post(`/devices/${deviceId}/invite-caregiver`, { email, accessLevel });
+  return response.data;
+};
+
+export const acceptDeviceCaregiverInvitation = async (deviceId: string, invitationId: string) => {
+  const response = await client.post(`/devices/${deviceId}/caregivers/${invitationId}/accept`);
+  return response.data;
+};
+
+export const getDeviceCaregivers = async (deviceId: string) => {
+  const response = await client.get(`/devices/${deviceId}/caregivers`);
+  return response.data;
+};
+
+export const removeDeviceCaregiver = async (deviceId: string, caregiverId: string) => {
+  const response = await client.delete(`/devices/${deviceId}/caregivers/${caregiverId}`);
   return response.data;
 };
 
@@ -163,6 +247,11 @@ export const updateProfile = async (profileData: any) => {
 
 export const changePassword = async (currentPassword: string, newPassword: string) => {
   const response = await client.put('/auth/password', { currentPassword, newPassword });
+  return response.data;
+};
+
+export const deleteAccount = async (password: string) => {
+  const response = await client.delete('/auth/account', { data: { password } });
   return response.data;
 };
 

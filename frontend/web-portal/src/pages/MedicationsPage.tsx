@@ -1,12 +1,13 @@
 import React, { useEffect, useState } from 'react';
-import { Plus, Pill, AlertCircle, Edit, Trash2, RefreshCw, X } from 'lucide-react';
+import { Plus, Trash2, X } from 'lucide-react';
 import DashboardLayout from '../components/DashboardLayout';
 import { getMedications, deleteMedication, addMedication } from '../api/services';
+import { motion, fadeIn, PageTransition } from '../animations';
 
 const MedicationsPage = () => {
   const [meds, setMeds] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [_, setError] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
 
   // Form State
@@ -60,8 +61,16 @@ const MedicationsPage = () => {
 
   return (
     <DashboardLayout>
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">My Medications</h1>
+      <PageTransition>
+        <div className="flex justify-between items-center mb-6">
+          <motion.h1
+            initial="hidden"
+            animate="visible"
+            variants={fadeIn}
+            className="text-2xl font-bold text-gray-900"
+          >
+            My Medications
+          </motion.h1>
         <button 
           onClick={() => setShowAddModal(true)}
           className="flex items-center gap-2 bg-teal-700 text-white px-4 py-2 rounded-lg hover:bg-teal-800 transition-colors"
@@ -131,6 +140,7 @@ const MedicationsPage = () => {
           </div>
         </div>
       )}
+      </PageTransition>
     </DashboardLayout>
   );
 };

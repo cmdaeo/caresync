@@ -14,6 +14,7 @@ import {
   User         // Add this
 } from 'lucide-react';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import useAuthStore from '../store/useAuthStore';
 import NotificationCenter from './NotificationCenter';
 
@@ -22,21 +23,33 @@ interface DashboardLayoutProps {
 }
 
 const DashboardLayout = ({ children }: DashboardLayoutProps) => {
+  const { t } = useTranslation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const location = useLocation();
   const logout = useAuthStore((state) => state.logout);
 
   const navItems = [
-    { icon: <LayoutDashboard size={20} />, label: 'Overview', path: '/dashboard' },
-    { icon: <Calendar size={20} />, label: 'Schedule', path: '/dashboard/schedule' },
-    { icon: <Pill size={20} />, label: 'Medications', path: '/dashboard/medications' },
-    { icon: <Smartphone size={20} />, label: 'Devices', path: '/dashboard/devices' },
-    { icon: <Users size={20} />, label: 'Caregivers', path: '/dashboard/caregivers' },
-    { icon: <Bell size={20} />, label: 'Notifications', path: '/dashboard/notifications' },
-    { icon: <FileText size={20} />, label: 'Reports', path: '/dashboard/reports' },
-    { icon: <User size={20} />, label: 'Profile', path: '/dashboard/profile' },
-    { icon: <Settings size={20} />, label: 'Settings', path: '/dashboard/settings' },
+    { icon: <LayoutDashboard size={20} />, label: t('dashboard'), path: '/dashboard' },
+    { icon: <Calendar size={20} />, label: t('schedule'), path: '/dashboard/schedule' },
+    { icon: <Pill size={20} />, label: t('medications'), path: '/dashboard/medications' },
+    { icon: <Smartphone size={20} />, label: t('devices'), path: '/dashboard/devices' },
+    { icon: <Users size={20} />, label: t('caregivers'), path: '/dashboard/caregivers' },
+    { icon: <Bell size={20} />, label: t('notifications'), path: '/dashboard/notifications' },
+    { icon: <FileText size={20} />, label: t('reports'), path: '/dashboard/reports' },
+    { icon: <User size={20} />, label: t('profile'), path: '/dashboard/profile' },
+    { icon: <Settings size={20} />, label: t('settings'), path: '/dashboard/settings' },
   ];
+
+  // Add calendar view navigation item
+  const calendarNavItem = {
+    icon: <Calendar size={20} />,
+    label: t('calendar_view'),
+    path: '/dashboard/calendar'
+  };
+
+  // Combine navigation items - insert calendar after schedule
+  const allNavItems = [...navItems];
+  allNavItems.splice(2, 0, calendarNavItem);
 
   return (
     <div className="min-h-screen bg-gray-50 flex font-sans">
@@ -46,15 +59,15 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
           <span className="text-2xl font-bold text-teal-700">CareSync</span>
         </div>
         <nav className="p-4 space-y-1">
-          {navItems.map((item) => {
+          {allNavItems.map((item) => {
             const isActive = location.pathname === item.path;
             return (
               <Link
                 key={item.path}
                 to={item.path}
                 className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${
-                  isActive 
-                    ? 'bg-teal-50 text-teal-700 font-medium' 
+                  isActive
+                    ? 'bg-teal-50 text-teal-700 font-medium'
                     : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
                 }`}
               >
@@ -65,12 +78,12 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
           })}
         </nav>
         <div className="absolute bottom-0 w-full p-4 border-t border-gray-100">
-          <button 
+          <button
             onClick={logout}
             className="flex items-center space-x-3 px-4 py-3 text-red-500 hover:bg-red-50 w-full rounded-lg transition-colors"
           >
             <LogOut size={20} />
-            <span>Sign Out</span>
+            <span>{t('logout')}</span>
           </button>
         </div>
       </aside>

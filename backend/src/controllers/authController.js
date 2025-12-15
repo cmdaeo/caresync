@@ -284,6 +284,41 @@ class AuthController {
       throw error;
     }
   }
+
+  /**
+   * Delete user account
+   */
+  async deleteAccount(req, res) {
+    try {
+      const { password } = req.body;
+      const user = await User.findByPk(req.user.id);
+
+      // Verify password before deletion
+      const isPasswordValid = await user.comparePassword(password);
+      if (!isPasswordValid) {
+        return res.status(400).json({
+          success: false,
+          message: 'Password is incorrect'
+        });
+      }
+
+      // Soft delete approach - mark as inactive instead of hard delete
+      user.isActive = false;
+      user.email = `deleted_${user.id}_${user.email}`;
+      user.deletedAt = new Date();
+      await user.save();
+
+      logger.info(`User account deleted: ${user.email}`);
+
+      res.json({
+        success: true,
+        message: 'Account deleted successfully'
+      });
+    } catch (error) {
+      logger.error('Delete account error:', error);
+      throw error;
+    }
+  }
 }
 
 module.exports = new AuthController();
