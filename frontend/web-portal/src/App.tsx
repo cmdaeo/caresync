@@ -5,6 +5,8 @@ import { useTranslation } from 'react-i18next';
 import useAuthStore from './store/useAuthStore';
 import LoadingSpinner from './components/LoadingSpinner';
 
+import { Capacitor } from '@capacitor/core';
+
 // Lazy load pages for better performance
 const LandingPage = lazy(() => import('./pages/LandingPage'));
 const Product3DPage = lazy(() => import('./pages/Product3DPage'));
@@ -81,6 +83,7 @@ const LanguageSelector = () => {
 };
 
 function App() {
+  const isNative = Capacitor.isNativePlatform();
   return (
     <BrowserRouter>
       <AnimatePresence mode="wait">
@@ -91,7 +94,7 @@ function App() {
               path="/"
               element={
                 <RouteWrapper>
-                  <LandingPage />
+                  {isNative ? <Navigate to="/login" replace /> : <LandingPage />}
                 </RouteWrapper>
               }
             />

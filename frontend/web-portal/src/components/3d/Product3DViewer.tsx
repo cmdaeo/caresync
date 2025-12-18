@@ -2,7 +2,6 @@ import React, { useState, useEffect, Suspense } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls, Environment, useGLTF, Html } from '@react-three/drei';
 import { useNavigate, useParams } from 'react-router-dom';
-import { motion } from 'framer-motion';
 import { ArrowLeft } from 'lucide-react';
 import { PageTransition } from '../../animations';
 
@@ -36,11 +35,11 @@ class ModelErrorBoundary extends React.Component<
     this.state = { hasError: false };
   }
 
-  static getDerivedStateFromError(error: any) {
+  static getDerivedStateFromError(_error: any) {
     return { hasError: true };
   }
 
-  componentDidCatch(error: any, errorInfo: any) {
+  componentDidCatch(error: any, _errorInfo: any) {
     console.error("Failed to load 3D model, defaulting to cube:", error);
   }
 
@@ -89,7 +88,7 @@ const WebGLFallback: React.FC = () => {
   );
 };
 
-const Product3DViewer: React.FC<Product3DViewerProps> = ({ onBack }) => {
+const Product3DViewer: React.FC<Product3DViewerProps> = ({ }) => {
   const { productName } = useParams<{ productName: string }>();
   const [webGLAvailable, setWebGLAvailable] = useState<boolean | null>(null);
 

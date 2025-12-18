@@ -6,7 +6,7 @@ import com.getcapacitor.BridgeActivity;
 public class MainActivity extends BridgeActivity {
     @Override
     public void onCreate(Bundle savedInstanceState) {
-        registerPlugin(NfcPlugin.class); // <--- Add this line
+        registerPlugin(NfcPlugin.class);
         super.onCreate(savedInstanceState);
     }
 }

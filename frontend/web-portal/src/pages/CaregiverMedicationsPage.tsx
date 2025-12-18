@@ -1,21 +1,20 @@
 import React, { useEffect, useState } from 'react';
-import { Plus, Trash2, X, Pill, Clock, Calendar as CalendarIcon, Users } from 'lucide-react';
+import { Plus, Trash2, X, Pill, Users } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import DashboardLayout from '../components/DashboardLayout';
 import { getPatientMedications, deletePatientMedication, createMedicationForPatient, getAvailableCompartments } from '../api/services';
 import { motion, fadeIn, PageTransition } from '../animations';
 import CompartmentSelector from '../components/CompartmentSelector';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
 
 const CaregiverMedicationsPage = () => {
   const { t } = useTranslation();
-  const navigate = useNavigate();
   const location = useLocation();
   const [meds, setMeds] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
-  const [availableCompartments, setAvailableCompartments] = useState<number[]>([]);
+  const [_, setAvailableCompartments] = useState<number[]>([]);
   const [usedCompartments, setUsedCompartments] = useState<number[]>([]);
 
   // Get patientId from location state or URL

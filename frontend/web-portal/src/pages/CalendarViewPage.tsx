@@ -5,11 +5,9 @@ import DashboardLayout from '../components/DashboardLayout';
 import { getCalendarData } from '../api/services';
 import { motion, fadeIn, PageTransition } from '../animations';
 import LoadingSpinner from '../components/LoadingSpinner';
-import useAuthStore from '../store/useAuthStore';
 
 const CalendarViewPage = () => {
   const { t } = useTranslation();
-  const user = useAuthStore(state => state.user);
   const [calendarData, setCalendarData] = useState<any[]>([]);
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [viewMode, setViewMode] = useState<'month' | 'week'>('month');

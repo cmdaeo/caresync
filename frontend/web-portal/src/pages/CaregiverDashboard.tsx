@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Users, Pill, Activity, AlertTriangle, Plus, UserPlus, Calendar as CalendarIcon } from 'lucide-react';
 import DashboardLayout from '../components/DashboardLayout';
