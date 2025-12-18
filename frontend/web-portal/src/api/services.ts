@@ -50,9 +50,15 @@ export const getMedicationStats = async () => {
   return response.data;
 };
 
-// --- Adherence ---
-export const logAdherenceRecord = async (data: { medicationId: string; status: string; takenAt?: Date }) => {
-  const response = await client.post('/adherence', data);
+// --- Adherence (Updated Paths) ---
+export const logAdherenceRecord = async (data: { 
+  medicationId: string; 
+  status: string; 
+  takenAt?: Date | string; 
+  scheduledTime?: Date | string; // ADDED: Backend requires this now
+}) => {
+  // CHANGED: /adherence -> /medications/adherence
+  const response = await client.post('/medications/adherence', data);
   return response.data;
 };
 
@@ -62,29 +68,35 @@ export const getAdherenceStats = async (startDate?: string, endDate?: string, pa
   if (endDate) params.append('endDate', endDate);
   if (patientId) params.append('patientId', patientId);
   
-  const response = await client.get(`/adherence/stats?${params.toString()}`);
+  // CHANGED: /adherence/stats -> /medications/adherence/stats
+  const response = await client.get(`/medications/adherence/stats?${params.toString()}`);
   return response.data;
 };
 
 export const getAdherenceTrends = async () => {
-  const response = await client.get('/adherence/trends');
+  // CHANGED: /adherence/trends -> /medications/adherence/trends (Ensure you have this route in backend if used)
+  const response = await client.get('/medications/adherence/trends');
   return response.data;
 };
 
 // --- Schedule ---
 export const getDailySchedule = async (date: string) => {
-  const response = await client.get(`/prescriptions/schedule?date=${date}`);
+  // NOTE: Assuming /prescriptions/schedule is handled elsewhere or should also be updated.
+  // If your merged controller handles this via getCalendarData, verify this path.
+  // Keeping as is based on your previous file, but check if this needs to change to /medications/schedule/daily
+  const response = await client.get(`/medications/schedule?startDate=${date}&endDate=${date}`);
   return response.data;
 };
 
-// --- Calendar ---
+// --- Calendar (Updated Paths) ---
 export const getCalendarData = async (startDate?: string, endDate?: string, patientId?: string) => {
   const params = new URLSearchParams();
   if (startDate) params.append('startDate', startDate);
   if (endDate) params.append('endDate', endDate);
   if (patientId) params.append('patientId', patientId);
   
-  const response = await client.get(`/calendar?${params.toString()}`);
+  // CHANGED: /calendar -> /medications/schedule
+  const response = await client.get(`/medications/schedule?${params.toString()}`);
   return response.data;
 };
 
@@ -94,7 +106,9 @@ export const getMedicationCalendarData = async (medicationId: string, startDate?
   if (endDate) params.append('endDate', endDate);
   if (patientId) params.append('patientId', patientId);
   
-  const response = await client.get(`/calendar/medication/${medicationId}?${params.toString()}`);
+  // CHANGED: /calendar/medication/:id -> /medications/schedule/:id
+  // Note: Ensure your backend route structure supports this if you need specific med calendar
+  const response = await client.get(`/medications/schedule/${medicationId}?${params.toString()}`);
   return response.data;
 };
 
@@ -257,7 +271,7 @@ export const deleteAccount = async (password: string) => {
 
 // --- Reports ---
 export const generatePDFReport = async (startDate: string, endDate: string) => {
-  const response = await client.get(`/adherence/report/pdf`, {
+  const response = await client.get(`/reports/pdf`, {
     params: { startDate, endDate },
     responseType: 'blob',
   });

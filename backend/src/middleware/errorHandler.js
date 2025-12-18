@@ -1,5 +1,10 @@
 const logger = require('../utils/logger');
 
+// --- ASYNC HANDLER (Restored) ---
+const asyncHandler = (fn) => (req, res, next) => {
+  Promise.resolve(fn(req, res, next)).catch(next);
+};
+
 // Custom error classes
 class AppError extends Error {
   constructor(message, statusCode, code = null) {
@@ -47,18 +52,20 @@ class ConflictError extends AppError {
 const errorHandler = (err, req, res, next) => {
   let error = { ...err };
   error.message = err.message;
+  error.statusCode = err.statusCode || 500;
 
-  // Log error details
+  // Context for logs
   const errorLog = {
     message: err.message,
     stack: err.stack,
     url: req.originalUrl,
     method: req.method,
     ip: req.ip,
-    userAgent: req.get('User-Agent'),
-    userId: req.user?.id,
+    userId: req.user?.id || 'anonymous',
     timestamp: new Date().toISOString()
   };
+
+  // --- Specific Error Type Handling ---
 
   // Mongoose/Sequelize bad ObjectId
   if (err.name === 'CastError') {
@@ -75,14 +82,6 @@ const errorHandler = (err, req, res, next) => {
     logger.warn('Duplicate key error:', { ...errorLog, field });
   }
 
-  // Validation errors
-  if (err.name === 'ValidationError' || err.name === 'SequelizeValidationError') {
-    const messages = err.errors ? err.errors.map(e => e.message) : [err.message];
-    const message = messages.join(', ');
-    error = new ValidationError(message);
-    logger.warn('Validation error:', { ...errorLog, validationErrors: err.errors });
-  }
-
   // JWT errors
   if (err.name === 'JsonWebTokenError') {
     const message = 'Invalid authentication token';
@@ -96,166 +95,46 @@ const errorHandler = (err, req, res, next) => {
     logger.warn('JWT Expired:', errorLog);
   }
 
-  // File upload errors
-  if (err.code === 'LIMIT_FILE_SIZE') {
-    const message = 'File size exceeds maximum allowed limit';
-    error = new ValidationError(message);
-    logger.warn('File size error:', { ...errorLog, fileSize: req.file?.size });
-  }
+  // --- Final Response Handling ---
 
-  if (err.code === 'LIMIT_UNEXPECTED_FILE') {
-    const message = 'Unexpected file field in request';
-    error = new ValidationError(message);
-    logger.warn('Unexpected file error:', errorLog);
-  }
-
-  // PDF processing errors
-  if (err.message && err.message.includes('PDF')) {
-    const message = 'Error processing PDF document';
-    error = new AppError(message, 422, 'PDF_PROCESSING_ERROR');
-    logger.error('PDF processing error:', { ...errorLog, pdfError: err.message });
-  }
-
-  // Rate limiting errors
-  if (err.statusCode === 429) {
-    const message = 'Too many requests, please try again later';
-    error = new AppError(message, 429, 'RATE_LIMIT_ERROR');
-    logger.warn('Rate limit exceeded:', errorLog);
-  }
-
-  // Database connection errors
-  if (err.name === 'SequelizeConnectionError' || err.name === 'SequelizeConnectionRefusedError') {
-    const message = 'Database connection error';
-    error = new AppError(message, 503, 'DATABASE_ERROR');
-    logger.error('Database connection error:', errorLog);
-  }
-
-  // Network/timeout errors
-  if (err.code === 'ECONNREFUSED' || err.code === 'ETIMEDOUT' || err.code === 'ENOTFOUND') {
-    const message = 'Service temporarily unavailable';
-    error = new AppError(message, 503, 'NETWORK_ERROR');
-    logger.error('Network error:', { ...errorLog, networkError: err.code });
-  }
-
-  // Use custom error properties if set
-  const statusCode = error.statusCode || 500;
-  const responseMessage = error.message || 'Internal server error';
-  const errorCode = error.code || 'INTERNAL_ERROR';
-
-  // Prepare error response
-  const errorResponse = {
-    success: false,
-    error: {
-      message: responseMessage,
-      code: errorCode,
-      timestamp: new Date().toISOString(),
-      path: req.originalUrl
+  // 1. Operational (Trusted) Errors - 4xx
+  if (error.isOperational || error.statusCode < 500) {
+    // We log these as warnings to keep error logs clean
+    // (Except JWT errors which are noisy and already logged above if needed)
+    if (!['JsonWebTokenError', 'TokenExpiredError'].includes(err.name)) {
+        logger.warn(`Operational Error (${error.statusCode}): ${error.message}`, {
+            url: req.originalUrl,
+            method: req.method
+        });
     }
-  };
-
-  // Add field-specific errors for validation
-  if (error instanceof ValidationError && error.field) {
-    errorResponse.error.field = error.field;
+    
+    return res.status(error.statusCode).json({
+      success: false,
+      message: error.message,
+      errorCode: error.code
+    });
   }
 
-  // Add suggestions for common errors
-  if (statusCode === 404) {
-    errorResponse.suggestion = 'Please check the request URL and parameters';
-  } else if (statusCode === 401) {
-    errorResponse.suggestion = 'Please check your authentication credentials';
-  } else if (statusCode === 403) {
-    errorResponse.suggestion = 'You do not have permission to access this resource';
-  } else if (statusCode >= 500) {
-    errorResponse.suggestion = 'Please try again later or contact support if the problem persists';
-  }
-
-  // Add stack trace in development
-  if (process.env.NODE_ENV === 'development') {
-    errorResponse.error.stack = err.stack;
-    errorResponse.error.details = {
-      name: err.name,
-      code: err.code,
-      statusCode: err.statusCode
-    };
-  }
-
-  res.status(statusCode).json(errorResponse);
-};
-
-// 404 handler
-const notFound = (req, res, next) => {
-  const error = new NotFoundError(`Not Found - ${req.originalUrl}`);
-  next(error);
-};
-
-// Async error handler wrapper
-const asyncHandler = (fn) => (req, res, next) => {
-  Promise.resolve(fn(req, res, next)).catch(next);
-};
-
-// Validation helpers
-const validateRequired = (fields, data) => {
-  const missing = [];
-  fields.forEach(field => {
-    if (!data[field] || (typeof data[field] === 'string' && data[field].trim() === '')) {
-      missing.push(field);
-    }
+  // 2. Programming or Unknown Errors - 500
+  logger.error('CRITICAL SERVER ERROR (500)', {
+    ...errorLog,
+    originalError: err 
   });
-  if (missing.length > 0) {
-    throw new ValidationError(`Missing required fields: ${missing.join(', ')}`);
-  }
-};
 
-const validateEmail = (email) => {
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  if (!emailRegex.test(email)) {
-    throw new ValidationError('Invalid email format', 'email');
-  }
-};
-
-const validateUUID = (uuid) => {
-  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-  if (!uuidRegex.test(uuid)) {
-    throw new ValidationError('Invalid UUID format', 'id');
-  }
-};
-
-const sanitizeInput = (input) => {
-  if (typeof input === 'string') {
-    return input.trim().replace(/[<>\"']/g, '');
-  }
-  return input;
-};
-
-const validateFileUpload = (file, allowedTypes = ['application/pdf'], maxSize = 10 * 1024 * 1024) => {
-  if (!file) {
-    throw new ValidationError('No file provided');
-  }
-
-  if (!allowedTypes.includes(file.mimetype)) {
-    throw new ValidationError(`File type not allowed. Allowed types: ${allowedTypes.join(', ')}`);
-  }
-
-  if (file.size > maxSize) {
-    throw new ValidationError(`File size exceeds maximum limit of ${maxSize / (1024 * 1024)}MB`);
-  }
+  return res.status(500).json({
+    success: false,
+    message: 'Something went wrong on the server',
+    ref: errorLog.timestamp
+  });
 };
 
 module.exports = {
-  errorHandler,
-  notFound,
   asyncHandler,
-  // Custom error classes
+  errorHandler,
   AppError,
   ValidationError,
   AuthenticationError,
   AuthorizationError,
   NotFoundError,
-  ConflictError,
-  // Validation helpers
-  validateRequired,
-  validateEmail,
-  validateUUID,
-  sanitizeInput,
-  validateFileUpload
+  ConflictError
 };

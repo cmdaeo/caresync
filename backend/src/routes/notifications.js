@@ -6,6 +6,52 @@ const { asyncHandler } = require('../middleware/errorHandler')
 const logger = require('../utils/logger');
 const { body, query, param, validationResult } = require('express-validator');
 
+/**
+ * @swagger
+ * /api/notifications:
+ *   get:
+ *     tags: [Notifications]
+ *     summary: Get all notifications for user with pagination
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *       - in: query
+ *         name: read
+ *         schema:
+ *           type: boolean
+ *       - in: query
+ *         name: type
+ *         schema:
+ *           type: string
+ *           enum: [medication_reminder, missed_dose, refill_reminder, device_alert, system_alert, caregiver_alert]
+ *     responses:
+ *       200:
+ *         description: List of notifications retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     notifications:
+ *                       type: array
+ *                       items:
+ *                         type: object
+ *                     pagination:
+ *                       type: object
+ */
 // @desc    Get all notifications for user
 // @route   GET /api/notifications
 // @access  Private
@@ -68,6 +114,38 @@ router.get(
   })
 );
 
+/**
+ * @swagger
+ * /api/notifications/{id}/read:
+ *   put:
+ *     tags: [Notifications]
+ *     summary: Mark notification as read
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Notification marked as read
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     notification:
+ *                       type: object
+ */
 // @desc    Mark notification as read
 // @route   PUT /api/notifications/:id/read
 // @access  Private
@@ -118,6 +196,27 @@ router.put(
   })
 );
 
+/**
+ * @swagger
+ * /api/notifications/read-all:
+ *   put:
+ *     tags: [Notifications]
+ *     summary: Mark all notifications as read
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: All notifications marked as read
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ */
 // @desc    Mark all notifications as read
 // @route   PUT /api/notifications/read-all
 // @access  Private
@@ -147,6 +246,33 @@ router.put(
   })
 );
 
+/**
+ * @swagger
+ * /api/notifications/{id}:
+ *   delete:
+ *     tags: [Notifications]
+ *     summary: Delete notification
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Notification deleted successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ */
 // @desc    Delete notification
 // @route   DELETE /api/notifications/:id
 // @access  Private
@@ -194,6 +320,30 @@ router.delete(
   })
 );
 
+/**
+ * @swagger
+ * /api/notifications/unread-count:
+ *   get:
+ *     tags: [Notifications]
+ *     summary: Get unread notification count
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Unread notification count retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     unreadCount:
+ *                       type: integer
+ */
 // @desc    Get unread notification count
 // @route   GET /api/notifications/unread-count
 // @access  Private
@@ -216,6 +366,55 @@ router.get('/unread-count', authMiddleware, asyncHandler(async (req, res) => {
   });
 }));
 
+/**
+ * @swagger
+ * /api/notifications/preferences:
+ *   put:
+ *     tags: [Notifications]
+ *     summary: Update notification preferences
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               email:
+ *                 type: boolean
+ *               push:
+ *                 type: boolean
+ *               sms:
+ *                 type: boolean
+ *               medicationReminders:
+ *                 type: boolean
+ *               missedDoseAlerts:
+ *                 type: boolean
+ *               refillReminders:
+ *                 type: boolean
+ *               deviceAlerts:
+ *                 type: boolean
+ *               caregiverAlerts:
+ *                 type: boolean
+ *     responses:
+ *       200:
+ *         description: Notification preferences updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     user:
+ *                       type: object
+ */
 // @desc    Update notification preferences
 // @route   PUT /api/notifications/preferences
 // @access  Private
@@ -266,7 +465,7 @@ router.put(
       };
     }
 
-    if (medicationReminders !== undefined || missedDoseAlerts !== undefined || 
+    if (medicationReminders !== undefined || missedDoseAlerts !== undefined ||
         refillReminders !== undefined || deviceAlerts !== undefined || caregiverAlerts !== undefined) {
       updates.notificationSettings = {
         ...user.preferences.notificationSettings,
@@ -292,6 +491,39 @@ router.put(
   })
 );
 
+/**
+ * @swagger
+ * /api/notifications/register-token:
+ *   post:
+ *     tags: [Notifications]
+ *     summary: Register device token for push notifications
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               token:
+ *                 type: string
+ *               platform:
+ *                 type: string
+ *                 enum: [ios, android, web]
+ *     responses:
+ *       200:
+ *         description: Device token registered successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ */
 // @desc    Register device token for push notifications
 // @route   POST /api/notifications/register-token
 // @access  Private
@@ -336,6 +568,44 @@ router.post(
   })
 );
 
+/**
+ * @swagger
+ * /api/notifications/test:
+ *   post:
+ *     tags: [Notifications]
+ *     summary: Create test notification
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               type:
+ *                 type: string
+ *                 enum: [medication_reminder, missed_dose, refill_reminder, device_alert, system_alert]
+ *               message:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Test notification created successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     notification:
+ *                       type: object
+ */
 // @desc    Test notification
 // @route   POST /api/notifications/test
 // @access  Private

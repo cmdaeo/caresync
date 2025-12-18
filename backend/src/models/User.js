@@ -1,7 +1,13 @@
 const { DataTypes } = require('sequelize');
 const bcrypt = require('bcryptjs');
+const Encrypted = require('sequelize-encrypted');
 
 module.exports = (sequelize) => {
+  const encryptionKey = process.env.ENCRYPTION_KEY;
+  if (!encryptionKey) {
+    throw new Error('ENCRYPTION_KEY environment variable is required');
+  }
+
   const User = sequelize.define('User', {
     id: {
       type: DataTypes.UUID,
@@ -9,7 +15,7 @@ module.exports = (sequelize) => {
       primaryKey: true
     },
     email: {
-      type: DataTypes.STRING,
+      type: Encrypted(DataTypes.STRING, encryptionKey),
       allowNull: false,
       unique: true,
       validate: {
@@ -21,11 +27,11 @@ module.exports = (sequelize) => {
       allowNull: false
     },
     firstName: {
-      type: DataTypes.STRING,
+      type: Encrypted(DataTypes.STRING, encryptionKey),
       allowNull: false
     },
     lastName: {
-      type: DataTypes.STRING,
+      type: Encrypted(DataTypes.STRING, encryptionKey),
       allowNull: false
     },
     role: {
@@ -33,7 +39,7 @@ module.exports = (sequelize) => {
       defaultValue: 'patient'
     },
     phone: {
-      type: DataTypes.STRING,
+      type: Encrypted(DataTypes.STRING, encryptionKey),
       allowNull: true,
       validate: {
         // Add custom validator to skip validation if empty
@@ -74,6 +80,14 @@ module.exports = (sequelize) => {
     },
     lastLogin: {
       type: DataTypes.DATE,
+      allowNull: true
+    },
+    tokenVersion: {
+      type: DataTypes.INTEGER,
+      defaultValue: 0
+    },
+    refreshTokenHash: {
+      type: DataTypes.STRING,
       allowNull: true
     },
     preferences: {
@@ -131,6 +145,7 @@ module.exports = (sequelize) => {
   User.prototype.toJSON = function() {
     const values = { ...this.get() };
     delete values.password;
+    delete values.refreshTokenHash;
     delete values.emailVerificationToken;
     delete values.passwordResetToken;
     delete values.passwordResetExpires;

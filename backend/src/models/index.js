@@ -11,6 +11,7 @@ const DeviceAccessPermissionModel = require('./DeviceAccessPermission');
 const DeviceInvitationModel = require('./DeviceInvitation');
 const NotificationModel = require('./Notification');
 const CaregiverPatientModel = require('./CaregiverPatient');
+const AuditLogModel = require('./AuditLog');
 
 // Initialize models by calling the functions with sequelize
 const User = UserModel(sequelize);
@@ -22,6 +23,7 @@ const DeviceAccessPermission = DeviceAccessPermissionModel(sequelize);
 const DeviceInvitation = DeviceInvitationModel(sequelize);
 const Notification = NotificationModel(sequelize);
 const CaregiverPatient = CaregiverPatientModel(sequelize);
+const AuditLog = AuditLogModel(sequelize);
 
 // Define associations
 User.hasMany(Medication, { foreignKey: 'userId', as: 'medications' });
@@ -98,5 +100,6 @@ module.exports = {
   DeviceAccessPermission,
   DeviceInvitation,
   Notification,
-  CaregiverPatient
+  CaregiverPatient,
+  AuditLog
 };

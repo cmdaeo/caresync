@@ -13,12 +13,15 @@ class JwtUtils {
    */
   static async verifyDeviceSignature(token, devicePublicKey) {
     try {
-      // For now, we'll use a temporary secret for development
-      // In production, this should use the actual device public key with proper crypto
-      const secret = process.env.JWT_SECRET || 'carebox-secret-key-temporary';
+      // Use the JWT_SECRET environment variable
+      if (!process.env.JWT_SECRET) {
+        throw new Error('JWT_SECRET environment variable is required');
+      }
+
+      const secret = process.env.JWT_SECRET;
 
       const decoded = await verifyJwt(token, secret, {
-        algorithms: ['HS256'], // Using HS256 for now, will switch to ES256 in production
+        algorithms: ['HS256'],
         ignoreExpiration: false
       });
 
@@ -50,7 +53,11 @@ class JwtUtils {
    * @returns {string} - JWT token
    */
   static generateDeviceToken(payload) {
-    const secret = process.env.JWT_SECRET || 'carebox-secret-key-temporary';
+    if (!process.env.JWT_SECRET) {
+      throw new Error('JWT_SECRET environment variable is required');
+    }
+
+    const secret = process.env.JWT_SECRET;
     return jwt.sign(payload, secret, {
       algorithm: 'HS256',
       expiresIn: '1h'
@@ -64,7 +71,11 @@ class JwtUtils {
    */
   static async verifyAccessToken(token) {
     try {
-      const secret = process.env.JWT_SECRET || 'carebox-secret-key-temporary';
+      if (!process.env.JWT_SECRET) {
+        throw new Error('JWT_SECRET environment variable is required');
+      }
+
+      const secret = process.env.JWT_SECRET;
       return await verifyJwt(token, secret);
     } catch (error) {
       logger.error('Access token verification error:', error.message);
