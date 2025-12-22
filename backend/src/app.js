@@ -19,6 +19,7 @@ const patientRoutes = require('./routes/patients');
 const deviceRoutes = require('./routes/devices');
 const notificationRoutes = require('./routes/notifications');
 const reportsRoutes = require('./routes/reports');
+const apiDocsRoutes = require('./routes/api-docs');
 
 // Import middleware
 const { authMiddleware } = require('./middleware/auth');
@@ -109,6 +110,10 @@ app.use('/api/patients', authMiddleware, patientRoutes);
 app.use('/api/devices', authMiddleware, deviceRoutes);
 app.use('/api/notifications', authMiddleware, notificationRoutes);
 app.use('/api/reports', authMiddleware, reportsRoutes);
+if (process.env.NODE_ENV === 'development') {
+  const apiDocsRoutes = require('./routes/api-docs');
+  app.use('/api/api-docs', apiDocsRoutes);
+}
 
 // Socket.IO
 io.on('connection', (socket) => {
