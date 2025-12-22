@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { Adherence, Medication, User } = require('../models');
+const { Adherence, Medication, User, DocumentMetadata } = require('../models');
 const {authMiddleware} = require('../middleware/auth');
 const {asyncHandler} = require('../middleware/errorHandler');
 const { query, validationResult } = require('express-validator');
@@ -78,7 +78,7 @@ router.get(
 
       // 1. Fetch User Data (with additional fields for enhanced report)
       const user = await User.findByPk(userId, {
-        attributes: ['id', 'firstName', 'lastName', 'email', 'dateOfBirth', 'gender', 'primaryCondition']
+        attributes: ['id', 'firstName', 'lastName', 'email', /*'dateOfBirth', 'gender', 'primaryCondition'*/]
       });
       if (!user) {
         return res.status(404).json({ success: false, message: 'User not found' });

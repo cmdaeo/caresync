@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/caresync.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    
+    <!-- CSP: Removed frame-ancestors to silence the console warning -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline'; connect-src 'self' https://api.caresync.com; img-src 'self' data:; style-src 'self' 'unsafe-inline'; font-src 'self' data:; object-src 'none'; base-uri 'self'; form-action 'self';">
+    
+    <title>CareSync Engineering Showcase</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    
+    <!-- FIX: Ensure these paths match your new src structure exactly -->
+    <!-- Vite requires the leading slash '/' for absolute paths -->
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

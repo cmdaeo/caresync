@@ -1,7 +1,7 @@
 const { Sequelize } = require('sequelize');
 const sequelize = require('../config/database');
 
-// Import model definitions (these are functions that define models)
+// Import model definitions
 const UserModel = require('./User');
 const MedicationModel = require('./Medication');
 const PrescriptionModel = require('./Prescription');
@@ -12,6 +12,8 @@ const DeviceInvitationModel = require('./DeviceInvitation');
 const NotificationModel = require('./Notification');
 const CaregiverPatientModel = require('./CaregiverPatient');
 const AuditLogModel = require('./AuditLog');
+// FIX: Import the DocumentMetadata model definition
+const DocumentMetadataModel = require('./DocumentMetadata'); 
 
 // Initialize models by calling the functions with sequelize
 const User = UserModel(sequelize);
@@ -24,6 +26,8 @@ const DeviceInvitation = DeviceInvitationModel(sequelize);
 const Notification = NotificationModel(sequelize);
 const CaregiverPatient = CaregiverPatientModel(sequelize);
 const AuditLog = AuditLogModel(sequelize);
+// FIX: Initialize DocumentMetadata
+const DocumentMetadata = DocumentMetadataModel(sequelize);
 
 // Define associations
 User.hasMany(Medication, { foreignKey: 'userId', as: 'medications' });
@@ -88,6 +92,10 @@ User.belongsToMany(User, {
   otherKey: 'patientId'
 });
 
+// FIX: Define DocumentMetadata associations (if any)
+DocumentMetadata.belongsTo(User, { foreignKey: 'userId' });
+User.hasMany(DocumentMetadata, { foreignKey: 'userId' });
+
 // Export models and sequelize instance
 module.exports = {
   sequelize,
@@ -101,5 +109,7 @@ module.exports = {
   DeviceInvitation,
   Notification,
   CaregiverPatient,
-  AuditLog
+  AuditLog,
+  // FIX: Export DocumentMetadata
+  DocumentMetadata 
 };
