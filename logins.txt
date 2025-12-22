@@ -1,5 +1,2 @@
-john@doe.com
-test123
-
-johncare@giver.com
-whois123
+john@doe.com:test123
+janecare@giver.com:whois123

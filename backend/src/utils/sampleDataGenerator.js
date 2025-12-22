@@ -28,7 +28,7 @@ async function generateSampleData() {
     const caregiver = await User.create({
       firstName: 'Jane',
       lastName: 'Care',
-      email: 'johncare@giver.com',
+      email: 'janecare@giver.com',
       password: 'whois123',
       role: 'caregiver',
       phone: '0987654321',
