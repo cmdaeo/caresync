@@ -1,11 +1,68 @@
 @import "tailwindcss";
 
-:root {
-  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+@theme {
+  /* Brand Palette (Fixed colors, mostly for accents) */
+  --color-brand-primary: #4AA4E1;
+  --color-brand-light: #54B4F0;
+  --color-brand-dark: #285D91;
+  
+  /* Semantic Colors (These CHANGE based on mode) */
+  --color-bg-page: var(--bg-page);
+  --color-bg-card: var(--bg-card);
+  --color-bg-hover: var(--bg-hover);
+  
+  --color-text-main: var(--text-main);
+  --color-text-muted: var(--text-muted);
+  --color-text-inverted: var(--text-inverted); /* New: for text on brand bg */
+  
+  --color-border-subtle: var(--border-subtle);
 }
 
-body {
-  margin: 0;
-  min-height: 100vh;
-  @apply bg-slate-950 text-slate-50; /* Set default dark theme background */
+/* --- LIGHT MODE (High Contrast) --- */
+:root {
+  --bg-page: #FFFFFF;         /* Pure White Page */
+  --bg-card: #F1F5F9;         /* Light Grey Card */
+  --bg-hover: #E2E8F0;        /* Slightly darker grey for hover */
+  
+  --text-main: #0F172A;       /* Slate-900 (Black-ish) */
+  --text-muted: #475569;      /* Slate-600 (Dark Grey) */
+  --text-inverted: #FFFFFF;   /* White text for buttons/badges */
+  
+  --border-subtle: #CBD5E1;   /* Slate-300 (Visible border) */
+}
+
+/* --- DARK MODE --- */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg-page: #020617;       /* Slate-950 (Deep Black/Blue) */
+    --bg-card: #0F172A;       /* Slate-900 */
+    --bg-hover: #1E293B;      /* Slate-800 */
+    
+    --text-main: #F8FAFC;     /* Slate-50 (White) */
+    --text-muted: #94A3B8;    /* Slate-400 (Light Grey) */
+    --text-inverted: #FFFFFF; /* Still white */
+    
+    --border-subtle: #1E293B; /* Slate-800 */
+  }
+}
+
+/* Manual Overrides */
+.dark {
+  --bg-page: #020617;
+  --bg-card: #0F172A;
+  --bg-hover: #1E293B;
+  --text-main: #F8FAFC;
+  --text-muted: #94A3B8;
+  --text-inverted: #FFFFFF;
+  --border-subtle: #1E293B;
+}
+
+.light {
+  --bg-page: #FFFFFF;
+  --bg-card: #F1F5F9;
+  --bg-hover: #E2E8F0;
+  --text-main: #0F172A;
+  --text-muted: #475569;
+  --text-inverted: #FFFFFF;
+  --border-subtle: #CBD5E1;
 }

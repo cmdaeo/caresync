@@ -1,37 +1,45 @@
-//import React from 'react';
+// frontend/src/App.tsx
+import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+
+// Layouts
 import { ShowcaseLayout } from './features/showcase/layouts/ShowcaseLayout';
+
+// Showcase Pages
 import { HardwareEvolutionPage } from './features/showcase/pages/HardwareEvolutionPage';
 import { SecurityDeepDivePage } from './features/showcase/pages/SecurityDeepDivePage';
 import { SoftwareArchitecturePage } from './features/showcase/pages/SoftwareArchitecturePage';
 import { UnifiedTimelinePage } from './features/showcase/pages/UnifiedTimelinePage';
+import { TeamPage } from './features/showcase/pages/TeamPage';
+
+// Dashboard Pages
 import { DashboardHome } from './features/dashboard/pages/DashboardHome';
 
-// Placeholder for TeamPage until we build it
-const TeamPage = () => <div className="text-white text-center py-20">Team Credits Coming Soon</div>;
-
-function App() {
+// --- MAIN APP COMPONENT ---
+export function App() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* Public Showcase Routes */}
+        
+        {/* PUBLIC SHOWCASE SECTION (Wrapped in Layout) */}
         <Route path="/showcase" element={<ShowcaseLayout />}>
           <Route path="hardware" element={<HardwareEvolutionPage />} />
           <Route path="software" element={<SoftwareArchitecturePage />} />
           <Route path="security" element={<SecurityDeepDivePage />} />
           <Route path="timeline" element={<UnifiedTimelinePage />} />
           <Route path="team" element={<TeamPage />} />
+          
+          {/* Default to hardware if just /showcase is visited */}
           <Route index element={<Navigate to="hardware" replace />} />
         </Route>
 
-        {/* Product Routes (Legacy Logic) */}
+        {/* DASHBOARD/PRODUCT SECTION (No Showcase Layout) */}
         <Route path="/app" element={<DashboardHome />} />
 
-        {/* Default Redirect */}
+        {/* ROOT REDIRECT */}
         <Route path="/" element={<Navigate to="/showcase" replace />} />
+        
       </Routes>
     </BrowserRouter>
   );
 }
-
-export default App;
