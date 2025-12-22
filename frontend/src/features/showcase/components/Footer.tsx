@@ -1,4 +1,3 @@
-import React from 'react';
 import { useTheme } from '../../../context/ThemeContext'; // Ensure this path is correct
 import { Moon, Sun, Monitor } from 'lucide-react';
 import clsx from 'clsx';
