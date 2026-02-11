@@ -277,6 +277,14 @@ router.get('/', authMiddleware, asyncHandler(medicationController.getMedications
  */
 router.post('/', authMiddleware, validateMedication, handleValidationErrors, asyncHandler(medicationController.createMedication.bind(medicationController)));
 
+router.post(
+  '/pem-scan',
+  authMiddleware,
+  body('qrData').notEmpty().withMessage('QR Data string is required'),
+  handleValidationErrors,
+  asyncHandler(medicationController.processPemScan.bind(medicationController))
+);
+
 // :id routes match ANYTHING, so keep them at the bottom
 /**
  * @swagger

@@ -1,5 +1,8 @@
 @import "tailwindcss";
 
+/* ================================
+   Tailwind Theme Tokens (Colors)
+   ================================ */
 @theme {
   /* Brand Palette (Fixed colors, mostly for accents) */
   --color-brand-primary: #4AA4E1;
@@ -13,40 +16,86 @@
   
   --color-text-main: var(--text-main);
   --color-text-muted: var(--text-muted);
-  --color-text-inverted: var(--text-inverted); /* New: for text on brand bg */
+  --color-text-inverted: var(--text-inverted);
   
   --color-border-subtle: var(--border-subtle);
 }
 
-/* --- LIGHT MODE (High Contrast) --- */
-:root {
-  --bg-page: #FFFFFF;         /* Pure White Page */
-  --bg-card: #F1F5F9;         /* Light Grey Card */
-  --bg-hover: #E2E8F0;        /* Slightly darker grey for hover */
-  
-  --text-main: #0F172A;       /* Slate-900 (Black-ish) */
-  --text-muted: #475569;      /* Slate-600 (Dark Grey) */
-  --text-inverted: #FFFFFF;   /* White text for buttons/badges */
-  
-  --border-subtle: #CBD5E1;   /* Slate-300 (Visible border) */
+/* ================================
+   Base Layout / Global Resets
+   ================================ */
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+  padding: 0;
 }
 
-/* --- DARK MODE --- */
+/* Disable body scroll – scrolling handled by main container */
+html,
+body {
+  overflow: hidden;
+  background-color: var(--bg-page);
+  color: var(--text-main);
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+/* ================================
+   Light Mode (default)
+   ================================ */
+
+:root {
+  --bg-page: #FFFFFF;
+  --bg-card: #F1F5F9;
+  --bg-hover: #E2E8F0;
+  
+  --text-main: #0F172A;
+  --text-muted: #475569;
+  --text-inverted: #FFFFFF;
+  
+  --border-subtle: #CBD5E1;
+  
+  /* Scrollbar colors for light mode */
+  --scrollbar-track: #F1F5F9;      /* Light grey track */
+  --scrollbar-thumb: #CBD5E1;      /* Slate-300 thumb */
+  --scrollbar-thumb-hover: #94A3B8; /* Darker on hover */
+}
+
+/* ================================
+   Dark Mode (prefers-color-scheme)
+   ================================ */
+
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg-page: #020617;       /* Slate-950 (Deep Black/Blue) */
-    --bg-card: #0F172A;       /* Slate-900 */
-    --bg-hover: #1E293B;      /* Slate-800 */
+    --bg-page: #020617;
+    --bg-card: #0F172A;
+    --bg-hover: #1E293B;
     
-    --text-main: #F8FAFC;     /* Slate-50 (White) */
-    --text-muted: #94A3B8;    /* Slate-400 (Light Grey) */
-    --text-inverted: #FFFFFF; /* Still white */
+    --text-main: #F8FAFC;
+    --text-muted: #94A3B8;
+    --text-inverted: #FFFFFF;
     
-    --border-subtle: #1E293B; /* Slate-800 */
+    --border-subtle: #1E293B;
+    
+    /* Scrollbar colors for dark mode */
+    --scrollbar-track: #0F172A;
+    --scrollbar-thumb: #334155;      /* Slate-700 */
+    --scrollbar-thumb-hover: #475569; /* Lighter on hover */
   }
 }
 
-/* Manual Overrides */
+/* ================================
+   Manual Mode Overrides
+   ================================ */
+
 .dark {
   --bg-page: #020617;
   --bg-card: #0F172A;
@@ -55,6 +104,10 @@
   --text-muted: #94A3B8;
   --text-inverted: #FFFFFF;
   --border-subtle: #1E293B;
+  
+  --scrollbar-track: #0F172A;
+  --scrollbar-thumb: #334155;
+  --scrollbar-thumb-hover: #475569;
 }
 
 .light {
@@ -65,4 +118,39 @@
   --text-muted: #475569;
   --text-inverted: #FFFFFF;
   --border-subtle: #CBD5E1;
+  
+  --scrollbar-track: #F1F5F9;
+  --scrollbar-thumb: #CBD5E1;
+  --scrollbar-thumb-hover: #94A3B8;
+}
+
+/* ================================
+   Theme-Aware Scrollbar Styling
+   ================================ */
+
+/* Apply to any scrollable container with .themed-scrollbar class */
+.themed-scrollbar::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.themed-scrollbar::-webkit-scrollbar-track {
+  background: var(--scrollbar-track);
+  border-radius: 4px;
+}
+
+.themed-scrollbar::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+  border-radius: 4px;
+  border: 2px solid var(--scrollbar-track); /* Padding effect */
+}
+
+.themed-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb-hover);
+}
+
+/* Firefox scrollbar */
+.themed-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
 }

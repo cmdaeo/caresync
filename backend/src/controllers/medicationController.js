@@ -1,4 +1,6 @@
 const medicationService = require('../services/medicationService');
+const pemParserService = require('../services/pemParserService');
+
 const logger = require('../utils/logger');
 const ApiResponse = require('../utils/ApiResponse');
 
@@ -94,6 +96,49 @@ class MedicationController {
       res.json(response);
     } catch (error) {
       logger.error('Delete medication error', error);
+      throw error;
+    }
+  }
+
+  async processPemScan(req, res) {
+    try {
+      const { qrData } = req.body;
+      
+      if (!qrData) {
+        throw new Error('QR Data is required');
+      }
+
+      // 1. Parse the string
+      const parsedKeys = pemParserService.parse(qrData);
+
+      // 2. "Fetch" (simulate) data from SNS using the keys
+      const medicationData = await pemParserService.fetchMedicationDetails(
+        parsedKeys.prescriptionId, 
+        parsedKeys.accessCode
+      );
+
+      // 3. Create the medication record for the user
+      // Note: We use the existing create service logic
+      const medication = await medicationService.createMedication(req.user, {
+        name: medicationData.name,
+        dosage: medicationData.dosage,
+        dosageUnit: medicationData.dosageUnit,
+        frequency: medicationData.frequency,
+        instructions: medicationData.instructions,
+        startDate: new Date(),
+        totalQuantity: 20, // Default for PEM
+        timesPerDay: 2,
+        notes: `Imported via SNS PEM Scan (Rx: ${parsedKeys.prescriptionId})`
+      });
+
+      const response = ApiResponse.success(
+        medication,
+        'PEM Prescription imported successfully'
+      );
+
+      res.status(201).json(response);
+    } catch (error) {
+      logger.error('PEM Scan error:', error);
       throw error;
     }
   }

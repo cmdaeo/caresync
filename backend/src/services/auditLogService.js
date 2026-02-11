@@ -4,23 +4,43 @@ class AuditLogService {
   /**
    * Create an audit log entry
    */
-  static async logAction({ userId, action, entityType, entityId, oldValues, newValues, ipAddress, userAgent, metadata }) {
+  static async logAction({ 
+    userId, 
+    action, 
+    entityType, 
+    entityId, 
+    oldValues, 
+    newValues, 
+    ipAddress, 
+    userAgent, 
+    justification = 'SYSTEM_ACTION' // Default justification
+  }) {
     try {
+      // CNPD Requirement: Separation of duties. 
+      // If the log contains sensitive data, encrypt the values payload.
+      const safeOldValues = oldValues ? encrypt(JSON.stringify(oldValues)) : null;
+      const safeNewValues = newValues ? encrypt(JSON.stringify(newValues)) : null;
+
       const logEntry = await AuditLog.create({
         userId,
         action,
         entityType,
         entityId,
-        oldValues,
-        newValues,
+        oldValues: safeOldValues ? { encrypted: safeOldValues } : null,
+        newValues: safeNewValues ? { encrypted: safeNewValues } : null,
         ipAddress,
         userAgent,
-        metadata
+        metadata: {
+            complianceStandard: 'CNPD-58/2019',
+            justification: justification,
+            timestamp: new Date().toISOString()
+        }
       });
       return logEntry;
     } catch (error) {
       console.error('Failed to create audit log:', error);
-      // Don't throw error to avoid breaking the main operation
+      // In a strict CNPD environment, if audit fails, the action might need to rollback.
+      // For this demo, we allow it to proceed but log the failure to stderr.
       return null;
     }
   }
