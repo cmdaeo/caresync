@@ -1,6 +1,6 @@
 // frontend/src/features/showcase/pages/TeamPage.tsx
 import { motion, Variants } from 'framer-motion'
-import { Crown, Code, Target, ArrowRight, Github, Mail, Linkedin, Users } from 'lucide-react'
+import { Crown, Mail, Linkedin } from 'lucide-react'
 
 // --- Types ---
 interface TeamMember {
@@ -87,7 +87,7 @@ const MinimalCard = ({ member }: { member: TeamMember }) => {
 }
 
 const LeadershipCard = ({ member }: { member: TeamMember }) => (
-  <motion.div variants={itemVariants} className="p-4 rounded-xl bg-gradient-to-br from-bg-card to-bg-card/50 border border-border-subtle hover:border-yellow-500/30 transition-all duration-300">
+  <motion.div variants={itemVariants} className="p-4 rounded-xl bg-linear-to-br from-bg-card to-bg-card/50 border border-border-subtle hover:border-yellow-500/30 transition-all duration-300">
     <div className="flex items-center gap-4">
       <div className="w-14 h-14 rounded-full overflow-hidden shrink-0 border-2 border-yellow-500/10 group-hover:border-yellow-500/30">
         <img 
