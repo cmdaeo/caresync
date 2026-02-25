@@ -1,7 +1,7 @@
 // src/features/dashboard/pages/SecuritySettings.tsx
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Shield, Key, AlertTriangle, Loader2, ArrowRight, HeartPulse, HeartHandshake } from 'lucide-react';
+import { Key, AlertTriangle, Loader2, ArrowRight, HeartPulse, HeartHandshake } from 'lucide-react';
 import { client } from '../../../shared/api/client';
 import { useAuthStore } from '../../../shared/store/authStore';
 
