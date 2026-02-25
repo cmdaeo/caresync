@@ -14,6 +14,15 @@ const validateRegistration = [
   body('role').optional().isIn(['patient', 'caregiver', 'healthcare_provider']).withMessage('Invalid role')
 ];
 
+const validateRoleChange = [
+  body('newRole')
+    .isIn(['patient', 'caregiver'])
+    .withMessage('Role must be patient or caregiver'),
+  body('currentPassword')
+    .notEmpty()
+    .withMessage('Current password is required')
+];
+
 const validateLogin = [
   body('email').isEmail().normalizeEmail().withMessage('Please provide a valid email'),
   body('password').notEmpty().withMessage('Password is required')
@@ -102,6 +111,23 @@ const handleValidationErrors = (req, res, next) => {
  *               example: refreshToken=abc123; HttpOnly; Secure; SameSite=Strict; Path=/; Max-Age=2592000
  */
 router.post('/register', validateRegistration, handleValidationErrors, asyncHandler(authController.register.bind(authController)));
+
+router.post(
+  '/forgot-password',
+  body('email').isEmail().withMessage('Please provide a valid email'),
+  handleValidationErrors,
+  asyncHandler(authController.forgotPassword.bind(authController))
+);
+
+router.post(
+  '/reset-password',
+  body('token').notEmpty().withMessage('Reset token is required'),
+  body('newPassword')
+    .isLength({ min: 12 })
+    .withMessage('Password must be at least 12 characters'),
+  handleValidationErrors,
+  asyncHandler(authController.resetPassword.bind(authController))
+);
 
 /**
  * @swagger
@@ -222,6 +248,14 @@ router.get('/me', authMiddleware, asyncHandler(authController.getProfile.bind(au
  *                       type: object
  */
 router.put('/profile', authMiddleware, validateProfileUpdate, handleValidationErrors, asyncHandler(authController.updateProfile.bind(authController)));
+
+router.put(
+  '/role',
+  authMiddleware,
+  validateRoleChange,
+  handleValidationErrors,
+  asyncHandler(authController.changeRole.bind(authController))
+);
 
 /**
  * @swagger

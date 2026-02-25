@@ -106,6 +106,14 @@ module.exports = (sequelize) => {
         }
       }
     },
+    passwordResetToken: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    passwordResetExpires: {
+      type: DataTypes.DATE,
+      allowNull: true,
+    },
     emergencyContact: {
       type: DataTypes.JSON,
       defaultValue: {

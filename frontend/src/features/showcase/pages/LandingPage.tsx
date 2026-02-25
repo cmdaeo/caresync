@@ -133,10 +133,24 @@ const CSS = () => (
       will-change: transform;
     }
 
-    @media (max-width: 639px) {
-      .hs-outer  { height: auto !important }
-      .hs-inner  { position: static; height: auto; overflow: visible }
-      .hs-rail   { flex-direction: column; padding: 0 1rem; gap: 12px }
+        @media (max-width: 639px) {
+      .hs-outer  { height: auto !important; }
+      .hs-inner  { 
+        position: static; 
+        height: auto; 
+        overflow: visible;
+        display: flex;
+        flex-direction: column;
+        align-items: center; /* Ensures the rail inside gets centered */
+      }
+      .hs-rail { 
+        flex-direction: column; 
+        align-items: center; /* Centers the cards inside the rail */
+        padding: 0 1rem;     /* Overrides the 6vw padding-left and 12vw padding-right */
+        gap: 16px; 
+        width: 100%;         /* Ensures the rail spans the screen */
+        transform: none !important; /* Force disables Framer Motion's X transform on mobile */
+      }
     }
 
     /* curriculum area colours */
@@ -205,7 +219,7 @@ const T = {
     eyebrow: 'Electrical & Computer Engineering',
     heroLines: ['Build what', 'powers', 'the world.'],
     heroGrad: 1, // which line index gets gradient
-    sub: '3 years · 180 ECTS · Full-time. From transistors to distributed systems - LEEC prepares you for every layer of modern technology.',
+    sub: '3 years · 180 ECTS. From transistors to distributed systems - LEEC prepares you for every layer of modern technology.',
     cta1: 'Explore the Project', cta2: 'Apply Now', scroll: 'scroll',
     discH: "What you'll master",
     disc: [
@@ -249,7 +263,7 @@ const T = {
     eyebrow: 'Engenharia Eletrotécnica e de Computadores',
     heroLines: ['Constrói o que', 'alimenta', 'o mundo.'],
     heroGrad: 1,
-    sub: '3 anos · 180 ECTS · Diurno. De transístores a sistemas distribuídos - a LEEC prepara-te para cada camada da tecnologia moderna.',
+    sub: '3 anos · 180 ECTS. De transístores a sistemas distribuídos - a LEEC prepara-te para cada camada da tecnologia moderna.',
     cta1: 'Explorar o Projeto', cta2: 'Candidatar Agora', scroll: 'descer',
     discH: 'O que vais dominar',
     disc: [
@@ -420,8 +434,14 @@ function HScroll({ t, scrollRef }: { t: typeof T[Lang]; scrollRef: React.RefObje
     const rw = railRef.current.scrollWidth;
     const vw = window.innerWidth;
     
+    // Disable horizontal scroll logic on mobile viewports
+    if (vw < 640) {
+      setTravel(0);
+      setReady(false);
+      return;
+    }
+    
     // Multiply by 2.5 to slow down the scroll speed by 2.5x. 
-    // (Increase to 3 for slower, decrease to 1.5 for faster)
     const SCROLL_MULTIPLIER = 5; 
     const t = Math.max(rw - vw, 0) * SCROLL_MULTIPLIER;
     
@@ -462,13 +482,13 @@ function HScroll({ t, scrollRef }: { t: typeof T[Lang]; scrollRef: React.RefObje
       </div>
 
       {/* Tall outer - scroll target */}
-      <div ref={outerRef} className="hs-outer" style={{ height: outerH }}>
-        <div className="hs-inner relative w-full">
+      <div ref={outerRef} className="hs-outer relative" style={{ height: outerH }}>
+        <div className="hs-inner relative w-full overflow-hidden">
 
           {/* Edge fade masks */}
-          <div className="pointer-events-none absolute left-0 top-0 bottom-0 w-10 sm:w-20 z-10"
+          <div className="pointer-events-none absolute left-0 top-0 bottom-0 w-10 sm:w-20 z-10 hidden sm:block"
             style={{ background: 'linear-gradient(90deg, var(--bg-page, #020617), transparent)' }} />
-          <div className="pointer-events-none absolute right-0 top-0 bottom-0 w-10 sm:w-20 z-10"
+          <div className="pointer-events-none absolute right-0 top-0 bottom-0 w-10 sm:w-20 z-10 hidden sm:block"
             style={{ background: 'linear-gradient(270deg, var(--bg-page, #020617), transparent)' }} />
 
           {/* The sliding rail */}
@@ -506,7 +526,7 @@ function HScroll({ t, scrollRef }: { t: typeof T[Lang]; scrollRef: React.RefObje
           </motion.div>
 
           {/* Progress dots */}
-          <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-2 z-20">
+          <div className="absolute bottom-6 left-1/2 -translate-x-1/2 hidden sm:flex gap-2 z-20">
             {t.proj.map((_, i) => (
               <div key={i} className="h-0.5 w-6 rounded-full bg-white/10 overflow-hidden">
                 <motion.div className="h-full bg-brand-primary rounded-full origin-left"
@@ -521,7 +541,7 @@ function HScroll({ t, scrollRef }: { t: typeof T[Lang]; scrollRef: React.RefObje
           {/* Hint */}
           <motion.div
             style={{ opacity: useTransform(scrollYProgress, [0, .08], [1, 0]) }}
-            className="absolute bottom-6 right-6 sm:right-10 flex items-center gap-1.5 jm text-[9px] uppercase tracking-widest text-text-muted z-20 pointer-events-none">
+            className="absolute bottom-6 right-6 sm:right-10 hidden sm:flex items-center gap-1.5 jm text-[9px] uppercase tracking-widest text-text-muted z-20 pointer-events-none">
             scroll <ArrowRight size={9} />
           </motion.div>
         </div>
