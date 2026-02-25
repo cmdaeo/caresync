@@ -1,11 +1,11 @@
 /**
- * LandingPage — LEEC · Universidade de Aveiro
+ * LandingPage - LEEC · Universidade de Aveiro
  *
  * Viewport safety rules applied throughout:
  *  • No whitespace-nowrap on large headline text
  *  • Font sizes use px breakpoints (Tailwind sm/md/lg), never raw vw
  *  • All containers have max-w + overflow-hidden guards
- *  • Horizontal scroll: useScroll({ container, target }) — container = page scroll div
+ *  • Horizontal scroll: useScroll({ container, target }) - container = page scroll div
  */
 import { useRef, useState, useEffect, useCallback } from 'react';
 import {
@@ -15,9 +15,9 @@ import {
 import { Link } from 'react-router-dom';
 import {
   ArrowRight, Code2, Wifi, Shield, Activity, Users,
-  Globe, Zap, CircuitBoard, Briefcase, 
+  Globe, CircuitBoard, Briefcase, 
   FlaskConical, Cpu, Radio, Battery,
-  ChevronRight, Check,
+  ChevronRight
 } from 'lucide-react';
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -33,7 +33,7 @@ const CSS = () => (
     .jm { font-family: 'JetBrains Mono', monospace; }
     .sy { font-family: 'Syne', sans-serif; }
 
-    /* Blueprint grid — theme-aware */
+    /* Blueprint grid - theme-aware */
     .bpg {
       background-image:
         linear-gradient(rgba(74,164,225,.055) 1px, transparent 1px),
@@ -111,18 +111,19 @@ const CSS = () => (
 
     /* ─── HORIZONTAL SCROLL PIN ──────────────────────────────────────────
        Works by making .hs-outer very tall so the page scrolls through it.
-       .hs-inner is sticky at top:0, height:100dvh — it never moves.
+       .hs-inner is sticky at top:0, height:100dvh - it never moves.
        The motion.div rail slides horizontally inside it.
 
        On mobile (< 640px): everything un-pins, cards stack vertically.
     ──────────────────────────────────────────────────────────────────── */
     .hs-inner {
       position: sticky;
-      top: 0;
-      height: 100dvh;
+      top: 20%;               /* Sticks it nicely near the top instead of flush to 0 */
+      height: 50vh;           /* Give it just enough height, not the whole screen */
+      min-height: 400px;      /* Ensure it doesn't get too small */
       overflow: hidden;
       display: flex;
-      align-items: center;
+      align-items: center;    
     }
     .hs-rail {
       display: flex;
@@ -204,8 +205,7 @@ const T = {
     eyebrow: 'Electrical & Computer Engineering',
     heroLines: ['Build what', 'powers', 'the world.'],
     heroGrad: 1, // which line index gets gradient
-    sub: '3 years · 180 ECTS · Full-time. From transistors to distributed systems — LEEC prepares you for every layer of modern technology.',
-    fees: ['697 €/yr · National/EU', '5 000 €/yr · International', 'Accredited A3ES 2025'],
+    sub: '3 years · 180 ECTS · Full-time. From transistors to distributed systems - LEEC prepares you for every layer of modern technology.',
     cta1: 'Explore the Project', cta2: 'Apply Now', scroll: 'scroll',
     discH: "What you'll master",
     disc: [
@@ -226,7 +226,7 @@ const T = {
       { icon: FlaskConical, label: 'Research & Academia',     desc: 'MSc/PhD at top European universities.' },
       { icon: Briefcase,    label: 'Startups & Consulting',   desc: 'Found tech companies or lead digital transformation.' },
     ],
-    projH: 'Inside CareSync', projSub: 'A real product — built end-to-end by LEEC students',
+    projH: 'Inside CareSync', projSub: 'A real product - built end-to-end by LEEC students',
     proj: [
       { t: 'Hardware',  d: 'Breadboard to production PCB.' },
       { t: 'Software',  d: 'React · Node.js · Embedded C.' },
@@ -235,11 +235,11 @@ const T = {
       { t: 'Team',      d: '12 engineers, one mission.'     },
     ],
     demoLabel: 'Live Demo', demoH: 'See it in action.',
-    demoSub: 'Launch the CareSync dashboard — a real, HIPAA-compliant medication management app built entirely by LEEC students.',
+    demoSub: 'Launch the CareSync dashboard - a real, HIPAA-compliant medication management app built entirely by LEEC students.',
     demoBtn: 'Launch Dashboard',
     finalH: ['Your circuit', 'starts here.'],
     finalGrad: 1,
-    finalSub: 'Join a programme where you graduate with a portfolio, not just a diploma. 697 €/year for national students.',
+    finalSub: 'Join a programme where you graduate with a portfolio, not just a diploma.',
     meet: 'Meet the Team', apply: 'Apply at UA',
     curriculum: CURRICULUM_EN,
   },
@@ -249,8 +249,7 @@ const T = {
     eyebrow: 'Engenharia Eletrotécnica e de Computadores',
     heroLines: ['Constrói o que', 'alimenta', 'o mundo.'],
     heroGrad: 1,
-    sub: '3 anos · 180 ECTS · Diurno. De transístores a sistemas distribuídos — a LEEC prepara-te para cada camada da tecnologia moderna.',
-    fees: ['697 €/ano · Nacional/UE', '5 000 €/ano · Internacional', 'Acreditado A3ES 2025'],
+    sub: '3 anos · 180 ECTS · Diurno. De transístores a sistemas distribuídos - a LEEC prepara-te para cada camada da tecnologia moderna.',
     cta1: 'Explorar o Projeto', cta2: 'Candidatar Agora', scroll: 'descer',
     discH: 'O que vais dominar',
     disc: [
@@ -271,7 +270,7 @@ const T = {
       { icon: FlaskConical, label: 'Investigação',            desc: 'Mestrado/Doutoramento nas melhores universidades.' },
       { icon: Briefcase,    label: 'Startups e Consultoria',  desc: 'Funda empresas ou lidera transformação digital.' },
     ],
-    projH: 'Dentro do CareSync', projSub: 'Um produto real — feito de raiz por estudantes da LEEC',
+    projH: 'Dentro do CareSync', projSub: 'Um produto real - feito de raiz por estudantes da LEEC',
     proj: [
       { t: 'Hardware',       d: 'Da breadboard à PCB de produção.' },
       { t: 'Software',       d: 'React · Node.js · C Embebido.'    },
@@ -280,11 +279,11 @@ const T = {
       { t: 'Equipa',         d: '12 engenheiros, uma missão.'      },
     ],
     demoLabel: 'Demo ao Vivo', demoH: 'Vê ao vivo.',
-    demoSub: 'Lança o dashboard CareSync — uma app real de gestão de medicação construída por estudantes da LEEC.',
+    demoSub: 'Lança o dashboard CareSync - uma app real de gestão de medicação construída por estudantes da LEEC.',
     demoBtn: 'Lançar Dashboard',
     finalH: ['O teu circuito', 'começa aqui.'],
     finalGrad: 1,
-    finalSub: 'Junta-te a um curso onde te licencias com um portefólio, não apenas um diploma. 697 €/ano para estudantes nacionais.',
+    finalSub: 'Junta-te a um curso onde te licencias com um portefólio, e não apenas um diploma.',
     meet: 'Conhecer a Equipa', apply: 'Candidatar na UA',
     curriculum: CURRICULUM_PT,
   },
@@ -364,7 +363,7 @@ function Curriculum({ t }: { t: typeof T[Lang] }) {
       <div className="max-w-5xl mx-auto">
         <Reveal className="mb-8">
           <p className="jm text-[10px] uppercase tracking-[.2em] text-brand-primary mb-2">{t.currH}</p>
-          <h2 className="sy font-800 text-3xl sm:text-4xl mb-1">{t.currH} <GText>—</GText></h2>
+          <h2 className="sy font-800 text-3xl sm:text-4xl mb-1">{t.currH} <GText>-</GText></h2>
           <p className="jm text-xs text-text-muted">{t.currSub}</p>
         </Reveal>
 
@@ -420,7 +419,12 @@ function HScroll({ t, scrollRef }: { t: typeof T[Lang]; scrollRef: React.RefObje
     if (!railRef.current) return;
     const rw = railRef.current.scrollWidth;
     const vw = window.innerWidth;
-    const t = Math.max(rw - vw, 0);
+    
+    // Multiply by 2.5 to slow down the scroll speed by 2.5x. 
+    // (Increase to 3 for slower, decrease to 1.5 for faster)
+    const SCROLL_MULTIPLIER = 5; 
+    const t = Math.max(rw - vw, 0) * SCROLL_MULTIPLIER;
+    
     setTravel(t);
     if (t > 0) setReady(true);
   }, []);
@@ -442,15 +446,14 @@ function HScroll({ t, scrollRef }: { t: typeof T[Lang]; scrollRef: React.RefObje
     offset: ['start start', 'end end'],
   });
 
-  const sp = useSpring(scrollYProgress, { stiffness: 80, damping: 25, restDelta: .001 });
-  const x = useTransform(sp, [0, 1], ['0px', `-${travel}px`]);
+  const x = useTransform(scrollYProgress, [0, 1], ['0px', `-${travel / 5}px`]);
 
   // outerHeight: 100dvh (the sticky viewport) + travel distance
-  const outerH = ready ? `calc(100dvh + ${travel}px)` : 'auto';
+  const outerH = ready ? `calc(max(50vh, 400px) + ${travel}px)` : 'auto';
 
   return (
     <section className="border-t border-border-subtle">
-      {/* Section header — sits in normal document flow, above sticky zone */}
+      {/* Section header - sits in normal document flow, above sticky zone */}
       <div className="px-4 sm:px-6 md:px-10 pt-12 sm:pt-16 pb-6 max-w-5xl mx-auto">
         <Reveal>
           <p className="jm text-[10px] uppercase tracking-[.2em] text-brand-primary mb-1">{t.projSub}</p>
@@ -458,7 +461,7 @@ function HScroll({ t, scrollRef }: { t: typeof T[Lang]; scrollRef: React.RefObje
         </Reveal>
       </div>
 
-      {/* Tall outer — scroll target */}
+      {/* Tall outer - scroll target */}
       <div ref={outerRef} className="hs-outer" style={{ height: outerH }}>
         <div className="hs-inner relative w-full">
 
@@ -479,9 +482,7 @@ function HScroll({ t, scrollRef }: { t: typeof T[Lang]; scrollRef: React.RefObje
                     '--col': col,
                     width: 'min(70vw, 280px)',
                     minWidth: '220px',
-                    aspectRatio: '3/4',
-                    maxHeight: '320px',
-                    minHeight: '200px',
+                    minHeight: '180px',    // Enough room for the icons and text
                     borderColor: `rgba(255,255,255,.08)`,
                   } as React.CSSProperties}
                   className="lft group flex flex-col shrink-0 rounded-2xl bg-bg-card border p-5
@@ -537,7 +538,7 @@ export default function LandingPage() {
   const t = T[lang];
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  // Hero parallax — uses the same container ref
+  // Hero parallax - uses the same container ref
   const { scrollYProgress: hp } = useScroll({ container: scrollRef as React.RefObject<HTMLElement> });
   const heroOp = useTransform(hp, [0, .18], [1, 0]);
   const heroY  = useTransform(hp, [0, .25], ['0%', '8%']);
@@ -559,7 +560,7 @@ export default function LandingPage() {
     <>
       <CSS />
 
-      {/* Lang toggle — fixed overlay */}
+      {/* Lang toggle - fixed overlay */}
       <motion.button
         initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: .9 }}
         onClick={() => setLang(l => l === 'en' ? 'pt' : 'en')}
@@ -598,27 +599,16 @@ export default function LandingPage() {
           <motion.div style={{ y: heroY, opacity: heroOp }}
             className="relative z-10 w-full px-5 sm:px-8 max-w-2xl mx-auto text-center">
 
-            {/* Badge */}
-            <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: .5 }}
-              className="inline-flex items-center gap-2 px-3 py-1.5 mb-5 rounded-full
-                border border-brand-primary/35 bg-brand-primary/10 text-brand-primary">
-              <span className="relative flex h-1.5 w-1.5">
-                <span className="animate-ping absolute inset-0 rounded-full bg-brand-primary opacity-60" />
-                <span className="relative rounded-full bg-brand-primary w-full h-full" />
-              </span>
-              <span className="jm text-[10px] font-700 uppercase tracking-widest">{t.badge}</span>
-            </motion.div>
-
             {/* Eyebrow */}
             <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: .1 }}
               className="jm text-[9px] sm:text-[11px] text-text-muted uppercase tracking-[.16em] mb-4">
-              <span className="text-brand-primary">// </span>{t.eyebrow}
+              {t.eyebrow}
               <span className="bln text-brand-primary">_</span>
             </motion.p>
 
             {/* HEADLINE
-                ✓ Uses text-4xl/text-5xl/text-6xl/text-7xl — fixed px sizes per breakpoint
-                ✓ No whitespace-nowrap — text wraps naturally within max-w-2xl
+                ✓ Uses text-4xl/text-5xl/text-6xl/text-7xl - fixed px sizes per breakpoint
+                ✓ No whitespace-nowrap - text wraps naturally within max-w-2xl
                 ✓ max-w-2xl on parent + overflow-hidden on section = nothing escapes
             */}
             {t.heroLines.map((line, i) => (
@@ -648,12 +638,6 @@ export default function LandingPage() {
             {/* Fee pills */}
             <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: .5, duration: .45 }}
               className="flex flex-wrap items-center justify-center gap-1.5 mb-6">
-              {t.fees.map(f => (
-                <div key={f} className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-bg-card border border-border-subtle">
-                  <Check size={9} className="text-brand-primary shrink-0" />
-                  <span className="jm text-[9px] sm:text-[10px] text-text-muted leading-none">{f}</span>
-                </div>
-              ))}
             </motion.div>
 
             {/* CTAs */}
@@ -733,7 +717,7 @@ export default function LandingPage() {
                         style={{ background: `${col}18`, borderColor: `${col}40`, color: col }}>
                         <Icon size={18} />
                       </div>
-                      <p className="jm text-[9px] uppercase tracking-widest text-text-muted mb-1">0{i + 1} — module</p>
+                      <p className="jm text-[9px] uppercase tracking-widest text-text-muted mb-1">0{i + 1} - module</p>
                       <h3 className="sy font-700 text-base sm:text-lg leading-tight mb-2">{label}</h3>
                       <p className="text-xs text-text-muted leading-relaxed">{desc}</p>
                     </div>
@@ -772,28 +756,30 @@ export default function LandingPage() {
         <section className="py-14 sm:py-20 px-4 sm:px-6 md:px-10 border-t border-border-subtle">
           <div className="max-w-5xl mx-auto">
             <Reveal className="mb-8">
-              <p className="jm text-[10px] uppercase tracking-[.2em] text-brand-primary mb-2">{t.carH}</p>
-              <h2 className="sy font-800 text-3xl sm:text-4xl leading-tight">
-                {t.carH} <GText>→</GText>
-              </h2>
-              <p className="jm text-xs text-text-muted mt-1">{t.carSub}</p>
-            </Reveal>
+                <p className="jm text-[10px] uppercase tracking-[.2em] text-brand-primary mb-2">
+                  {t.carSub}
+                </p>
+                <h2 className="sy font-800 text-3xl sm:text-4xl leading-tight">
+                  {t.carH} <GText>→</GText>
+                </h2>
+              </Reveal>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
               {t.careers.map(({ icon: Icon, label, desc }, i) => (
                 <Reveal key={label} delay={i * .05}>
-                  <div className="lft p-4 rounded-xl bg-bg-card border border-border-subtle
-                    hover:border-brand-primary/35 hover:bg-bg-hover transition-all h-full">
-                    <div className="flex items-start gap-3">
-                      <div className="w-8 h-8 rounded-lg bg-brand-primary/10 border border-brand-primary/20
-                        flex items-center justify-center shrink-0 mt-0.5">
-                        <Icon size={15} className="text-brand-primary" />
-                      </div>
-                      <div>
-                        <h3 className="sy font-700 text-sm leading-snug mb-1">{label}</h3>
-                        <p className="text-xs text-text-muted leading-relaxed">{desc}</p>
-                      </div>
-                    </div>
-                  </div>
+                  <div className="lft p-5 sm:p-6 rounded-xl bg-bg-card border border-border-subtle
+  hover:border-brand-primary/35 hover:bg-bg-hover transition-all h-full flex flex-col">
+  
+  <div className="w-10 h-10 mb-4 rounded-lg bg-brand-primary/10 border border-brand-primary/20
+    flex items-center justify-center shrink-0">
+    <Icon size={18} className="text-brand-primary" />
+  </div>
+  
+  <div className="mt-auto">
+    <h3 className="sy font-700 text-[15px] text-text-main leading-snug mb-1.5">{label}</h3>
+    <p className="text-[13px] text-text-muted leading-relaxed">{desc}</p>
+  </div>
+  
+</div>
                 </Reveal>
               ))}
             </div>
@@ -811,14 +797,13 @@ export default function LandingPage() {
           <div className="s2 absolute top-12 right-[20%] w-1 h-1 rounded-full pgn" style={{ animationDelay: '1.2s' }} />
           <Reveal className="relative z-10 px-4 text-center max-w-3xl mx-auto">
             <div className="inline-flex items-center gap-2 mb-5 px-3 py-1.5 rounded-full border border-brand-primary/20 bg-brand-primary/8">
-              <Zap size={11} className="text-brand-primary" />
               <span className="jm text-[9px] uppercase tracking-widest text-brand-primary">CareSync · LEEC Student Project 2026</span>
             </div>
             <blockquote className="sy font-800 text-3xl sm:text-4xl md:text-5xl leading-tight tracking-tight">
-              "Built by students.{' '}
-              <GText>Ready for the world.</GText>"
+              Built by students.{' '}
+              <GText>Ready for the world.</GText>
             </blockquote>
-            <p className="jm text-xs text-text-muted mt-4 tracking-wider">— LEEC / DETI, Universidade de Aveiro</p>
+            <p className="jm text-xs text-text-muted mt-4 tracking-wider">- LEEC / DETI, Universidade de Aveiro</p>
           </Reveal>
         </section>
 
@@ -831,30 +816,49 @@ export default function LandingPage() {
             DEMO BANNER
         ════════════════════════════════════════════════════════════════ */}
         <section className="py-8 sm:py-10 px-4 sm:px-6 md:px-10 border-t border-border-subtle">
-          <Reveal>
-            <div className="rounded-2xl border border-brand-primary/25 bg-brand-primary/6 p-5 sm:p-8
-              flex flex-col md:flex-row items-start md:items-center justify-between gap-5 relative overflow-hidden">
-              <div className="absolute right-0 top-0 bottom-0 w-24 sm:w-40 opacity-[.06] pointer-events-none">
-                <OscWave />
-              </div>
-              <div className="relative z-10">
-                <div className="chp border border-green-500/30 bg-green-500/14 text-green-400 mb-3">
-                  <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse shrink-0" />
-                  {t.demoLabel}
-                </div>
-                <h3 className="sy font-800 text-xl sm:text-2xl mb-1.5">{t.demoH}</h3>
-                <p className="text-text-muted text-xs sm:text-sm max-w-sm leading-relaxed">{t.demoSub}</p>
-              </div>
-              <Link to="/app"
-                className="shm relative z-10 shrink-0 flex items-center justify-center gap-2 px-6 py-3 rounded-xl
-                  bg-brand-primary text-white font-700 text-sm
-                  shadow-lg shadow-brand-primary/30 hover:bg-brand-light transition-all group w-full md:w-auto">
-                {t.demoBtn}
-                <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
-              </Link>
-            </div>
-          </Reveal>
-        </section>
+  <Reveal>
+    <div className="rounded-2xl border border-brand-primary/25 bg-brand-primary/6 p-5 sm:p-8
+      flex flex-col md:flex-row items-start md:items-center justify-between gap-5 relative overflow-hidden">
+      <div className="absolute right-0 top-0 bottom-0 w-24 sm:w-40 opacity-[.06] pointer-events-none">
+        <OscWave />
+      </div>
+      <div className="relative z-10">
+        
+        {/* Glowing Border Badge */}
+        <div className="chp relative overflow-hidden bg-green-500/14 text-green-400 mb-3 border-0">
+          <span className="relative z-10">
+            {t.demoLabel}
+          </span>
+          <div 
+            className="absolute inset-0 rounded-[inherit] pointer-events-none p-px"
+            style={{
+              WebkitMask: "linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)",
+              WebkitMaskComposite: "xor",
+              maskComposite: "exclude",
+            }}
+          >
+            <div className="absolute inset-0 bg-green-500/30" />
+            <motion.div
+              className="absolute inset-[-1000%] bg-[conic-gradient(from_0deg_at_50%_50%,transparent_0%,#4ade80_15%,transparent_30%)]"
+              animate={{ rotate: 360 }}
+              transition={{ ease: "linear", duration: 3, repeat: Infinity }}
+            />
+          </div>
+        </div>
+
+        <h3 className="sy font-800 text-xl sm:text-2xl mb-1.5">{t.demoH}</h3>
+        <p className="text-text-muted text-xs sm:text-sm max-w-sm leading-relaxed">{t.demoSub}</p>
+      </div>
+      <Link to="/app"
+        className="shm relative z-10 shrink-0 flex items-center justify-center gap-2 px-6 py-3 rounded-xl
+          bg-brand-primary text-white font-700 text-sm
+          shadow-lg shadow-brand-primary/30 hover:bg-brand-light transition-all group w-full md:w-auto">
+        {t.demoBtn}
+        <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
+      </Link>
+    </div>
+  </Reveal>
+</section>
 
         {/* ════════════════════════════════════════════════════════════════
             FINAL CTA
@@ -864,7 +868,6 @@ export default function LandingPage() {
             style={{ background: 'radial-gradient(ellipse 70% 55% at 50% 50%, rgba(74,164,225,.09), transparent)' }} />
           <div className="relative z-10 max-w-xl mx-auto">
             <Reveal>
-              <p className="jm text-[9px] uppercase tracking-[.25em] text-brand-primary mb-4">// end of file — begin your story</p>
 
               {/* Same safe sizing as hero */}
               {t.finalH.map((line, i) => (
