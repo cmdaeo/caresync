@@ -17,11 +17,17 @@ export default {
           50: '#f8fafc',
           100: '#f1f5f9',
           500: '#0ea5e9',
+        },
+        ua: {
+          green: '#55b31f', // Approximate UA green
+          dark: '#121212',
         }
       },
       fontFamily: {
         mono: ['JetBrains Mono', 'monospace'],
         sans: ['Inter', 'sans-serif'],
+        marker: ['"Permanent Marker"', 'cursive'],
+        note: ['"Caveat"', 'cursive'],
       }
     },
   },

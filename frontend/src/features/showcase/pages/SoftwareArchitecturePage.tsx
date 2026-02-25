@@ -175,7 +175,7 @@ export const SoftwareArchitecturePage = () => {
                       items={[
                         { label: 'Helmet', description: "Sets secure HTTP headers (CSP, HSTS) to prevent common web attacks.", detail: "OWASP recommended" },
                         { label: 'Rate Limiting', description: "Prevents DDoS and brute-force attacks by tracking IP request frequency in Redis.", detail: "Configurable per-endpoint" },
-                        { label: 'Joi Validation', description: "Strict schema validation for all incoming request payloads.", detail: "Fails fast on bad input" },
+                        { label: 'Express Validator', description: "Middleware-based validation and sanitization for incoming requests.", detail: "Chained validation rules directly in route definitions." },
                         { label: 'CORS', description: "Strict whitelist policy allowing only trusted domains to access the API.", detail: "Production domain hardcoded" }
                       ]}
                     />

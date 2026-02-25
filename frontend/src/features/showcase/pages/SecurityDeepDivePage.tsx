@@ -238,11 +238,11 @@ const SecurityColumn = () => (
                     desc="100% Parameterized queries via ORM." 
                     detail="Raw SQL forbidden in codebase." 
                 />
-                <FeatureBlock 
-                    icon={Terminal} 
-                    title="Input Validation" 
-                    desc="Strict Joi/Zod schemas for all requests." 
-                    detail="Strip unknown fields automatically." 
+                <FeatureBlock
+                    icon={Terminal}
+                    title="Input Validation"
+                    desc="Express-validator rules on routes and shared middleware validation handling."
+                    detail="Rejects invalid requests with 400 + detailed field errors; redacts sensitive fields in validation logs."
                 />
                 <FeatureBlock 
                     icon={FileKey} 
