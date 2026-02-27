@@ -3,7 +3,8 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const { Op } = require('sequelize');
-const { User } = require('../models');
+const { User, Medication, Adherence, Prescription, Device, Notification,
+        DeviceAccessPermission, DeviceInvitation, CaregiverPatient, sequelize } = require('../models');
 const logger = require('../utils/logger');
 const { AppError, AuthenticationError, ConflictError } = require('../middleware/errorHandler');
 const AuditLogService = require('./auditLogService');
@@ -160,25 +161,53 @@ class AuthService {
       lastName: encrypt(user.lastName)
     };
 
-    user.firstName = 'Anonymized';
-    user.lastName = 'User';
-    user.email = `anonymized_${user.id}_${Date.now()}@deleted.example.com`;
-    user.phone = null;
-    user.dateOfBirth = null;
-    user.profilePicture = null;
-    user.isActive = false;
-    user.refreshTokenHash = null;
-    user.deletedAt = new Date();
-    user.emergencyContact = { name: '', phone: '', relationship: '' };
-    await user.save();
+    const transaction = await sequelize.transaction();
+    try {
+      // 1. Hard-delete all associated health and relational data (GDPR Art. 17)
+      await Adherence.destroy({ where: { userId: user.id }, transaction });
+      await Prescription.destroy({ where: { userId: user.id }, transaction });
+      await Medication.destroy({ where: { userId: user.id }, transaction });
+      await Device.destroy({ where: { userId: user.id }, transaction });
+      await Notification.destroy({ where: { userId: user.id }, transaction });
+      await DeviceAccessPermission.destroy({
+        where: { [Op.or]: [{ userId: user.id }, { grantedBy: user.id }] },
+        transaction
+      });
+      await DeviceInvitation.destroy({
+        where: { [Op.or]: [{ createdBy: user.id }, { acceptedBy: user.id }] },
+        transaction
+      });
+      await CaregiverPatient.destroy({
+        where: { [Op.or]: [{ patientId: user.id }, { caregiverId: user.id }] },
+        transaction
+      });
 
-    logger.info(`User account anonymized: ${user.id}`);
+      // 2. Anonymize the user record (preserve for audit log FK integrity)
+      user.firstName = 'Anonymized';
+      user.lastName = 'User';
+      user.email = `anonymized_${user.id}_${Date.now()}@deleted.example.com`;
+      user.phone = null;
+      user.dateOfBirth = null;
+      user.profilePicture = null;
+      user.isActive = false;
+      user.refreshTokenHash = null;
+      user.deletedAt = new Date();
+      user.emergencyContact = { name: '', phone: '', relationship: '' };
+      await user.save({ transaction });
+
+      await transaction.commit();
+    } catch (error) {
+      await transaction.rollback();
+      throw error;
+    }
+
+    logger.info(`User account deleted (data purged, record anonymized): ${user.id}`);
 
     await AuditLogService.logAction({
       userId: user.id, action: 'USER_ACCOUNT_DELETED', entityType: 'User', entityId: user.id,
       oldValues: preservedAuditData,
       newValues: { email: user.email, firstName: user.firstName, lastName: user.lastName },
-      metadata: { encrypted: true, description: 'User account deleted. PII in oldValues is encrypted.' }
+      metadata: { encrypted: true, description: 'User account deleted. All health data purged. PII in oldValues is encrypted.' }
     });
 
     return { success: true };

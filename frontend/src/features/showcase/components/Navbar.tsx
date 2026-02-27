@@ -58,7 +58,7 @@ export const Navbar = () => {
                 key={path}
                 to={path}
                 className={clsx(
-                  "relative px-3 py-1.5 lg:px-4 lg:py-2 rounded-lg text-xs lg:text-sm font-medium transition-all duration-300 flex items-center gap-1.5 lg:gap-2 group overflow-hidden",
+                  "relative px-3 py-1.5 lg:px-4 lg:py-2 rounded-lg text-xs lg:text-sm font-medium transition-colors duration-150 flex items-center gap-1.5 lg:gap-2 group overflow-hidden",
                   isActive(path)
                     ? "text-brand-primary"
                     : "text-text-muted hover:text-text-main"
@@ -66,7 +66,7 @@ export const Navbar = () => {
               >
                 {/* Hover background effect */}
                 <div className={clsx(
-                  "absolute inset-0 rounded-lg transition-all duration-300",
+                  "absolute inset-0 rounded-lg transition-colors duration-150",
                   isActive(path) 
                     ? "bg-brand-primary/10 border border-brand-primary/20" 
                     : "bg-transparent group-hover:bg-bg-hover"

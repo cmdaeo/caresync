@@ -5,8 +5,6 @@ const helmet = require('helmet');
 const morgan = require('morgan');
 const compression = require('compression');
 const rateLimit = require('express-rate-limit');
-//const { initializeRateLimiter } = require('./config/rateLimiter');
-//const rateLimiterMiddleware = require('./middleware/rateLimiter');
 const { Server } = require('socket.io');
 const http = require('http');
 
@@ -48,7 +46,8 @@ app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
-      // Allow Google Fonts
+      // 'unsafe-inline' required for Framer Motion runtime inline styles.
+      // TODO: Migrate to nonce-based CSP when Framer Motion supports it.
       styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
       fontSrc: ["'self'", "https://fonts.gstatic.com", "data:"],
       scriptSrc: ["'self'"],
@@ -71,9 +70,64 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization', 'x-device-id', 'x-app-version'],
 }));
 
+// --- HTTPS enforcement for production (behind reverse proxy) ---
+if (process.env.NODE_ENV === 'production') {
+  app.use((req, res, next) => {
+    if (req.headers['x-forwarded-proto'] !== 'https') {
+      return res.redirect(301, `https://${req.headers.host}${req.url}`);
+    }
+    next();
+  });
+}
+
 app.use(compression());
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// --- CSRF mitigation: reject non-JSON content types on state-changing requests ---
+app.use((req, res, next) => {
+  if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method)) {
+    const contentType = req.headers['content-type'] || '';
+    // Allow requests with no body (e.g. DELETE), JSON, and multipart (file uploads)
+    if (req.body && Object.keys(req.body).length > 0
+        && !contentType.includes('application/json')
+        && !contentType.includes('multipart/form-data')) {
+      return res.status(415).json({ success: false, message: 'Content-Type must be application/json' });
+    }
+  }
+  next();
+});
+
+// --- Rate Limiting ---
+const globalLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 200,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, message: 'Too many requests, please try again later.' }
+});
+app.use(globalLimiter);
+
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, message: 'Too many authentication attempts, please try again later.' }
+});
+app.use('/api/auth/login', authLimiter);
+app.use('/api/auth/register', authLimiter);
+app.use('/api/auth/forgot-password', authLimiter);
+app.use('/api/auth/reset-password', authLimiter);
+
+const reportLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, message: 'Too many report requests, please try again later.' }
+});
+app.use('/api/reports', reportLimiter);
 
 // DETAILED REQUEST LOGGER
 app.use((req, res, next) => {
@@ -143,12 +197,6 @@ const PORT = process.env.PORT || 5000;
 
 async function startServer() {
   try {
-    // Initialize rate limiter with Redis
-    //const rateLimiter = await initializeRateLimiter();
-
-    // Use custom rate limiter middleware
-    //app.use(rateLimiterMiddleware);
-
     await db.authenticate();
     logger.info('Database connection established successfully.');
 
