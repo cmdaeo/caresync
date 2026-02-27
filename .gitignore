@@ -5,3 +5,11 @@ database.sqlite
 database.sqlite-journal
 .snapshotignore
 pythonTest/
+
+# Sensitive files
+.env
+.env.local
+.env.production
+logins.txt
+dist/
+.claude/

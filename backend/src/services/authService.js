@@ -3,7 +3,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const { Op } = require('sequelize');
-const { User } = require('../models');
+const { User, Medication, Prescription, Adherence, Device, DeviceAccessPermission, DeviceInvitation, CaregiverPatient, Notification, sequelize } = require('../models');
 const logger = require('../utils/logger');
 const { AppError, AuthenticationError, ConflictError } = require('../middleware/errorHandler');
 const AuditLogService = require('./auditLogService');
@@ -154,31 +154,60 @@ class AuthService {
     const isPasswordValid = await user.comparePassword(password);
     if (!isPasswordValid) throw new AppError('Password is incorrect', 400);
 
+    // Preserve encrypted PII for audit before wiping
     const preservedAuditData = {
       email: encrypt(user.email),
       firstName: encrypt(user.firstName),
       lastName: encrypt(user.lastName)
     };
 
-    user.firstName = 'Anonymized';
-    user.lastName = 'User';
-    user.email = `anonymized_${user.id}_${Date.now()}@deleted.example.com`;
-    user.phone = null;
-    user.dateOfBirth = null;
-    user.profilePicture = null;
-    user.isActive = false;
-    user.refreshTokenHash = null;
-    user.deletedAt = new Date();
-    user.emergencyContact = { name: '', phone: '', relationship: '' };
-    await user.save();
+    const userId = user.id;
 
-    logger.info(`User account anonymized: ${user.id}`);
+    // GDPR cascade delete: destroy ALL health data in a single transaction
+    // to prevent partial deletions if any query fails
+    const t = await sequelize.transaction();
+    try {
+      // 1. Delete health data (hard delete — GDPR right to erasure)
+      await Adherence.destroy({ where: { userId }, transaction: t });
+      await Prescription.destroy({ where: { userId }, transaction: t });
+      await Medication.destroy({ where: { userId }, transaction: t });
+      await Notification.destroy({ where: { userId }, transaction: t });
+
+      // 2. Delete device relationships
+      await DeviceAccessPermission.destroy({ where: { [Op.or]: [{ userId }, { grantedBy: userId }] }, transaction: t });
+      await DeviceInvitation.destroy({ where: { [Op.or]: [{ createdBy: userId }, { acceptedBy: userId }] }, transaction: t });
+      await Device.destroy({ where: { userId }, transaction: t });
+
+      // 3. Delete caregiver links
+      await CaregiverPatient.destroy({ where: { [Op.or]: [{ patientId: userId }, { caregiverId: userId }] }, transaction: t });
+
+      // 4. Anonymize user record (keep for audit trail integrity)
+      user.firstName = 'Anonymized';
+      user.lastName = 'User';
+      user.email = `anonymized_${userId}_${Date.now()}@deleted.example.com`;
+      user.phone = null;
+      user.dateOfBirth = null;
+      user.profilePicture = null;
+      user.isActive = false;
+      user.refreshTokenHash = null;
+      user.emergencyContact = null;
+      user.tokenVersion = (user.tokenVersion || 0) + 1;
+      await user.save({ transaction: t });
+
+      await t.commit();
+    } catch (error) {
+      await t.rollback();
+      logger.error(`GDPR cascade delete failed for user ${userId}:`, error);
+      throw new AppError('Account deletion failed. No data was modified. Please try again.', 500);
+    }
+
+    logger.info(`User account deleted (GDPR cascade): ${userId}`);
 
     await AuditLogService.logAction({
-      userId: user.id, action: 'USER_ACCOUNT_DELETED', entityType: 'User', entityId: user.id,
+      userId, action: 'USER_ACCOUNT_DELETED', entityType: 'User', entityId: userId,
       oldValues: preservedAuditData,
       newValues: { email: user.email, firstName: user.firstName, lastName: user.lastName },
-      metadata: { encrypted: true, description: 'User account deleted. PII in oldValues is encrypted.' }
+      metadata: { encrypted: true, description: 'User account deleted. All health data hard-deleted. PII in oldValues is encrypted for legal hold.' }
     });
 
     return { success: true };
@@ -291,41 +320,41 @@ class AuthService {
       if (!['patient', 'caregiver'].includes(newRole)) throw new AppError('Invalid role selection', 400);
       if (!['patient', 'caregiver'].includes(user.role)) throw new AppError('Your current role cannot be changed', 400);
 
-      // 3. Import all models to wipe data
-      const { 
-        Medication, Prescription, Adherence, Device, 
-        DeviceAccessPermission, DeviceInvitation, CaregiverPatient, Notification 
-      } = require('../models');
-      const { Op } = require('sequelize');
+      // 3. Wipe ALL data in a transaction to prevent partial deletions
+      const t = await sequelize.transaction();
+      try {
+        await CaregiverPatient.destroy({ where: { [Op.or]: [{ patientId: userId }, { caregiverId: userId }] }, transaction: t });
+        await DeviceAccessPermission.destroy({ where: { [Op.or]: [{ userId }, { grantedBy: userId }] }, transaction: t });
+        await DeviceInvitation.destroy({ where: { [Op.or]: [{ createdBy: userId }] }, transaction: t });
+        await Adherence.destroy({ where: { userId }, transaction: t });
+        await Prescription.destroy({ where: { userId }, transaction: t });
+        await Medication.destroy({ where: { userId }, transaction: t });
+        await Device.destroy({ where: { userId }, transaction: t });
+        await Notification.destroy({ where: { userId }, transaction: t });
 
-      // 4. Wipe ALL relationships and data associated with this user
-      await CaregiverPatient.destroy({ where: { [Op.or]: [{ patientId: userId }, { caregiverId: userId }] } });
-      await DeviceAccessPermission.destroy({ where: { [Op.or]: [{ userId }, { grantedBy: userId }] } });
-      await DeviceInvitation.destroy({ where: { [Op.or]: [{ email: user.email }, { createdBy: userId }] } });
-      
-      await Adherence.destroy({ where: { userId } });
-      await Prescription.destroy({ where: { userId } });
-      await Medication.destroy({ where: { userId } });
-      await Device.destroy({ where: { userId } });
-      await Notification.destroy({ where: { userId } });
+        // 4. Update Role and force re-login
+        const oldRole = user.role;
+        user.role = newRole;
+        user.tokenVersion = (user.tokenVersion || 0) + 1;
+        user.refreshTokenHash = null;
+        await user.save({ transaction: t });
 
-      // 5. Update Role and force re-login
-      const oldRole = user.role;
-      user.role = newRole;
-      user.tokenVersion = (user.tokenVersion || 0) + 1; // Invalidates current JWTs
-      user.refreshTokenHash = null; // Invalidates current session
+        await t.commit();
 
-      await user.save();
+        logger.info(`User ${user.email} changed role from ${oldRole} to ${newRole} and data was wiped.`);
 
-      logger.info(`User ${user.email} changed role from ${oldRole} to ${newRole} and data was wiped.`);
+        await AuditLogService.logAction({
+          userId: user.id, action: 'USER_ROLE_CHANGED', entityType: 'User', entityId: user.id,
+          oldValues: { role: oldRole }, newValues: { role: newRole },
+          metadata: { description: 'Role changed and all associated patient/caregiver data wiped.' }
+        });
 
-      await AuditLogService.logAction({
-        userId: user.id, action: 'USER_ROLE_CHANGED', entityType: 'User', entityId: user.id,
-        oldValues: { role: oldRole }, newValues: { role: newRole },
-        metadata: { description: 'Role changed and all associated patient/caregiver data wiped.' }
-      });
-
-      return user;
+        return user;
+      } catch (error) {
+        await t.rollback();
+        logger.error(`Role change transaction failed for user ${userId}:`, error);
+        throw new AppError('Role change failed. No data was modified. Please try again.', 500);
+      }
     }
 
 }

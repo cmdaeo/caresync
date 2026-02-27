@@ -5,8 +5,24 @@ const helmet = require('helmet');
 const morgan = require('morgan');
 const compression = require('compression');
 const rateLimit = require('express-rate-limit');
-//const { initializeRateLimiter } = require('./config/rateLimiter');
-//const rateLimiterMiddleware = require('./middleware/rateLimiter');
+
+// General rate limiter: 100 requests per minute per IP
+const generalLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 100,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, message: 'Too many requests, please try again later.' }
+});
+
+// Strict auth limiter: 5 attempts per 15 minutes per IP (brute-force protection)
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 5,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, message: 'Too many login attempts, please try again later.' }
+});
 const { Server } = require('socket.io');
 const http = require('http');
 
@@ -76,6 +92,7 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization', 'x-device-id', 'x-app-version'],
 }));
 
+app.use(generalLimiter);
 app.use(compression());
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
@@ -111,7 +128,7 @@ app.get('/health', (req, res) => {
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(specs));
 
 // --- API ROUTES ---
-app.use('/api/auth', authRoutes);
+app.use('/api/auth', authLimiter, authRoutes);
 app.use('/api/users', authMiddleware, userRoutes);
 app.use('/api/medications', authMiddleware, medicationRoutes);
 app.use('/api/caregivers', authMiddleware, caregiverRoutes);
@@ -153,12 +170,6 @@ const PORT = process.env.PORT || 5000;
 
 async function startServer() {
   try {
-    // Initialize rate limiter with Redis
-    //const rateLimiter = await initializeRateLimiter();
-
-    // Use custom rate limiter middleware
-    //app.use(rateLimiterMiddleware);
-
     await db.authenticate();
     logger.info('Database connection established successfully.');
 

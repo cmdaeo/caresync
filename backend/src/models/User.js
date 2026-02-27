@@ -1,12 +1,27 @@
 const { DataTypes } = require('sequelize');
 const bcrypt = require('bcryptjs');
 const Encrypted = require('sequelize-encrypted');
+const { encrypt, decrypt } = require('../utils/encryption');
 
 module.exports = (sequelize) => {
   const encryptionKey = process.env.ENCRYPTION_KEY;
   if (!encryptionKey) {
     throw new Error('ENCRYPTION_KEY environment variable is required');
   }
+
+  /**
+   * Safe decryption helper: tries to decrypt, falls back to returning
+   * the raw value if decryption fails (handles pre-existing plaintext data).
+   */
+  const safeDecrypt = (value) => {
+    if (!value) return value;
+    try {
+      return decrypt(value);
+    } catch {
+      // Value was stored before encryption was enabled — return as-is
+      return value;
+    }
+  };
 
   const User = sequelize.define('User', {
     id: {
@@ -51,8 +66,16 @@ module.exports = (sequelize) => {
       }
     },
     dateOfBirth: {
-      type: DataTypes.DATEONLY,
-      allowNull: true
+      type: DataTypes.TEXT,
+      allowNull: true,
+      set(value) {
+        if (!value) { this.setDataValue('dateOfBirth', null); return; }
+        this.setDataValue('dateOfBirth', encrypt(String(value)));
+      },
+      get() {
+        const raw = this.getDataValue('dateOfBirth');
+        return safeDecrypt(raw);
+      }
     },
     profilePicture: {
       type: DataTypes.STRING,
@@ -115,11 +138,23 @@ module.exports = (sequelize) => {
       allowNull: true,
     },
     emergencyContact: {
-      type: DataTypes.JSON,
-      defaultValue: {
-        name: '',
-        phone: '',
-        relationship: ''
+      type: DataTypes.TEXT,
+      defaultValue: null,
+      set(value) {
+        if (!value) { this.setDataValue('emergencyContact', null); return; }
+        const json = typeof value === 'string' ? value : JSON.stringify(value);
+        this.setDataValue('emergencyContact', encrypt(json));
+      },
+      get() {
+        const raw = this.getDataValue('emergencyContact');
+        if (!raw) return { name: '', phone: '', relationship: '' };
+        const decrypted = safeDecrypt(raw);
+        try {
+          return typeof decrypted === 'object' ? decrypted : JSON.parse(decrypted);
+        } catch {
+          // Legacy JSON stored directly by SQLite — return as-is
+          return decrypted;
+        }
       }
     }
   }, {

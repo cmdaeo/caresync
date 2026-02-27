@@ -157,12 +157,22 @@ class DeviceService {
   /**
    * Sync device status (Webhook/Ping endpoint)
    */
-  async syncStatus(deviceId, statusData) {
+  async syncStatus(user, deviceId, statusData) {
     const { batteryLevel, connectionStatus, status } = statusData;
 
     const device = await Device.findOne({ where: { deviceId } });
     if (!device) {
       throw new NotFoundError('Device not found');
+    }
+
+    // Ownership check: device owner or caregiver with access
+    if (device.userId !== user.id) {
+      const hasAccess = await DeviceAccessPermission.findOne({
+        where: { deviceId: device.id, userId: user.id, isActive: true }
+      });
+      if (!hasAccess) {
+        throw new AuthenticationError('You do not have permission to sync this device');
+      }
     }
 
     const updates = {

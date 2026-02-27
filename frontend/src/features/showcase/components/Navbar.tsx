@@ -1,13 +1,15 @@
 // frontend/src/features/showcase/components/Navbar.tsx
 import { Link, useLocation } from 'react-router-dom';
-import { Layers, Code2, Shield, Activity, Users, ArrowRight, Menu, X } from 'lucide-react';
+import { Layers, Code2, Shield, Activity, Users, ArrowRight, Menu, X, LayoutDashboard } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import clsx from 'clsx';
 import { AnimatePresence, motion } from 'framer-motion';
+import { useAuthStore } from '@/shared/store/authStore';
 
 export const Navbar = () => {
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const isAuthenticated = useAuthStore((s) => !!s.token);
 
   useEffect(() => setMobileMenuOpen(false), [location]);
 
@@ -58,7 +60,7 @@ export const Navbar = () => {
                 key={path}
                 to={path}
                 className={clsx(
-                  "relative px-3 py-1.5 lg:px-4 lg:py-2 rounded-lg text-xs lg:text-sm font-medium transition-all duration-300 flex items-center gap-1.5 lg:gap-2 group overflow-hidden",
+                  "relative px-3 py-1.5 lg:px-4 lg:py-2 rounded-lg text-xs lg:text-sm font-medium transition-colors duration-150 flex items-center gap-1.5 lg:gap-2 group overflow-hidden",
                   isActive(path)
                     ? "text-brand-primary"
                     : "text-text-muted hover:text-text-main"
@@ -66,7 +68,7 @@ export const Navbar = () => {
               >
                 {/* Hover background effect */}
                 <div className={clsx(
-                  "absolute inset-0 rounded-lg transition-all duration-300",
+                  "absolute inset-0 rounded-lg transition-[background-color,border-color,opacity] duration-150",
                   isActive(path) 
                     ? "bg-brand-primary/10 border border-brand-primary/20" 
                     : "bg-transparent group-hover:bg-bg-hover"
@@ -103,8 +105,11 @@ export const Navbar = () => {
               {/* Shadow glow */}
               <div className="absolute inset-0 bg-linear-to-r from-blue-500 to-cyan-500 blur-md opacity-50 group-hover:opacity-75 transition-opacity" />
               
-              <span className="relative z-10 text-white">Live Demo</span>
-              <ArrowRight size={12} className="relative z-10 text-white lg:w-3.5 lg:h-3.5 group-hover:translate-x-0.5 transition-transform" />
+              <span className="relative z-10 text-white">{isAuthenticated ? 'Dashboard' : 'Live Demo'}</span>
+              {isAuthenticated
+                ? <LayoutDashboard size={12} className="relative z-10 text-white lg:w-3.5 lg:h-3.5" />
+                : <ArrowRight size={12} className="relative z-10 text-white lg:w-3.5 lg:h-3.5 group-hover:translate-x-0.5 transition-transform" />
+              }
             </Link>
 
             {/* Mobile Menu Toggle */}
@@ -174,8 +179,8 @@ export const Navbar = () => {
                   to="/app"
                   className="flex items-center justify-center gap-2 w-full px-4 py-3 mt-4 rounded-lg bg-linear-to-r from-blue-500 to-cyan-500 text-white text-sm font-semibold shadow-lg shadow-blue-500/25 active:scale-[0.98] transition-transform"
                 >
-                  Launch Live Demo
-                  <ArrowRight size={16} />
+                  {isAuthenticated ? 'Open Dashboard' : 'Launch Live Demo'}
+                  {isAuthenticated ? <LayoutDashboard size={16} /> : <ArrowRight size={16} />}
                 </Link>
               </motion.div>
             </div>

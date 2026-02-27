@@ -132,7 +132,7 @@ class DeviceController {
     try {
       const { deviceId } = req.params;
       const statusData = req.body;
-      await deviceService.syncStatus(deviceId, statusData);
+      await deviceService.syncStatus(req.user, deviceId, statusData);
 
       const response = ApiResponse.success(
         null,
