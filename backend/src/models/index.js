@@ -1,14 +1,19 @@
 const { Sequelize } = require('sequelize');
 const sequelize = require('../config/database');
 
-// Import model definitions (these are functions that define models)
+// Import model definitions
 const UserModel = require('./User');
 const MedicationModel = require('./Medication');
 const PrescriptionModel = require('./Prescription');
 const AdherenceModel = require('./Adherence');
 const DeviceModel = require('./Device');
+const DeviceAccessPermissionModel = require('./DeviceAccessPermission');
+const DeviceInvitationModel = require('./DeviceInvitation');
 const NotificationModel = require('./Notification');
 const CaregiverPatientModel = require('./CaregiverPatient');
+const AuditLogModel = require('./AuditLog');
+// FIX: Import the DocumentMetadata model definition
+const DocumentMetadataModel = require('./DocumentMetadata'); 
 
 // Initialize models by calling the functions with sequelize
 const User = UserModel(sequelize);
@@ -16,8 +21,13 @@ const Medication = MedicationModel(sequelize);
 const Prescription = PrescriptionModel(sequelize);
 const Adherence = AdherenceModel(sequelize);
 const Device = DeviceModel(sequelize);
+const DeviceAccessPermission = DeviceAccessPermissionModel(sequelize);
+const DeviceInvitation = DeviceInvitationModel(sequelize);
 const Notification = NotificationModel(sequelize);
 const CaregiverPatient = CaregiverPatientModel(sequelize);
+const AuditLog = AuditLogModel(sequelize);
+// FIX: Initialize DocumentMetadata
+const DocumentMetadata = DocumentMetadataModel(sequelize);
 
 // Define associations
 User.hasMany(Medication, { foreignKey: 'userId', as: 'medications' });
@@ -37,6 +47,22 @@ Adherence.belongsTo(Medication, { foreignKey: 'medicationId' });
 
 User.hasMany(Device, { foreignKey: 'userId', as: 'devices' });
 Device.belongsTo(User, { foreignKey: 'userId' });
+
+// Device access permissions
+Device.hasMany(DeviceAccessPermission, { foreignKey: 'deviceId', as: 'accessPermissions' });
+DeviceAccessPermission.belongsTo(Device, { foreignKey: 'deviceId' });
+User.hasMany(DeviceAccessPermission, { foreignKey: 'userId', as: 'deviceAccessPermissions' });
+DeviceAccessPermission.belongsTo(User, { foreignKey: 'userId' });
+User.hasMany(DeviceAccessPermission, { foreignKey: 'grantedBy', as: 'grantedPermissions' });
+DeviceAccessPermission.belongsTo(User, { foreignKey: 'grantedBy' });
+
+// Device invitations
+Device.hasMany(DeviceInvitation, { foreignKey: 'deviceId', as: 'invitations' });
+DeviceInvitation.belongsTo(Device, { foreignKey: 'deviceId' });
+User.hasMany(DeviceInvitation, { foreignKey: 'createdBy', as: 'createdInvitations' });
+DeviceInvitation.belongsTo(User, { foreignKey: 'createdBy' });
+User.hasMany(DeviceInvitation, { foreignKey: 'acceptedBy', as: 'acceptedInvitations' });
+DeviceInvitation.belongsTo(User, { foreignKey: 'acceptedBy' });
 
 User.hasMany(Notification, { foreignKey: 'userId', as: 'notifications' });
 Notification.belongsTo(User, { foreignKey: 'userId' });
@@ -66,6 +92,10 @@ User.belongsToMany(User, {
   otherKey: 'patientId'
 });
 
+// FIX: Define DocumentMetadata associations (if any)
+DocumentMetadata.belongsTo(User, { foreignKey: 'userId' });
+User.hasMany(DocumentMetadata, { foreignKey: 'userId' });
+
 // Export models and sequelize instance
 module.exports = {
   sequelize,
@@ -75,6 +105,11 @@ module.exports = {
   Prescription,
   Adherence,
   Device,
+  DeviceAccessPermission,
+  DeviceInvitation,
   Notification,
-  CaregiverPatient
+  CaregiverPatient,
+  AuditLog,
+  // FIX: Export DocumentMetadata
+  DocumentMetadata 
 };

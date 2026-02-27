@@ -4,7 +4,7 @@ const path = require('path');
 const sequelize = new Sequelize({
   dialect: process.env.DB_DIALECT || 'sqlite',
   storage: process.env.DB_STORAGE || path.join(__dirname, '../../database.sqlite'),
-  logging: process.env.NODE_ENV === 'development' ? console.log : false,
+  logging: false, // Disable all SQL query logging
   pool: {
     max: 10,
     min: 0,

@@ -1,286 +1,176 @@
-const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
-const crypto = require('crypto');
-const { User } = require('../models');
+// controllers/authController.js
+const authService = require('../services/authService');
 const logger = require('../utils/logger');
-
-// Generate JWT token
-const generateToken = (id) => {
-  return jwt.sign({ id }, process.env.JWT_SECRET, {
-    expiresIn: process.env.JWT_EXPIRE || '7d',
-  });
-};
-
-// Generate refresh token
-const generateRefreshToken = (id) => {
-  return jwt.sign({ id, type: 'refresh' }, process.env.JWT_REFRESH_SECRET || process.env.JWT_SECRET, {
-    expiresIn: process.env.JWT_REFRESH_EXPIRE || '30d',
-  });
-};
+const ApiResponse = require('../utils/ApiResponse');
 
 class AuthController {
-  /**
-   * Register a new user
-   */
   async register(req, res) {
     try {
-      const { email, password, firstName, lastName, role = 'patient', phone, dateOfBirth } = req.body;
+      const userData = req.body;
+      const { user, token, refreshToken } = await authService.register(userData);
 
-      // Check if user already exists
-      const existingUser = await User.findOne({ where: { email } });
-      if (existingUser) {
-        return res.status(400).json({
-          success: false,
-          message: 'User already exists with this email'
-        });
-      }
-
-      // Generate email verification token
-      const emailVerificationToken = crypto.randomBytes(32).toString('hex');
-
-      // Create user
-      const user = await User.create({
-        email,
-        password,
-        firstName,
-        lastName,
-        role,
-        phone,
-        dateOfBirth,
-        emailVerificationToken
+      res.cookie('refreshToken', refreshToken, {
+        httpOnly: true, secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict', maxAge: 30 * 24 * 60 * 60 * 1000
       });
 
-      // Generate tokens
-      const token = generateToken(user.id);
-      const refreshToken = generateRefreshToken(user.id);
-
-      logger.info(`New user registered: ${email}`);
-
-      res.status(201).json({
-        success: true,
-        message: 'User registered successfully',
-        data: {
-          user: user.toJSON(),
-          token,
-          refreshToken
-        }
-      });
+      res.status(201).json(ApiResponse.success({ user: user.toJSON(), token }, 'User registered successfully', 201));
     } catch (error) {
       logger.error('Registration error:', error);
       throw error;
     }
   }
 
-  /**
-   * Login user
-   */
   async login(req, res) {
     try {
       const { email, password } = req.body;
-
-      // Check if user exists and include password for comparison
-      const user = await User.findOne({ where: { email } });
-      if (!user) {
-        return res.status(401).json({
-          success: false,
-          message: 'Invalid credentials'
-        });
-      }
-
-      // Check if account is active
-      if (!user.isActive) {
-        return res.status(401).json({
-          success: false,
-          message: 'Account is inactive. Please contact support.'
-        });
-      }
-
-      // Validate password
-      const isPasswordValid = await user.comparePassword(password);
-      if (!isPasswordValid) {
-        return res.status(401).json({
-          success: false,
-          message: 'Invalid credentials'
-        });
-      }
-
-      // Update last login
-      user.lastLogin = new Date();
-      await user.save();
-
-      // Generate tokens
-      const token = generateToken(user.id);
-      const refreshToken = generateRefreshToken(user.id);
-
-      logger.info(`User logged in: ${email}`);
-
-      res.json({
-        success: true,
-        message: 'Login successful',
-        data: {
-          user: user.toJSON(),
-          token,
-          refreshToken
-        }
+      const { user, token, refreshToken } = await authService.login(email, password, {
+        ip: req.ip, userAgent: req.headers['user-agent']
       });
+
+      res.cookie('refreshToken', refreshToken, {
+        httpOnly: true, secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict', maxAge: 30 * 24 * 60 * 60 * 1000
+      });
+
+      res.json(ApiResponse.success({ user: user.toJSON(), token }, 'Login successful'));
     } catch (error) {
       logger.error('Login error:', error);
       throw error;
     }
   }
 
-  /**
-   * Get current user profile
-   */
   async getProfile(req, res) {
     try {
-      const user = req.user;
-
-      res.json({
-        success: true,
-        data: {
-          user
-        }
-      });
+      const user = await authService.getProfile(req.user);
+      res.json(ApiResponse.success({ user }));
     } catch (error) {
       logger.error('Get profile error:', error);
       throw error;
     }
   }
 
-  /**
-   * Update user profile
-   */
   async updateProfile(req, res) {
     try {
-      const { firstName, lastName, phone, dateOfBirth, preferences, emergencyContact } = req.body;
-      const user = req.user;
-
-      // Update fields if provided
-      if (firstName !== undefined) user.firstName = firstName;
-      if (lastName !== undefined) user.lastName = lastName;
-      if (phone !== undefined) user.phone = phone;
-      if (dateOfBirth !== undefined) user.dateOfBirth = dateOfBirth;
-      if (preferences !== undefined) user.preferences = { ...user.preferences, ...preferences };
-      if (emergencyContact !== undefined) user.emergencyContact = emergencyContact;
-
-      await user.save();
-
-      logger.info(`User profile updated: ${user.email}`);
-
-      res.json({
-        success: true,
-        message: 'Profile updated successfully',
-        data: {
-          user: user.toJSON()
-        }
-      });
+      const user = await authService.updateProfile(req.user, req.body);
+      res.json(ApiResponse.success({ user: user.toJSON() }, 'Profile updated successfully'));
     } catch (error) {
       logger.error('Update profile error:', error);
       throw error;
     }
   }
 
-  /**
-   * Change password
-   */
   async changePassword(req, res) {
     try {
       const { currentPassword, newPassword } = req.body;
-      const user = await User.findByPk(req.user.id);
-
-      // Verify current password
-      const isCurrentPasswordValid = await user.comparePassword(currentPassword);
-      if (!isCurrentPasswordValid) {
-        return res.status(400).json({
-          success: false,
-          message: 'Current password is incorrect'
-        });
-      }
-
-      // Update password
-      user.password = newPassword;
-      await user.save();
-
-      logger.info(`Password changed for user: ${user.email}`);
-
-      res.json({
-        success: true,
-        message: 'Password changed successfully'
-      });
+      await authService.changePassword(req.user.id, currentPassword, newPassword);
+      res.json(ApiResponse.success(null, 'Password changed successfully'));
     } catch (error) {
       logger.error('Change password error:', error);
       throw error;
     }
   }
 
-  /**
-   * Refresh access token
-   */
   async refreshToken(req, res) {
     try {
-      const { refreshToken } = req.body;
+      const { refreshToken } = req.cookies;
+      const { token, refreshToken: newRefreshToken } = await authService.refreshToken(refreshToken);
 
-      if (!refreshToken) {
-        return res.status(401).json({
-          success: false,
-          message: 'Refresh token is required'
-        });
-      }
-
-      const decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET || process.env.JWT_SECRET);
-      
-      if (decoded.type !== 'refresh') {
-        return res.status(401).json({
-          success: false,
-          message: 'Invalid token type'
-        });
-      }
-
-      // Verify user still exists and is active
-      const user = await User.findByPk(decoded.id);
-      if (!user || !user.isActive) {
-        return res.status(401).json({
-          success: false,
-          message: 'User not found or inactive'
-        });
-      }
-
-      // Generate new tokens
-      const newToken = generateToken(user.id);
-      const newRefreshToken = generateRefreshToken(user.id);
-
-      res.json({
-        success: true,
-        data: {
-          token: newToken,
-          refreshToken: newRefreshToken
-        }
+      res.cookie('refreshToken', newRefreshToken, {
+        httpOnly: true, secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict', maxAge: 30 * 24 * 60 * 60 * 1000
       });
 
+      res.json(ApiResponse.success({ token }));
     } catch (error) {
-      return res.status(401).json({
-        success: false,
-        message: 'Invalid refresh token'
+      logger.error('Refresh token error:', error);
+      throw error;
+    }
+  }
+
+  async logout(req, res) {
+    try {
+      await authService.logout(req.user);
+      res.clearCookie('refreshToken', {
+        httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: 'strict'
       });
+      res.json(ApiResponse.success(null, 'Logged out successfully'));
+    } catch (error) {
+      logger.error('Logout error:', error);
+      throw error;
+    }
+  }
+
+  async deleteAccount(req, res) {
+    try {
+      const { password } = req.body;
+      await authService.deleteAccount(req.user, password);
+      res.clearCookie('refreshToken', {
+        httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: 'strict'
+      });
+      res.json(ApiResponse.success(null, 'Account deleted successfully'));
+    } catch (error) {
+      logger.error('Delete account error:', error);
+      throw error;
     }
   }
 
   /**
-   * Logout user
+   * Forgot Password — no auth required
+   * Always returns 200 regardless of whether the email exists.
    */
-  async logout(req, res) {
+  async forgotPassword(req, res) {
     try {
-      // In a real application, you might want to blacklist the token
-      // For now, we'll just return success
-      logger.info(`User logged out: ${req.user.email}`);
+      const { email } = req.body;
+      await authService.forgotPassword(email);
 
-      res.json({
-        success: true,
-        message: 'Logged out successfully'
-      });
+      // Always return the same message — never reveal if the email exists
+      res.json(ApiResponse.success(
+        null,
+        'If that email is registered, you will receive a reset link shortly.'
+      ));
     } catch (error) {
-      logger.error('Logout error:', error);
+      logger.error('Forgot password error:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Reset Password — no auth required (uses the token from the email link)
+   */
+  async resetPassword(req, res) {
+    try {
+      const { token, newPassword } = req.body;
+      await authService.resetPassword(token, newPassword);
+
+      res.json(ApiResponse.success(null, 'Password has been reset successfully. Please sign in.'));
+    } catch (error) {
+      logger.error('Reset password error:', error);
+      throw error;
+    }
+  }
+
+    /**
+   * Change User Role
+   */
+  async changeRole(req, res) {
+    try {
+      const { newRole, currentPassword } = req.body;
+      await authService.changeRole(req.user.id, newRole, currentPassword);
+
+      // Clear refresh token cookie to force them to log in as their new role
+      res.clearCookie('refreshToken', {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict'
+      });
+
+      res.json(ApiResponse.success(
+        null, 
+        `Role changed to ${newRole}. All previous data was wiped. Please sign in again.`
+      ));
+    } catch (error) {
+      logger.error('Change role error:', error);
       throw error;
     }
   }

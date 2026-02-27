@@ -17,7 +17,7 @@ const authMiddleware = async (req, res, next) => {
 
     try {
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
-      
+       
       // Get user from database to ensure they still exist and are active
       const user = await User.findByPk(decoded.id, {
         attributes: { exclude: ['password', 'emailVerificationToken', 'passwordResetToken'] }
@@ -34,6 +34,15 @@ const authMiddleware = async (req, res, next) => {
         return res.status(401).json({
           success: false,
           message: 'User account is inactive'
+        });
+      }
+
+      // Check if token version matches user's current token version
+      if (decoded.tokenVersion !== user.tokenVersion) {
+        return res.status(401).json({
+          success: false,
+          message: 'Token is invalid due to password change',
+          code: 'TOKEN_INVALIDATED'
         });
       }
 

@@ -1,5 +1,6 @@
-const { Device } = require('../models');
+const deviceService = require('../services/deviceService');
 const logger = require('../utils/logger');
+const ApiResponse = require('../utils/ApiResponse');
 
 class DeviceController {
   /**
@@ -7,15 +8,11 @@ class DeviceController {
    */
   async getDevices(req, res) {
     try {
-      const devices = await Device.findAll({
-        where: { userId: req.user.id, isActive: true },
-        order: [['createdAt', 'DESC']]
-      });
+      const devices = await deviceService.getDevices(req.user);
 
-      res.json({
-        success: true,
-        data: { devices }
-      });
+      const response = ApiResponse.success({ devices });
+
+      res.json(response);
     } catch (error) {
       logger.error('Get devices error:', error);
       throw error;
@@ -23,41 +20,49 @@ class DeviceController {
   }
 
   /**
-   * Register a new device
+   * Register a new device (Legacy method - kept for backward compatibility)
    */
   async registerDevice(req, res) {
     try {
-      const { deviceId, name, deviceType, model, serialNumber } = req.body;
+      const deviceData = req.body;
+      const device = await deviceService.registerDevice(req.user, deviceData);
 
-      // Check if device already exists
-      const existingDevice = await Device.findOne({ where: { deviceId } });
-      if (existingDevice) {
-        return res.status(409).json({
-          success: false,
-          message: 'Device with this ID is already registered'
-        });
-      }
+      const response = ApiResponse.success(
+        { device },
+        'Device registered successfully',
+        201
+      );
 
-      const device = await Device.create({
-        userId: req.user.id,
-        deviceId,
-        name,
-        deviceType,
-        model,
-        serialNumber,
-        batteryStatus: 'unknown',
-        connectionStatus: 'offline'
-      });
-
-      logger.info(`New device registered: ${name} (${deviceId}) for user ${req.user.email}`);
-
-      res.status(201).json({
-        success: true,
-        message: 'Device registered successfully',
-        data: { device }
-      });
+      res.status(201).json(response);
     } catch (error) {
       logger.error('Register device error:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Register a new device using signature-based authentication
+   */
+  async registerDeviceWithSignature(req, res) {
+    try {
+      const deviceData = req.body;
+      const device = await deviceService.registerDeviceWithSignature(req.user, deviceData);
+
+      const response = ApiResponse.success(
+        {
+          device: {
+            ...device.toJSON(),
+            registrationSignature: undefined,
+            devicePublicKey: undefined
+          }
+        },
+        'Device registered successfully with signature',
+        201
+      );
+
+      res.status(201).json(response);
+    } catch (error) {
+      logger.error('Register device with signature error:', error);
       throw error;
     }
   }
@@ -68,21 +73,11 @@ class DeviceController {
   async getDevice(req, res) {
     try {
       const { id } = req.params;
-      const device = await Device.findOne({
-        where: { id, userId: req.user.id }
-      });
+      const device = await deviceService.getDevice(req.user, id);
 
-      if (!device) {
-        return res.status(404).json({
-          success: false,
-          message: 'Device not found'
-        });
-      }
+      const response = ApiResponse.success({ device });
 
-      res.json({
-        success: true,
-        data: { device }
-      });
+      res.json(response);
     } catch (error) {
       logger.error('Get device error:', error);
       throw error;
@@ -95,24 +90,15 @@ class DeviceController {
   async updateDevice(req, res) {
     try {
       const { id } = req.params;
-      const device = await Device.findOne({
-        where: { id, userId: req.user.id }
-      });
+      const deviceData = req.body;
+      const device = await deviceService.updateDevice(req.user, id, deviceData);
 
-      if (!device) {
-        return res.status(404).json({
-          success: false,
-          message: 'Device not found'
-        });
-      }
+      const response = ApiResponse.success(
+        { device },
+        'Device updated successfully'
+      );
 
-      await device.update(req.body);
-
-      res.json({
-        success: true,
-        message: 'Device updated successfully',
-        data: { device }
-      });
+      res.json(response);
     } catch (error) {
       logger.error('Update device error:', error);
       throw error;
@@ -125,24 +111,14 @@ class DeviceController {
   async deleteDevice(req, res) {
     try {
       const { id } = req.params;
-      const device = await Device.findOne({
-        where: { id, userId: req.user.id }
-      });
+      await deviceService.deleteDevice(req.user, id);
 
-      if (!device) {
-        return res.status(404).json({
-          success: false,
-          message: 'Device not found'
-        });
-      }
+      const response = ApiResponse.success(
+        null,
+        'Device removed successfully'
+      );
 
-      await device.update({ isActive: false });
-      logger.info(`Device removed: ${device.name} for user ${req.user.email}`);
-
-      res.json({
-        success: true,
-        message: 'Device removed successfully'
-      });
+      res.json(response);
     } catch (error) {
       logger.error('Delete device error:', error);
       throw error;
@@ -155,32 +131,111 @@ class DeviceController {
   async syncStatus(req, res) {
     try {
       const { deviceId } = req.params;
-      const { batteryLevel, connectionStatus, status } = req.body;
+      const statusData = req.body;
+      await deviceService.syncStatus(deviceId, statusData);
 
-      const device = await Device.findOne({ where: { deviceId } });
-      if (!device) {
-        return res.status(404).json({ success: false, message: 'Device not found' });
-      }
+      const response = ApiResponse.success(
+        null,
+        'Device synced'
+      );
 
-      const updates = {
-        lastSync: new Date(),
-        status: { ...device.status, ...status }
-      };
-
-      if (batteryLevel !== undefined) {
-        updates.batteryLevel = batteryLevel;
-        updates.batteryStatus = batteryLevel > 20 ? 'good' : 'low';
-      }
-
-      if (connectionStatus) {
-        updates.connectionStatus = connectionStatus;
-        updates.lastConnection = new Date();
-      }
-
-      await device.update(updates);
-      res.json({ success: true, message: 'Device synced' });
+      res.json(response);
     } catch (error) {
       logger.error('Sync device error:', error);
+      throw error;
+    }
+  }
+  /**
+   * Invite a caregiver to access a device
+   */
+  async inviteCaregiver(req, res) {
+    try {
+      const { deviceId } = req.params;
+      const invitationData = req.body;
+      const invitation = await deviceService.inviteCaregiver(req.user, deviceId, invitationData);
+
+      const response = ApiResponse.success(
+        {
+          invitation: {
+            id: invitation.id,
+            email: invitation.email,
+            accessLevel: invitation.accessLevel,
+            invitationToken: invitation.invitationToken,
+            expiresAt: invitation.expiresAt,
+            createdAt: invitation.createdAt
+          }
+        },
+        'Caregiver invitation created successfully',
+        201
+      );
+
+      res.status(201).json(response);
+    } catch (error) {
+      logger.error('Invite caregiver error:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Accept a caregiver invitation
+   */
+  async acceptCaregiverInvitation(req, res) {
+    try {
+      const { deviceId, invitationId } = req.params;
+      const permission = await deviceService.acceptCaregiverInvitation(req.user, deviceId, invitationId);
+
+      const response = ApiResponse.success(
+        {
+          permission: {
+            id: permission.id,
+            deviceId: permission.deviceId,
+            accessLevel: permission.accessLevel,
+            grantedAt: permission.grantedAt
+          }
+        },
+        'Caregiver invitation accepted successfully'
+      );
+
+      res.json(response);
+    } catch (error) {
+      logger.error('Accept caregiver invitation error:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get all caregivers for a device
+   */
+  async getDeviceCaregivers(req, res) {
+    try {
+      const { deviceId } = req.params;
+      const caregivers = await deviceService.getDeviceCaregivers(req.user, deviceId);
+
+      const response = ApiResponse.success({ caregivers });
+
+      res.json(response);
+    } catch (error) {
+      logger.error('Get device caregivers error:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Remove caregiver access from a device
+   */
+  async removeCaregiver(req, res) {
+    try {
+      const { deviceId, caregiverId } = req.params;
+      await deviceService.removeCaregiver(req.user, deviceId, caregiverId);
+
+      const response = ApiResponse.success(
+        null,
+        'Caregiver access removed successfully'
+      );
+
+      res.json(response);
+    } catch (error) {
+      logger.error('Remove caregiver error:', error);
       throw error;
     }
   }

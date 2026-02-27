@@ -1,10 +1,12 @@
 const express = require('express');
 const router = express.Router();
 const medicationController = require('../controllers/medicationController');
-const { authMiddleware, requirePatientAccess } = require('../middleware/auth');
-const { asyncHandler } = require('../middleware/errorHandler')
-const { body, query, param, validationResult } = require('express-validator');
+const { authMiddleware } = require('../middleware/auth');
+const { asyncHandler } = require('../middleware/errorHandler');
+const { handleValidationErrors } = require('../middleware/validationMiddleware');
+const { body, query, param } = require('express-validator');
 
+<<<<<<< HEAD
 // Validation middleware
 const validateMedicationCreation = [
   body('name').notEmpty().trim().withMessage('Medication name is required'),
@@ -19,83 +21,404 @@ const validateMedicationCreation = [
   body('endDate').optional().isISO8601().withMessage('Invalid end date'),
   body('totalQuantity').isInt({ min: 1 }).withMessage('Total quantity must be a positive integer'),
   body('remainingQuantity').optional().isInt({ min: 0 }).withMessage('Remaining quantity must be non-negative')
+=======
+// --- VALIDATION RULES ---
+
+const validateMedication = [
+  body('name').trim().notEmpty().withMessage('Medication name is required'),
+  body('dosage').trim().notEmpty().withMessage('Dosage is required'),
+  body('dosageUnit').trim().notEmpty().withMessage('Dosage unit is required'),
+  body('frequency').optional().trim(),
+  body('timesPerDay').optional().isInt({ min: 1 }),
+  body('totalQuantity').optional().isInt({ min: 0 }),
+  body('startDate').optional().isISO8601()
+>>>>>>> upstream/main
 ];
 
-const validateMedicationUpdate = [
-  param('id').isUUID().withMessage('Invalid medication ID'),
-  body('name').optional().trim().isLength({ min: 2 }).withMessage('Medication name must be at least 2 characters'),
-  body('dosage').optional().trim().isLength({ min: 1 }).withMessage('Dosage is required'),
-  body('dosageUnit').optional().isIn(['mg', 'ml', 'tablets', 'capsules', 'drops', 'units', 'puffs']).withMessage('Invalid dosage unit'),
-  body('totalQuantity').optional().isInt({ min: 1 }).withMessage('Total quantity must be a positive integer'),
-  body('remainingQuantity').optional().isInt({ min: 0 }).withMessage('Remaining quantity must be non-negative'),
-  body('frequency.timesPerDay').optional().isInt({ min: 1, max: 24 }).withMessage('Times per day must be between 1 and 24')
+const validateAdherenceRecord = [
+  body('medicationId').isUUID().withMessage('Invalid medication ID'),
+  body('status').isIn(['taken', 'skipped', 'missed', 'late', 'early']).withMessage('Invalid status'),
+  body('takenAt').optional().isISO8601().withMessage('Invalid taken time'),
+  body('scheduledTime').isISO8601().withMessage('Invalid scheduled time')
 ];
 
-const validateRefill = [
-  param('id').isUUID().withMessage('Invalid medication ID'),
-  body('quantity').isInt({ min: 1 }).withMessage('Refill quantity must be a positive integer'),
-  body('refillsRemaining').optional().isInt({ min: 0 }).withMessage('Refills remaining must be non-negative')
-];
+// ==========================================
+// 1. SPECIFIC ROUTES (Must come first!)
+// ==========================================
 
-const validatePagination = [
-  query('page').optional().isInt({ min: 1 }).withMessage('Page must be a positive integer'),
-  query('limit').optional().isInt({ min: 1, max: 100 }).withMessage('Limit must be between 1 and 100'),
-  query('status').optional().isIn(['active', 'inactive', 'all']).withMessage('Invalid status'),
-  query('search').optional().trim().isLength({ max: 100 }).withMessage('Search term too long')
-];
+/**
+ * @swagger
+ * /api/medications/schedule:
+ *   get:
+ *     tags: [Medications]
+ *     summary: Get calendar data for medications
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: startDate
+ *         schema:
+ *           type: string
+ *           format: date
+ *       - in: query
+ *         name: endDate
+ *         schema:
+ *           type: string
+ *           format: date
+ *       - in: query
+ *         name: patientId
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Calendar data retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     calendar:
+ *                       type: array
+ *                       items:
+ *                         type: object
+ *                     dateRange:
+ *                       type: object
+ */
+// Matches GET /api/medications/schedule
+// (Moved to top so "schedule" isn't treated as an :id)
+router.get('/schedule', authMiddleware, asyncHandler(medicationController.getCalendarData.bind(medicationController)));
 
-const validateMedicationId = [
-  param('id').isUUID().withMessage('Invalid medication ID')
-];
+/**
+ * @swagger
+ * /api/medications/adherence:
+ *   post:
+ *     tags: [Medications]
+ *     summary: Record adherence
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               medicationId:
+ *                 type: string
+ *               status:
+ *                 type: string
+ *                 enum: [taken, skipped, missed, late, early]
+ *               takenAt:
+ *                 type: string
+ *                 format: date-time
+ *               scheduledTime:
+ *                 type: string
+ *                 format: date-time
+ *     responses:
+ *       201:
+ *         description: Adherence recorded successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *                 data:
+ *                   type: object
+ */
+// Matches POST /api/medications/adherence
+router.post('/adherence', authMiddleware, validateAdherenceRecord, handleValidationErrors, asyncHandler(medicationController.recordAdherence.bind(medicationController)));
 
-const validateUpcomingDoses = [
-  query('hours').optional().isInt({ min: 1, max: 168 }).withMessage('Hours must be between 1 and 168 (1 week)')
-];
+/**
+ * @swagger
+ * /api/medications/adherence/stats:
+ *   get:
+ *     tags: [Medications]
+ *     summary: Get adherence statistics
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: startDate
+ *         schema:
+ *           type: string
+ *           format: date
+ *       - in: query
+ *         name: endDate
+ *         schema:
+ *           type: string
+ *           format: date
+ *       - in: query
+ *         name: period
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: patientId
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Adherence statistics retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     rate:
+ *                       type: number
+ *                     total:
+ *                       type: number
+ *                     taken:
+ *                       type: number
+ *                     missed:
+ *                       type: number
+ *                     skipped:
+ *                       type: number
+ *                     period:
+ *                       type: string
+ */
+// Matches GET /api/medications/adherence/stats
+router.get('/adherence/stats', authMiddleware, asyncHandler(medicationController.getAdherenceStats.bind(medicationController)));
 
-const validatePatientAccess = [
-  requirePatientAccess
-];
 
-// Validation handler
-const handleValidationErrors = (req, res, next) => {
-  const errors = validationResult(req);
-  if (!errors.isEmpty()) {
-    return res.status(400).json({
-      success: false,
-      message: 'Validation failed',
-      errors: errors.array()
-    });
-  }
-  next();
-};
+// ==========================================
+// 2. GENERIC / PARAMETER ROUTES (Must come last!)
+// ==========================================
 
-// Routes
+// Core Medication CRUD
+/**
+ * @swagger
+ * /api/medications:
+ *   get:
+ *     tags: [Medications]
+ *     summary: Get all medications with pagination and optional filtering
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *       - in: query
+ *         name: status
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: search
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: patientId
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: List of medications retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                 pagination:
+ *                   type: object
+ */
+router.get('/', authMiddleware, asyncHandler(medicationController.getMedications.bind(medicationController)));
 
-// @desc    Get all medications for user
-// @route   GET /api/medications
-// @access  Private
-router.get('/', authMiddleware, validatePagination, handleValidationErrors, asyncHandler(medicationController.getMedications.bind(medicationController)));
+/**
+ * @swagger
+ * /api/medications:
+ *   post:
+ *     tags: [Medications]
+ *     summary: Create a new medication
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               name:
+ *                 type: string
+ *               dosage:
+ *                 type: string
+ *               dosageUnit:
+ *                 type: string
+ *               frequency:
+ *                 type: string
+ *               timesPerDay:
+ *                 type: integer
+ *               totalQuantity:
+ *                 type: integer
+ *               startDate:
+ *                 type: string
+ *                 format: date
+ *     responses:
+ *       201:
+ *         description: Medication created successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *                 data:
+ *                   type: object
+ */
+router.post('/', authMiddleware, validateMedication, handleValidationErrors, asyncHandler(medicationController.createMedication.bind(medicationController)));
 
-// @desc    Get single medication
-// @route   GET /api/medications/:id
-// @access  Private
-router.get('/:id', authMiddleware, validateMedicationId, validatePatientAccess, handleValidationErrors, asyncHandler(medicationController.getMedication.bind(medicationController)));
+router.post(
+  '/pem-scan',
+  authMiddleware,
+  body('qrData').notEmpty().withMessage('QR Data string is required'),
+  handleValidationErrors,
+  asyncHandler(medicationController.processPemScan.bind(medicationController))
+);
 
-// @desc    Create new medication
-// @route   POST /api/medications
-// @access  Private
-router.post('/', authMiddleware, validateMedicationCreation, handleValidationErrors, asyncHandler(medicationController.createMedication.bind(medicationController)));
+// :id routes match ANYTHING, so keep them at the bottom
+/**
+ * @swagger
+ * /api/medications/{id}:
+ *   get:
+ *     tags: [Medications]
+ *     summary: Get a specific medication
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: patientId
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Medication retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: object
+ */
+router.get('/:id', authMiddleware, asyncHandler(medicationController.getMedication.bind(medicationController)));
 
-// @desc    Update medication
-// @route   PUT /api/medications/:id
-// @access  Private
-router.put('/:id', authMiddleware, validateMedicationUpdate, validatePatientAccess, handleValidationErrors, asyncHandler(medicationController.updateMedication.bind(medicationController)));
+/**
+ * @swagger
+ * /api/medications/{id}:
+ *   put:
+ *     tags: [Medications]
+ *     summary: Update a medication
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               name:
+ *                 type: string
+ *               dosage:
+ *                 type: string
+ *               dosageUnit:
+ *                 type: string
+ *               frequency:
+ *                 type: string
+ *               timesPerDay:
+ *                 type: integer
+ *               totalQuantity:
+ *                 type: integer
+ *               startDate:
+ *                 type: string
+ *                 format: date
+ *     responses:
+ *       200:
+ *         description: Medication updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *                 data:
+ *                   type: object
+ */
+router.put('/:id', authMiddleware, validateMedication, handleValidationErrors, asyncHandler(medicationController.updateMedication.bind(medicationController)));
 
-// @desc    Delete medication
-// @route   DELETE /api/medications/:id
-// @access  Private
-router.delete('/:id', authMiddleware, validateMedicationId, validatePatientAccess, handleValidationErrors, asyncHandler(medicationController.deleteMedication.bind(medicationController)));
+/**
+ * @swagger
+ * /api/medications/{id}:
+ *   delete:
+ *     tags: [Medications]
+ *     summary: Delete a medication
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Medication deleted successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ */
+router.delete('/:id', authMiddleware, asyncHandler(medicationController.deleteMedication.bind(medicationController)));
 
+<<<<<<< HEAD
 // @desc    Get medications needing refill
 // @route   GET /api/medications/refill-needed
 // @access  Private
@@ -123,4 +446,6 @@ router.get('/schedule', authMiddleware, [
   query('startDate').optional().isISO8601().withMessage('Invalid start date')
 ], handleValidationErrors, asyncHandler(medicationController.generateSchedule.bind(medicationController)));
 
+=======
+>>>>>>> upstream/main
 module.exports = router;

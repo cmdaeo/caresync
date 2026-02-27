@@ -1,6 +1,12 @@
 const { DataTypes } = require('sequelize');
+const Encrypted = require('sequelize-encrypted');
 
 module.exports = (sequelize) => {
+  const encryptionKey = process.env.ENCRYPTION_KEY;
+  if (!encryptionKey) {
+    throw new Error('ENCRYPTION_KEY environment variable is required');
+  }
+
   const Medication = sequelize.define('Medication', {
     id: {
       type: DataTypes.UUID,
@@ -16,7 +22,7 @@ module.exports = (sequelize) => {
       }
     },
     name: {
-      type: DataTypes.STRING,
+      type: Encrypted(DataTypes.STRING, encryptionKey),
       allowNull: false
     },
     dosage: {
@@ -24,11 +30,11 @@ module.exports = (sequelize) => {
       allowNull: false
     },
     dosageUnit: {
-      type: DataTypes.STRING,
+      type: Encrypted(DataTypes.STRING, encryptionKey),
       allowNull: false
     },
     frequency: {
-      type: DataTypes.STRING,
+      type: Encrypted(DataTypes.STRING, encryptionKey),
       allowNull: false
     },
     timesPerDay: {
@@ -37,11 +43,11 @@ module.exports = (sequelize) => {
       defaultValue: 1
     },
     route: {
-      type: DataTypes.STRING,
+      type: Encrypted(DataTypes.STRING, encryptionKey),
       allowNull: true
     },
     instructions: {
-      type: DataTypes.TEXT,
+      type: Encrypted(DataTypes.TEXT, encryptionKey),
       allowNull: true
     },
     startDate: {
@@ -59,6 +65,14 @@ module.exports = (sequelize) => {
     totalQuantity: {
       type: DataTypes.INTEGER,
       allowNull: true
+    },
+    compartment: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      validate: {
+        min: 1,
+        max: 12
+      }
     },
     refillReminder: {
       type: DataTypes.BOOLEAN,

@@ -1,6 +1,12 @@
 const { DataTypes } = require('sequelize');
+const Encrypted = require('sequelize-encrypted');
 
 module.exports = (sequelize) => {
+  const encryptionKey = process.env.ENCRYPTION_KEY;
+  if (!encryptionKey) {
+    throw new Error('ENCRYPTION_KEY environment variable is required');
+  }
+
   const Prescription = sequelize.define('Prescription', {
     id: {
       type: DataTypes.UUID,
@@ -24,7 +30,7 @@ module.exports = (sequelize) => {
       }
     },
     prescribedBy: {
-      type: DataTypes.STRING,
+      type: Encrypted(DataTypes.STRING, encryptionKey),
       allowNull: true
     },
     prescribedDate: {
@@ -41,15 +47,15 @@ module.exports = (sequelize) => {
       allowNull: true
     },
     dosage: {
-      type: DataTypes.STRING,
+      type: Encrypted(DataTypes.STRING, encryptionKey),
       allowNull: false
     },
     frequency: {
-      type: DataTypes.STRING,
+      type: Encrypted(DataTypes.STRING, encryptionKey),
       allowNull: false
     },
     instructions: {
-      type: DataTypes.TEXT,
+      type: Encrypted(DataTypes.TEXT, encryptionKey),
       allowNull: true
     },
     refillsRemaining: {
