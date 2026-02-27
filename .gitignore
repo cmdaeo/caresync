@@ -11,3 +11,5 @@ pythonTest/
 .env.local
 .env.production
 logins.txt
+dist/
+.claude/
