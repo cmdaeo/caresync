@@ -5,3 +5,26 @@ database.sqlite
 database.sqlite-journal
 .snapshotignore
 pythonTest/
+.claude/
+
+# Secrets — never commit these
+.env
+.env.*
+!.env.example
+backend/.env
+backend/.env.*
+!backend/.env.example
+logins.txt
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Build output
+frontend/dist/
+backend/uploads/

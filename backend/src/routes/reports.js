@@ -222,8 +222,7 @@ router.get(
           documentId: document.documentId,
           documentType: document.documentType,
           generationTimestamp: document.generationTimestamp,
-          expirationDate: document.expirationDate,
-          userId: document.userId
+          expirationDate: document.expirationDate
         }
       });
 

@@ -90,8 +90,9 @@ class DeviceController {
   async updateDevice(req, res) {
     try {
       const { id } = req.params;
-      const deviceData = req.body;
-      const device = await deviceService.updateDevice(req.user, id, deviceData);
+      // Whitelist allowed fields to prevent mass assignment (e.g. userId override)
+      const { name, deviceType, model } = req.body;
+      const device = await deviceService.updateDevice(req.user, id, { name, deviceType, model });
 
       const response = ApiResponse.success(
         { device },
