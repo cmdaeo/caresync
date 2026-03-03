@@ -1,8 +1,17 @@
 const { Sequelize } = require('sequelize');
 const path = require('path');
+const sqlcipher = require('@journeyapps/sqlcipher');
+
+// ── SQLCipher encryption key (required) ──────────────────────
+const SQLCIPHER_KEY = process.env.SQLCIPHER_KEY;
+if (!SQLCIPHER_KEY) {
+  throw new Error('SQLCIPHER_KEY environment variable is required for database encryption');
+}
 
 const sharedOptions = {
   dialect: process.env.DB_DIALECT || 'sqlite',
+  dialectModule: sqlcipher,
+  password: SQLCIPHER_KEY,
   logging: false,
   pool: {
     max: 10,

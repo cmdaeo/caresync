@@ -161,10 +161,11 @@ class DeviceService {
   /**
    * Sync device status (Webhook/Ping endpoint)
    */
-  async syncStatus(deviceId, statusData) {
+  async syncStatus(user, deviceId, statusData) {
     const { batteryLevel, connectionStatus, status } = statusData;
 
-    const device = await Device.findOne({ where: { deviceId } });
+    // IDOR fix: verify device belongs to the authenticated user
+    const device = await Device.findOne({ where: { deviceId, userId: user.id } });
     if (!device) {
       throw new NotFoundError('Device not found');
     }
