@@ -21,6 +21,7 @@ const notificationRoutes = require('./routes/notifications');
 const reportsRoutes = require('./routes/reports');
 const consentRoutes = require('./routes/consent');
 const twoFactorRoutes = require('./routes/twoFactor');
+const prescriptionRoutes = require('./routes/prescriptions');
 const apiDocsRoutes = require('./routes/api-docs');
 
 // Import middleware
@@ -204,6 +205,7 @@ app.use('/api/devices', authMiddleware, deviceRoutes);
 app.use('/api/notifications', authMiddleware, notificationRoutes);
 app.use('/api/reports', authMiddleware, reportsRoutes);
 app.use('/api/consent', consentRoutes);
+app.use('/api/prescriptions', authMiddleware, prescriptionRoutes);
 if (process.env.NODE_ENV === 'development') {
   const apiDocsRoutes = require('./routes/api-docs');
   app.use('/api/api-docs', apiDocsRoutes);
