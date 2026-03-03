@@ -28,6 +28,11 @@ import { PatientDashboard } from './features/dashboard/pages/PatientDashboard'
 import { CaregiverDashboard } from './features/dashboard/pages/CaregiverDashboard'
 import { SecuritySettings } from './features/dashboard/pages/SecuritySettings'
 
+// Medication Pages
+import { MyMedicationsPage } from './features/medications/pages/MyMedicationsPage'
+import { AddMedicationPage } from './features/medications/pages/AddMedicationPage'
+import { EditMedicationPage } from './features/medications/pages/EditMedicationPage'
+
 // Helper: redirects /app to the user's role-appropriate dashboard
 import { useAuthStore } from './shared/store/authStore'
 
@@ -89,6 +94,32 @@ export function App() {
             element={
               <RoleBasedRoute allowedRoles={['caregiver', 'healthcare_provider']}>
                 <CaregiverDashboard />
+              </RoleBasedRoute>
+            }
+          />
+
+          {/* Medications — patient-only CRUD */}
+          <Route
+            path="medications"
+            element={
+              <RoleBasedRoute allowedRoles={['patient']}>
+                <MyMedicationsPage />
+              </RoleBasedRoute>
+            }
+          />
+          <Route
+            path="medications/add"
+            element={
+              <RoleBasedRoute allowedRoles={['patient']}>
+                <AddMedicationPage />
+              </RoleBasedRoute>
+            }
+          />
+          <Route
+            path="medications/:id/edit"
+            element={
+              <RoleBasedRoute allowedRoles={['patient']}>
+                <EditMedicationPage />
               </RoleBasedRoute>
             }
           />
