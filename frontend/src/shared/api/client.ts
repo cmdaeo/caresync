@@ -31,6 +31,45 @@ fetchCsrfToken().catch(() => {
   /* silent — will retry on first mutating request */
 })
 
+// --- JWT auto-refresh state ---
+// Serialises concurrent 401s so only one refresh request flies at a time.
+let refreshPromise: Promise<string | null> | null = null
+
+/** URLs that should never trigger a token refresh (they are the auth flow itself). */
+const AUTH_URLS = ['/auth/login', '/auth/register', '/auth/refresh']
+
+function isAuthUrl(url?: string): boolean {
+  if (!url) return false
+  return AUTH_URLS.some((u) => url.includes(u))
+}
+
+/**
+ * Attempts to obtain a new access token via `POST /auth/refresh`.
+ * The refresh token travels automatically in the HttpOnly cookie
+ * (`withCredentials: true`).  A body field is included to satisfy
+ * the backend's express-validator rule.
+ *
+ * Returns the new access token on success, or `null` on failure.
+ */
+async function tryRefreshToken(): Promise<string | null> {
+  try {
+    const res = await client.post('/auth/refresh', {
+      refreshToken: 'cookie',          // satisfies body validator; controller reads cookie
+    })
+    const newToken: string | undefined = res.data?.data?.token
+    if (newToken) {
+      // Shallow-merge into Zustand — keeps `user` intact
+      useAuthStore.setState({ token: newToken })
+      return newToken
+    }
+    return null
+  } catch {
+    return null
+  }
+}
+
+// --- Interceptors ---
+
 client.interceptors.request.use(async (config) => {
   // Attach Bearer token
   const token = useAuthStore.getState().token
@@ -57,16 +96,37 @@ client.interceptors.response.use(
   async (error) => {
     const status = error.response?.status
     const code = error.response?.data?.errorCode
+    const originalConfig = error.config
 
     // If CSRF token was rejected, refresh it and retry once
-    if (status === 403 && code === 'ERR_BAD_CSRF_TOKEN' && !error.config._csrfRetried) {
-      error.config._csrfRetried = true
+    if (status === 403 && code === 'ERR_BAD_CSRF_TOKEN' && !originalConfig._csrfRetried) {
+      originalConfig._csrfRetried = true
       await fetchCsrfToken()
-      error.config.headers['x-csrf-token'] = csrfToken
-      return client.request(error.config)
+      originalConfig.headers['x-csrf-token'] = csrfToken
+      return client.request(originalConfig)
     }
 
-    if (status === 401) {
+    // --- JWT auto-refresh on 401 ---
+    if (status === 401 && !originalConfig._authRetried && !isAuthUrl(originalConfig.url)) {
+      originalConfig._authRetried = true
+
+      // Deduplicate: if a refresh is already in flight, piggyback on it
+      if (!refreshPromise) {
+        refreshPromise = tryRefreshToken().finally(() => {
+          refreshPromise = null
+        })
+      }
+
+      const newToken = await refreshPromise
+
+      if (newToken) {
+        // Retry the original request with the fresh token
+        originalConfig.headers = originalConfig.headers ?? {}
+        originalConfig.headers.Authorization = `Bearer ${newToken}`
+        return client.request(originalConfig)
+      }
+
+      // Refresh failed — session is truly expired
       useAuthStore.getState().logout()
       window.location.href = '/login'
     }

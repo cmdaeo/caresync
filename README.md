@@ -24,14 +24,17 @@
 
 > **Bloqueador:** O ToDo 20 (`DashboardLayout.tsx`) é pré-requisito arquitetural para todos os ToDos dos Sprints 1 e 2. Sem sidebar/nav e rotas nested, não é possível implementar nenhuma feature do dashboard.
 
-- [ ] **20. Criar `DashboardLayout.tsx` com sidebar e routing nested (BLOQUEADOR).**
+- [x] **20. Criar `DashboardLayout.tsx` com sidebar e routing nested (BLOQUEADOR).**
   Criar `features/dashboard/layouts/DashboardLayout.tsx` com: sidebar de navegação responsíva (links diferenciados por role), header partilhado com notificações e logout, e `<Outlet />` para renderizar rotas filhas. Reestruturar `App.tsx` para converter `/app` numa rota-pai com rotas nested (`/app/dashboard`, `/app/medications`, `/app/schedule`, `/app/settings`, `/app/devices`, `/app/reports`). Descoberto na auditoria do ToDo 12 — o dashboard atual é uma página única sem navegação interna.
+  > *Resolvido.* Criado `DashboardLayout.tsx` com sidebar responsiva (hamburger drawer mobile, fixed desktop), header com greeting/Bell/Logout, e `<Outlet />`. Links diferenciados por role (patient: Dashboard/Medications/Schedule/Devices/Reports; caregiver: Dashboard/Patients/Reports). `App.tsx` reestruturado com rotas nested sob `/app`. Código morto `DashboardHome.tsx` eliminado. [`inserir-hash-commit`](https://github.com/ds-sv/caresync/commits/frontend-overhaul/)
 
-- [ ] **12. Implementar dashboards separados para Patient e Caregiver (RBAC frontend).**
+- [x] **12. Implementar dashboards separados para Patient e Caregiver (RBAC frontend).**
   Zero infraestrutura de RBAC existe no frontend. O `ProtectedRoute.tsx` apenas verifica `!!token`, ignora `user.role`. Criar `RoleBasedRoute.tsx` em `features/auth/components/` que leia `user.role` do `authStore` e redirecione para o dashboard correto. Criar `PatientDashboard.tsx` (medicações, schedule, adherence) e `CaregiverDashboard.tsx` (pacientes atribuídos, alertas). Rota `/app/dashboard` deve redirecionar automaticamente para `/app/patient` ou `/app/caregiver` baseado no role do utilizador autenticado.
+  > *Resolvido.* Criado `RoleBasedRoute.tsx` (guarda RBAC que lê `user.role` do authStore e redireciona roles não autorizados). Criado `PatientDashboard.tsx` (extraído do antigo `DashboardHome`), `CaregiverDashboard.tsx` (stub com empty-state). `/app` index redireciona automaticamente para `/app/patient` ou `/app/caregiver` via `AppIndexRedirect` + `dashboardPathForRole()`. [`inserir-hash-commit`](https://github.com/ds-sv/caresync/commits/frontend-overhaul/)
 
-- [ ] **18. Implementar auto-refresh do JWT no interceptor de 401 (`client.ts`).**
+- [x] **18. Implementar auto-refresh do JWT no interceptor de 401 (`client.ts`).**
   O interceptor atual (linha 69-71) faz logout imediato quando recebe 401, sem tentar renovar o token. O backend suporta `POST /api/auth/refresh` via cookie HttpOnly, mas o frontend nunca o utiliza. Implementar: ao receber 401, tentar `POST /api/auth/refresh` primeiro; se falhar (refresh token expirado), aí sim fazer logout. Previne logouts abruptos quando o JWT access token expira durante uma sessão ativa. Ficheiro: `frontend/src/shared/api/client.ts:69`.
+  > *Resolvido.* Interceptor de 401 agora tenta `POST /auth/refresh` antes de fazer logout. Refresh token viaja no cookie HttpOnly (`withCredentials: true`). Pedidos concorrentes com 401 são deduplicated (um único refresh em voo). URLs de auth (`/auth/login`, `/auth/register`, `/auth/refresh`) são excluídas para evitar loops infinitos. Token renovado é guardado no Zustand via `setState({ token })` e o pedido original é retried automaticamente. [`inserir-hash-commit`](https://github.com/ds-sv/caresync/commits/frontend-overhaul/)
 
 ---
 
@@ -40,8 +43,8 @@
 - [ ] **4. Construir o sistema completo de gestão de medicações (CRUD + state).**
   O ToDo original ("medication only appears in schedule") está mal formulado — a feature inteira não existe no frontend. O backend tem 8 endpoints prontos mas o frontend só faz `GET /medications?limit=5` com fallback para mock data hardcoded (Lisinopril, Metformin). Não existe formulário, lista, store, nem rotas. Implementar: (1) `medicationStore.ts` em Zustand com `fetchMedications()`, `addMedication()`, `updateMedication()`, `deleteMedication()`; (2) `MyMedicationsPage.tsx` em `/app/medications` com lista completa e CRUD; (3) `AddMedicationPage.tsx` em `/app/medications/add`; (4) `EditMedicationPage.tsx` em `/app/medications/:id/edit`; (5) Componentes reutilizáveis: `MedicationForm.tsx`, `MedicationCard.tsx`, `MedicationList.tsx`; (6) Fluxo pós-adição: `POST` → sucesso → `medicationStore.fetchMedications()` para sincronizar todas as vistas.
 
-- [ ] **3. Integrar `SecuritySettings.tsx` no router e expandir a página de Settings.**
-  O componente `SecuritySettings.tsx` (216 linhas) existe e tem API funcional (`PUT /auth/password`, `PUT /auth/role`), mas está completamente órfão — não tem rota no `App.tsx` nem link de navegação. Integrar em `/app/settings` (requer `DashboardLayout` do ToDo 20). Adicionar secções de: edição de perfil (nome, email), toggle de tema (o `ThemeContext` já existe mas não tem UI nas Settings), e preferências de notificação.
+- [ ] **3. Expandir a página de Settings com secções adicionais.**
+  O `SecuritySettings.tsx` já está integrado no router (`/app/settings`) e acessível via sidebar (Sprint 1). Falta expandir com: edição de perfil (nome, email), toggle de tema (o `ThemeContext` já existe mas não tem UI nas Settings), e preferências de notificação.
 
 - [ ] **5. Implementar vista de calendário para doses agendadas.**
   A feature não existe — zero componentes de calendário, zero bibliotecas (`react-calendar`, `@fullcalendar`, `date-fns` ausentes do `package.json`). O backend tem `GET /api/medications/schedule` pronto. Instalar `@fullcalendar/react` (ou alternativa leve). Criar `SchedulePage.tsx` em `/app/schedule` consumindo o endpoint de schedule. Garantir que a vista mensal/semanal não necessite de scrollbar horizontal (o ToDo original).
