@@ -129,15 +129,16 @@ class MedicationService {
   }
 
   async deleteMedication(user, id) {
-    const medication = await Medication.findOne({ 
-      where: { id, userId: user.id } 
+    const medication = await Medication.findOne({
+      where: { id, userId: user.id }
     });
 
     if (!medication) throw new AppError('Medication not found', 404);
 
-    // Soft delete: set inactive
-    await medication.update({ isActive: false });
-    return { success: true, message: 'Medication deactivated' };
+    // GDPR Art. 17 — hard delete with cascade to adherence records
+    await Adherence.destroy({ where: { medicationId: medication.id } });
+    await medication.destroy();
+    return { success: true, message: 'Medication permanently deleted' };
   }
 
   // ==========================================

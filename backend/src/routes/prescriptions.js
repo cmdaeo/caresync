@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { Prescription, User } = require('../models');
+const { hydrateWithUsers } = require('../utils/crossDbHelper');
 const { authMiddleware, requirePatientAccess, requireRole } = require('../middleware/auth');
 const { asyncHandler } = require('../middleware/errorHandler')
 const logger = require('../utils/logger');
@@ -90,17 +91,15 @@ router.get(
     if (status) whereClause.status = status;
     if (needsReview !== undefined) whereClause.needsReview = needsReview === 'true';
 
-    const { count, rows: prescriptions } = await Prescription.findAndCountAll({
+    const { count, rows: prescriptionsRaw } = await Prescription.findAndCountAll({
       where: whereClause,
       limit: parseInt(limit),
       offset: parseInt(offset),
       order: [['createdAt', 'DESC']],
-      include: [{
-        model: User,
-        as: 'reviewer',
-        attributes: ['id', 'firstName', 'lastName', 'role']
-      }]
     });
+
+    // Cross-DB hydration: attach reviewer user data from PII database
+    const prescriptions = await hydrateWithUsers(prescriptionsRaw, 'reviewerId', 'reviewer', ['id', 'firstName', 'lastName', 'role']);
 
     // Calculate summary statistics
     const totalStats = await Prescription.findAll({
@@ -245,25 +244,23 @@ router.get(
       });
     }
 
-    const prescription = await Prescription.findOne({
+    const prescriptionRaw = await Prescription.findOne({
       where: {
         id: req.params.id,
         userId: req.params.patientId || req.user.id,
         isActive: true
       },
-      include: [{
-        model: User,
-        as: 'reviewer',
-        attributes: ['id', 'firstName', 'lastName', 'role']
-      }]
     });
 
-    if (!prescription) {
+    if (!prescriptionRaw) {
       return res.status(404).json({
         success: false,
         message: 'Prescription not found'
       });
     }
+
+    // Cross-DB hydration: attach reviewer user data from PII database
+    const [prescription] = await hydrateWithUsers([prescriptionRaw], 'reviewerId', 'reviewer', ['id', 'firstName', 'lastName', 'role']);
 
     res.json({
       success: true,
@@ -518,8 +515,8 @@ router.delete(
       });
     }
 
-    // Soft delete by setting isActive to false
-    await prescription.update({ isActive: false });
+    // GDPR Art. 17 — hard delete the prescription
+    await prescription.destroy();
 
     logger.info(`Prescription deleted: ${prescription.prescriptionNumber} by user ${req.user.email}`);
 
@@ -611,7 +608,7 @@ router.get(
     const { page = 1, limit = 20 } = req.query;
     const offset = (page - 1) * limit;
 
-    const { count, rows: prescriptions } = await Prescription.findAndCountAll({
+    const { count, rows: prescriptionsRaw } = await Prescription.findAndCountAll({
       where: {
         needsReview: true,
         isActive: true
@@ -619,12 +616,10 @@ router.get(
       limit: parseInt(limit),
       offset: parseInt(offset),
       order: [['createdAt', 'ASC']],
-      include: [{
-        model: User,
-        as: 'user',
-        attributes: ['id', 'firstName', 'lastName', 'email']
-      }]
     });
+
+    // Cross-DB hydration: attach user data from PII database
+    const prescriptions = await hydrateWithUsers(prescriptionsRaw, 'userId', 'user', ['id', 'firstName', 'lastName', 'email']);
 
     res.json({
       success: true,

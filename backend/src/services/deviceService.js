@@ -1,4 +1,5 @@
 const { Device, DeviceAccessPermission, DeviceInvitation, User } = require('../models');
+const { hydrateWithUsers } = require('../utils/crossDbHelper');
 const logger = require('../utils/logger');
 const JwtUtils = require('../utils/jwtUtils');
 const { v4: uuidv4 } = require('uuid');
@@ -137,7 +138,7 @@ class DeviceService {
   }
 
   /**
-   * Remove device (Soft Delete)
+   * Remove device (GDPR Art. 17 — hard delete with cascade)
    */
   async deleteDevice(user, id) {
     const device = await Device.findOne({
@@ -148,10 +149,13 @@ class DeviceService {
       throw new NotFoundError('Device not found');
     }
 
-    await device.update({ isActive: false });
-    logger.info(`Device removed: ${device.name} for user ${user.email}`);
+    // Cascade: destroy all related permissions and invitations
+    await DeviceAccessPermission.destroy({ where: { deviceId: device.id } });
+    await DeviceInvitation.destroy({ where: { deviceId: device.id } });
+    await device.destroy();
+    logger.info(`Device hard-deleted: ${device.name} for user ${user.email}`);
 
-    return { success: true, message: 'Device removed successfully' };
+    return { success: true, message: 'Device permanently removed' };
   }
 
   /**
@@ -300,23 +304,21 @@ class DeviceService {
     // Get all access permissions for this device
     const permissions = await DeviceAccessPermission.findAll({
       where: { deviceId, isActive: true },
-      include: [{
-        model: User,
-        as: 'user',
-        attributes: ['id', 'firstName', 'lastName', 'email']
-      }]
     });
 
-    return permissions.map(perm => ({
+    // Cross-DB hydration: attach user data from PII database
+    const hydrated = await hydrateWithUsers(permissions, 'userId', '_user', ['id', 'firstName', 'lastName', 'email']);
+
+    return hydrated.map(perm => ({
       id: perm.id,
       userId: perm.userId,
       accessLevel: perm.accessLevel,
       grantedAt: perm.grantedAt,
       grantedBy: perm.grantedBy,
-      user: perm.user ? {
-        id: perm.user.id,
-        name: `${perm.user.firstName} ${perm.user.lastName}`,
-        email: perm.user.email
+      user: perm._user ? {
+        id: perm._user.id,
+        name: `${perm._user.firstName} ${perm._user.lastName}`,
+        email: perm._user.email
       } : null
     }));
   }
@@ -352,8 +354,8 @@ class DeviceService {
       throw new AuthenticationError('You do not have permission to remove caregivers');
     }
 
-    // Soft delete the permission
-    await permission.update({ isActive: false });
+    // GDPR Art. 17 — hard delete the permission
+    await permission.destroy();
 
     logger.info(`Caregiver ${caregiverId} removed from device ${deviceId} by user ${user.email}`);
 

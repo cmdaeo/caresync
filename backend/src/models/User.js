@@ -113,6 +113,20 @@ module.exports = (sequelize) => {
         phone: '',
         relationship: ''
       }
+    },
+    // --- 2FA TOTP fields ---
+    isTwoFactorEnabled: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false
+    },
+    twoFactorSecret: {
+      type: DataTypes.STRING,
+      allowNull: true
+    },
+    recoveryCodes: {
+      type: DataTypes.JSON,
+      allowNull: true,
+      defaultValue: null
     }
   }, {
     tableName: 'users',
@@ -149,6 +163,8 @@ module.exports = (sequelize) => {
     delete values.emailVerificationToken;
     delete values.passwordResetToken;
     delete values.passwordResetExpires;
+    delete values.twoFactorSecret;
+    delete values.recoveryCodes;
     return values;
   };
 
