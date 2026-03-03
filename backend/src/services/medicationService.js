@@ -1,7 +1,7 @@
 const { Medication, Adherence, CaregiverPatient } = require('../models');
 const logger = require('../utils/logger');
 const { Op } = require('sequelize');
-const { AppError, AuthorizationError } = require('../middleware/errorHandler');
+const { AppError, AuthorizationError, NotFoundError } = require('../middleware/errorHandler');
 
 class MedicationService {
 
@@ -186,7 +186,13 @@ class MedicationService {
 
   async recordAdherence(user, adherenceData) {
     const { medicationId, status, takenAt, scheduledTime } = adherenceData;
-    
+
+    // IDOR fix: verify medication belongs to the authenticated user
+    const med = await Medication.findOne({ where: { id: medicationId, userId: user.id } });
+    if (!med) {
+      throw new NotFoundError('Medication not found');
+    }
+
     const intake = await Adherence.create({
       userId: user.id,
       medicationId,
@@ -197,10 +203,7 @@ class MedicationService {
 
     // Update medication stock
     if (status === 'taken') {
-      const med = await Medication.findByPk(medicationId);
-      if (med) {
-        await med.decrement('remainingQuantity', { by: 1 });
-      }
+      await med.decrement('remainingQuantity', { by: 1 });
     }
 
     return intake;
