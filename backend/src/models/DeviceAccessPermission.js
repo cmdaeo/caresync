@@ -18,10 +18,7 @@ module.exports = (sequelize) => {
     userId: {
       type: DataTypes.UUID,
       allowNull: false,
-      references: {
-        model: 'users',
-        key: 'id'
-      }
+      comment: 'UUID link to users table in PII database'
     },
     accessLevel: {
       type: DataTypes.ENUM('read_only', 'full_access'),
@@ -31,10 +28,7 @@ module.exports = (sequelize) => {
     grantedBy: {
       type: DataTypes.UUID,
       allowNull: false,
-      references: {
-        model: 'users',
-        key: 'id'
-      }
+      comment: 'UUID link to users table in PII database'
     },
     grantedAt: {
       type: DataTypes.DATE,

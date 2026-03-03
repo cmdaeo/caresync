@@ -35,10 +35,7 @@ module.exports = (sequelize) => {
     createdBy: {
       type: DataTypes.UUID,
       allowNull: false,
-      references: {
-        model: 'users',
-        key: 'id'
-      }
+      comment: 'UUID link to users table in PII database'
     },
     createdAt: {
       type: DataTypes.DATE,
@@ -56,10 +53,7 @@ module.exports = (sequelize) => {
     acceptedBy: {
       type: DataTypes.UUID,
       allowNull: true,
-      references: {
-        model: 'users',
-        key: 'id'
-      }
+      comment: 'UUID link to users table in PII database'
     },
     status: {
       type: DataTypes.ENUM('pending', 'accepted', 'expired', 'revoked'),

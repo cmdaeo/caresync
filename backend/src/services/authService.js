@@ -4,7 +4,8 @@ const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const { Op } = require('sequelize');
 const { User, Medication, Adherence, Prescription, Device, Notification,
-        DeviceAccessPermission, DeviceInvitation, CaregiverPatient, sequelize } = require('../models');
+        DeviceAccessPermission, DeviceInvitation, CaregiverPatient, ConsentLog,
+        sequelizePii, sequelizeMedical } = require('../models');
 const logger = require('../utils/logger');
 const { AppError, AuthenticationError, ConflictError } = require('../middleware/errorHandler');
 const AuditLogService = require('./auditLogService');
@@ -64,6 +65,24 @@ class AuthService {
 
     const isPasswordValid = await user.comparePassword(password);
     if (!isPasswordValid) throw new AuthenticationError('Invalid credentials');
+
+    // --- 2FA check: if enabled, return a short-lived temp token instead of full access ---
+    if (user.isTwoFactorEnabled) {
+      const tempToken = jwt.sign(
+        { userId: user.id, type: '2fa_pending' },
+        process.env.JWT_SECRET,
+        { expiresIn: '5m' }
+      );
+
+      logger.info(`2FA required for user ${email}`);
+
+      await AuditLogService.logAction({
+        userId: user.id, action: 'USER_LOGIN_2FA_PENDING', entityType: 'User', entityId: user.id,
+        metadata: { ipAddress: context.ip || 'unknown', userAgent: context.userAgent || 'unknown' }
+      });
+
+      return { requiresTwoFactor: true, tempToken, user };
+    }
 
     user.lastLogin = new Date();
     await user.save();
@@ -161,28 +180,38 @@ class AuthService {
       lastName: encrypt(user.lastName)
     };
 
-    const transaction = await sequelize.transaction();
+    // Step 1: Purge medical data (separate DB, separate transaction)
+    const medicalTx = await sequelizeMedical.transaction();
     try {
-      // 1. Hard-delete all associated health and relational data (GDPR Art. 17)
-      await Adherence.destroy({ where: { userId: user.id }, transaction });
-      await Prescription.destroy({ where: { userId: user.id }, transaction });
-      await Medication.destroy({ where: { userId: user.id }, transaction });
-      await Device.destroy({ where: { userId: user.id }, transaction });
-      await Notification.destroy({ where: { userId: user.id }, transaction });
+      await Adherence.destroy({ where: { userId: user.id }, transaction: medicalTx });
+      await Prescription.destroy({ where: { userId: user.id }, transaction: medicalTx });
+      await Medication.destroy({ where: { userId: user.id }, transaction: medicalTx });
       await DeviceAccessPermission.destroy({
         where: { [Op.or]: [{ userId: user.id }, { grantedBy: user.id }] },
-        transaction
+        transaction: medicalTx
       });
       await DeviceInvitation.destroy({
         where: { [Op.or]: [{ createdBy: user.id }, { acceptedBy: user.id }] },
-        transaction
+        transaction: medicalTx
       });
+      await Device.destroy({ where: { userId: user.id }, transaction: medicalTx });
+      await medicalTx.commit();
+    } catch (error) {
+      await medicalTx.rollback();
+      throw error;
+    }
+
+    // Step 2: Purge PII data + anonymize user (PII DB transaction)
+    const piiTx = await sequelizePii.transaction();
+    try {
+      await Notification.destroy({ where: { userId: user.id }, transaction: piiTx });
       await CaregiverPatient.destroy({
         where: { [Op.or]: [{ patientId: user.id }, { caregiverId: user.id }] },
-        transaction
+        transaction: piiTx
       });
+      await ConsentLog.destroy({ where: { userId: user.id }, transaction: piiTx });
 
-      // 2. Anonymize the user record (preserve for audit log FK integrity)
+      // Anonymize the user record (preserve for audit log FK integrity)
       user.firstName = 'Anonymized';
       user.lastName = 'User';
       user.email = `anonymized_${user.id}_${Date.now()}@deleted.example.com`;
@@ -191,13 +220,19 @@ class AuthService {
       user.profilePicture = null;
       user.isActive = false;
       user.refreshTokenHash = null;
+      user.twoFactorSecret = null;
+      user.isTwoFactorEnabled = false;
+      user.recoveryCodes = null;
       user.deletedAt = new Date();
       user.emergencyContact = { name: '', phone: '', relationship: '' };
-      await user.save({ transaction });
+      await user.save({ transaction: piiTx });
 
-      await transaction.commit();
+      await piiTx.commit();
     } catch (error) {
-      await transaction.rollback();
+      await piiTx.rollback();
+      // Note: medical data is already purged at this point.
+      // In production, consider a saga/compensation pattern or outbox table.
+      logger.error(`PII cleanup failed after medical purge for user ${user.id}`, { error });
       throw error;
     }
 
@@ -359,4 +394,11 @@ class AuthService {
 
 }
 
-module.exports = new AuthService();
+const authServiceInstance = new AuthService();
+
+// Export token generators for use by 2FA routes
+authServiceInstance.generateToken = generateToken;
+authServiceInstance.generateRefreshToken = generateRefreshToken;
+authServiceInstance.hashRefreshToken = hashRefreshToken;
+
+module.exports = authServiceInstance;

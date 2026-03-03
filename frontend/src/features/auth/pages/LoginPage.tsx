@@ -1,7 +1,7 @@
 // src/features/auth/pages/LoginPage.tsx
 import React, { useState } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
-import { Lock, Mail, ArrowRight, AlertCircle, Loader2 } from 'lucide-react';
+import { Lock, Mail, ArrowRight, AlertCircle, Loader2, ShieldCheck, KeyRound } from 'lucide-react';
 import { client } from '../../../shared/api/client';
 import { useAuthStore } from '../../../shared/store/authStore';
 
@@ -9,14 +9,19 @@ export const LoginPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const login = useAuthStore((state) => state.login);
-  
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [formData, setFormData] = useState({ email: '', password: '' });
 
-  const from = location.state?.from?.pathname || '/app';
+  // 2FA state
+  const [twoFactorPending, setTwoFactorPending] = useState(false);
+  const [tempToken, setTempToken] = useState<string | null>(null);
+  const [totpCode, setTotpCode] = useState('');
+  const [useRecoveryCode, setUseRecoveryCode] = useState(false);
+  const [recoveryCode, setRecoveryCode] = useState('');
 
-  // Inside src/features/auth/pages/LoginPage.tsx
+  const from = location.state?.from?.pathname || '/app';
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -26,15 +31,19 @@ export const LoginPage = () => {
     try {
       const { data } = await client.post('/auth/login', formData);
       if (data.success) {
+        // Check if 2FA is required
+        if (data.data.requiresTwoFactor) {
+          setTwoFactorPending(true);
+          setTempToken(data.data.tempToken);
+          return;
+        }
+
         login(data.data.token, data.data.user);
         navigate(from, { replace: true });
       }
     } catch (err: any) {
       console.error(err);
-      
-      // NEW ERROR HANDLING LOGIC
       const responseData = err.response?.data;
-      
       if (responseData?.errors && Array.isArray(responseData.errors)) {
         const errorMessages = responseData.errors.map((e: any) => e.msg).join('\n');
         setError(errorMessages);
@@ -46,6 +55,175 @@ export const LoginPage = () => {
     }
   };
 
+  const handleTwoFactorVerify = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
+
+    try {
+      let response;
+
+      if (useRecoveryCode) {
+        response = await client.post('/auth/2fa/recovery', {
+          tempToken,
+          recoveryCode: recoveryCode.toUpperCase(),
+        });
+      } else {
+        response = await client.post('/auth/2fa/verify', {
+          tempToken,
+          token: totpCode,
+        });
+      }
+
+      const { data } = response;
+      if (data.success) {
+        login(data.data.token, data.data.user);
+        navigate(from, { replace: true });
+      }
+    } catch (err: any) {
+      console.error(err);
+      const responseData = err.response?.data;
+
+      // If temp token expired, reset to login
+      if (responseData?.errorCode === 'INVALID_TEMP_TOKEN') {
+        setTwoFactorPending(false);
+        setTempToken(null);
+        setTotpCode('');
+        setRecoveryCode('');
+        setError('Session expired. Please sign in again.');
+        return;
+      }
+
+      setError(responseData?.message || 'Verification failed');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // --- 2FA Verification UI ---
+  if (twoFactorPending) {
+    return (
+      <div className="w-full">
+        <div className="mb-6 sm:mb-8 text-center">
+          <ShieldCheck className="h-10 w-10 text-brand-primary mx-auto mb-3" />
+          <h2 className="text-xl sm:text-2xl font-extrabold text-text-main tracking-tight">
+            Two-Factor Authentication
+          </h2>
+          <p className="mt-1 text-sm text-text-muted">
+            {useRecoveryCode
+              ? 'Enter one of your recovery codes'
+              : 'Enter the 6-digit code from your authenticator app'}
+          </p>
+        </div>
+
+        <form className="space-y-5" onSubmit={handleTwoFactorVerify}>
+          {error && (
+            <div className="rounded-lg bg-red-500/10 border border-red-500/20 p-3">
+              <div className="flex items-center">
+                <AlertCircle className="h-4 w-4 text-red-500 shrink-0" aria-hidden="true" />
+                <h3 className="ml-2.5 text-xs sm:text-sm font-medium text-red-500 leading-snug">{error}</h3>
+              </div>
+            </div>
+          )}
+
+          {useRecoveryCode ? (
+            <div>
+              <label htmlFor="recoveryCode" className="block text-sm font-medium text-text-main mb-1.5 ml-1">
+                Recovery Code
+              </label>
+              <div className="relative rounded-lg shadow-sm">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <KeyRound className="h-4 w-4 text-text-muted" />
+                </div>
+                <input
+                  id="recoveryCode"
+                  type="text"
+                  required
+                  value={recoveryCode}
+                  onChange={(e) => setRecoveryCode(e.target.value.toUpperCase())}
+                  className="block w-full pl-9 pr-3 py-2.5 text-sm rounded-lg bg-bg-page border border-border-subtle text-text-main focus:ring-2 focus:ring-brand-primary focus:border-brand-primary transition-colors outline-none font-mono tracking-wider"
+                  placeholder="XXXX-XXXX"
+                  maxLength={9}
+                  autoFocus
+                />
+              </div>
+            </div>
+          ) : (
+            <div>
+              <label htmlFor="totpCode" className="block text-sm font-medium text-text-main mb-1.5 ml-1">
+                Verification Code
+              </label>
+              <div className="relative rounded-lg shadow-sm">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <ShieldCheck className="h-4 w-4 text-text-muted" />
+                </div>
+                <input
+                  id="totpCode"
+                  type="text"
+                  inputMode="numeric"
+                  required
+                  value={totpCode}
+                  onChange={(e) => setTotpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                  className="block w-full pl-9 pr-3 py-2.5 text-sm rounded-lg bg-bg-page border border-border-subtle text-text-main focus:ring-2 focus:ring-brand-primary focus:border-brand-primary transition-colors outline-none font-mono tracking-[0.3em] text-center text-lg"
+                  placeholder="000000"
+                  maxLength={6}
+                  autoFocus
+                />
+              </div>
+            </div>
+          )}
+
+          <button
+            type="submit"
+            disabled={loading || (!useRecoveryCode && totpCode.length !== 6) || (useRecoveryCode && recoveryCode.length !== 9)}
+            className="w-full flex justify-center items-center py-3 px-4 rounded-xl shadow-sm text-sm font-bold text-white bg-brand-primary hover:bg-brand-light focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-primary focus:ring-offset-bg-page disabled:opacity-50 transition-all mt-4"
+          >
+            {loading ? (
+              <Loader2 className="animate-spin h-5 w-5" />
+            ) : (
+              <>
+                Verify
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </>
+            )}
+          </button>
+
+          <div className="text-center mt-3">
+            <button
+              type="button"
+              onClick={() => {
+                setUseRecoveryCode(!useRecoveryCode);
+                setError(null);
+                setTotpCode('');
+                setRecoveryCode('');
+              }}
+              className="text-xs sm:text-sm font-medium text-brand-primary hover:text-brand-light transition-colors"
+            >
+              {useRecoveryCode ? 'Use authenticator app instead' : 'Lost your device? Use a recovery code'}
+            </button>
+          </div>
+
+          <div className="text-center">
+            <button
+              type="button"
+              onClick={() => {
+                setTwoFactorPending(false);
+                setTempToken(null);
+                setTotpCode('');
+                setRecoveryCode('');
+                setError(null);
+              }}
+              className="text-xs text-text-muted hover:text-text-main transition-colors"
+            >
+              Back to sign in
+            </button>
+          </div>
+        </form>
+      </div>
+    );
+  }
+
+  // --- Standard Login UI ---
   return (
     <div className="w-full">
       <div className="mb-6 sm:mb-8 text-center">

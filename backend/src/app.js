@@ -5,6 +5,8 @@ const helmet = require('helmet');
 const morgan = require('morgan');
 const compression = require('compression');
 const rateLimit = require('express-rate-limit');
+const cookieParser = require('cookie-parser');
+const { doubleCsrf } = require('csrf-csrf');
 const { Server } = require('socket.io');
 const http = require('http');
 
@@ -17,13 +19,16 @@ const patientRoutes = require('./routes/patients');
 const deviceRoutes = require('./routes/devices');
 const notificationRoutes = require('./routes/notifications');
 const reportsRoutes = require('./routes/reports');
+const consentRoutes = require('./routes/consent');
+const twoFactorRoutes = require('./routes/twoFactor');
+const prescriptionRoutes = require('./routes/prescriptions');
 const apiDocsRoutes = require('./routes/api-docs');
 
 // Import middleware
 const { authMiddleware } = require('./middleware/auth');
 const { errorHandler } = require('./middleware/errorHandler');
 const logger = require('./utils/logger');
-const db = require('./config/database');
+const { sequelizePii, sequelizeMedical } = require('./config/database');
 const generateSampleData = require('./utils/sampleDataGenerator');
 
 // Swagger setup
@@ -67,7 +72,7 @@ app.use(cors({
   ].filter(Boolean),
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'x-device-id', 'x-app-version'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'x-device-id', 'x-app-version', 'x-csrf-token'],
 }));
 
 // --- HTTPS enforcement for production (behind reverse proxy) ---
@@ -83,20 +88,39 @@ if (process.env.NODE_ENV === 'production') {
 app.use(compression());
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+app.use(cookieParser());
 
-// --- CSRF mitigation: reject non-JSON content types on state-changing requests ---
-app.use((req, res, next) => {
-  if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method)) {
-    const contentType = req.headers['content-type'] || '';
-    // Allow requests with no body (e.g. DELETE), JSON, and multipart (file uploads)
-    if (req.body && Object.keys(req.body).length > 0
-        && !contentType.includes('application/json')
-        && !contentType.includes('multipart/form-data')) {
-      return res.status(415).json({ success: false, message: 'Content-Type must be application/json' });
-    }
-  }
-  next();
+// --- CSRF Protection (Double Submit Cookie via csrf-csrf) ---
+const { doubleCsrfProtection, generateCsrfToken } = doubleCsrf({
+  getSecret: () => process.env.CSRF_SECRET || process.env.SESSION_SECRET,
+  getSessionIdentifier: (req) => req.ip || '',
+  getTokenFromRequest: (req) => req.headers['x-csrf-token'],
+  cookieName: process.env.NODE_ENV === 'production'
+    ? '__Host-caresync.x-csrf-token'
+    : '_csrf',
+  cookieOptions: {
+    httpOnly: true,
+    sameSite: 'strict',
+    secure: process.env.NODE_ENV === 'production',
+    path: '/',
+  },
+  size: 64,
+  ignoredMethods: ['GET', 'HEAD', 'OPTIONS'],
+  errorConfig: {
+    statusCode: 403,
+    message: 'Invalid or missing CSRF token',
+    code: 'ERR_BAD_CSRF_TOKEN',
+  },
 });
+
+// Endpoint to issue a CSRF token (must be called before any mutating request)
+app.get('/api/csrf-token', (req, res) => {
+  const token = generateCsrfToken(req, res);
+  res.json({ success: true, data: { csrfToken: token } });
+});
+
+// Apply CSRF protection globally to all mutating API routes
+app.use(doubleCsrfProtection);
 
 // --- Rate Limiting ---
 const globalLimiter = rateLimit({
@@ -119,6 +143,17 @@ app.use('/api/auth/login', authLimiter);
 app.use('/api/auth/register', authLimiter);
 app.use('/api/auth/forgot-password', authLimiter);
 app.use('/api/auth/reset-password', authLimiter);
+
+// Strict rate limiter for 2FA endpoints (brute-force protection for 6-digit codes)
+const twoFactorLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 5,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, message: 'Too many 2FA attempts. Please try again later.' }
+});
+app.use('/api/auth/2fa/verify', twoFactorLimiter);
+app.use('/api/auth/2fa/recovery', twoFactorLimiter);
 
 const reportLimiter = rateLimit({
   windowMs: 60 * 60 * 1000,
@@ -161,6 +196,7 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(specs));
 
 // --- API ROUTES ---
 app.use('/api/auth', authRoutes);
+app.use('/api/auth/2fa', twoFactorRoutes);
 app.use('/api/users', authMiddleware, userRoutes);
 app.use('/api/medications', authMiddleware, medicationRoutes);
 app.use('/api/caregivers', authMiddleware, caregiverRoutes);
@@ -168,6 +204,8 @@ app.use('/api/patients', authMiddleware, patientRoutes);
 app.use('/api/devices', authMiddleware, deviceRoutes);
 app.use('/api/notifications', authMiddleware, notificationRoutes);
 app.use('/api/reports', authMiddleware, reportsRoutes);
+app.use('/api/consent', consentRoutes);
+app.use('/api/prescriptions', authMiddleware, prescriptionRoutes);
 if (process.env.NODE_ENV === 'development') {
   const apiDocsRoutes = require('./routes/api-docs');
   app.use('/api/api-docs', apiDocsRoutes);
@@ -195,40 +233,44 @@ app.use(errorHandler);
 
 const PORT = process.env.PORT || 5000;
 
+async function syncDatabase(instance, label) {
+  try {
+    await instance.query('PRAGMA foreign_keys = OFF;');
+    await instance.sync({ alter: true });
+    await instance.query('PRAGMA foreign_keys = ON;');
+    logger.info(`${label} database synchronized (ALTER).`);
+  } catch (syncError) {
+    logger.warn(`${label} safe sync failed. Falling back to FORCE sync...`);
+    logger.error(syncError.message);
+    await instance.query('PRAGMA foreign_keys = OFF;');
+    await instance.sync({ force: true });
+    await instance.query('PRAGMA foreign_keys = ON;');
+    logger.info(`${label} database synchronized (FORCE).`);
+  }
+}
+
 async function startServer() {
   try {
-    await db.authenticate();
-    logger.info('Database connection established successfully.');
+    // Authenticate both database connections
+    await sequelizePii.authenticate();
+    logger.info('PII database connection established successfully.');
+    await sequelizeMedical.authenticate();
+    logger.info('Medical database connection established successfully.');
 
     if (process.env.NODE_ENV === 'development') {
-      try {
-        // 1. Try safe sync (alter: true)
-        // This attempts to update tables without losing data
-        await db.query('PRAGMA foreign_keys = OFF;');
-        await db.sync({ alter: true });
-        await db.query('PRAGMA foreign_keys = ON;');
-        logger.info('Database models synchronized (ALTER).');
-      } catch (syncError) {
-        // 2. Fallback: If ALTER fails (like your SQLite Unique Constraint error),
-        // we force a hard reset. This wipes data but fixes the error.
-        logger.warn('Safe sync failed. Falling back to FORCE sync (Recreating tables)...');
-        logger.error(syncError.message);
-        
-        await db.query('PRAGMA foreign_keys = OFF;');
-        await db.sync({ force: true });
-        await db.query('PRAGMA foreign_keys = ON;');
-        logger.info('Database models synchronized (FORCE).');
-      }
+      await syncDatabase(sequelizePii, 'PII');
+      await syncDatabase(sequelizeMedical, 'Medical');
 
-      // 3. Always run sample data generator in dev
-      // It handles checking if users exist, so safe to run often.
+      // Run sample data generator (handles checking if data exists)
       await generateSampleData();
     } else if (process.env.NODE_ENV === 'test') {
-      // For test environment, we can use force sync to ensure clean state
-      await db.query('PRAGMA foreign_keys = OFF;');
-      await db.sync({ force: true });
-      await db.query('PRAGMA foreign_keys = ON;');
-      logger.info('Database models synchronized (FORCE) for test environment.');
+      await sequelizePii.query('PRAGMA foreign_keys = OFF;');
+      await sequelizePii.sync({ force: true });
+      await sequelizePii.query('PRAGMA foreign_keys = ON;');
+      await sequelizeMedical.query('PRAGMA foreign_keys = OFF;');
+      await sequelizeMedical.sync({ force: true });
+      await sequelizeMedical.query('PRAGMA foreign_keys = ON;');
+      logger.info('Both databases synchronized (FORCE) for test environment.');
     }
 
     server.listen(PORT, () => {
@@ -245,8 +287,9 @@ process.on('SIGTERM', async () => {
   logger.info('SIGTERM received. Shutting down gracefully...');
   server.close(async () => {
     try {
-      await db.close();
-      logger.info('Database connection closed.');
+      await sequelizePii.close();
+      await sequelizeMedical.close();
+      logger.info('Both database connections closed.');
       process.exit(0);
     } catch (error) {
       logger.error('Error during shutdown:', error);
@@ -259,8 +302,9 @@ process.on('SIGINT', async () => {
   logger.info('SIGINT received. Shutting down gracefully...');
   server.close(async () => {
     try {
-      await db.close();
-      logger.info('Database connection closed.');
+      await sequelizePii.close();
+      await sequelizeMedical.close();
+      logger.info('Both database connections closed.');
       process.exit(0);
     } catch (error) {
       logger.error('Error during shutdown:', error);
