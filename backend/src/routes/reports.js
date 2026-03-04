@@ -181,6 +181,7 @@ router.get(
 router.get(
   '/verify',
   [
+    authMiddleware,
     query('docId', 'Invalid document ID').isUUID()
   ],
   asyncHandler(async (req, res) => {
@@ -192,9 +193,9 @@ router.get(
     try {
       const { docId } = req.query;
 
-      // Find document metadata
+      // IDOR fix: scope document lookup to the authenticated user
       const document = await DocumentMetadata.findOne({
-        where: { documentId: docId }
+        where: { documentId: docId, userId: req.user.id }
       });
 
       if (!document) {

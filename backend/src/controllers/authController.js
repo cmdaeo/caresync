@@ -24,9 +24,19 @@ class AuthController {
   async login(req, res) {
     try {
       const { email, password } = req.body;
-      const { user, token, refreshToken } = await authService.login(email, password, {
+      const result = await authService.login(email, password, {
         ip: req.ip, userAgent: req.headers['user-agent']
       });
+
+      // 2FA required — return partial auth state with temp token
+      if (result.requiresTwoFactor) {
+        return res.json(ApiResponse.success({
+          requiresTwoFactor: true,
+          tempToken: result.tempToken,
+        }, 'Two-factor authentication required'));
+      }
+
+      const { user, token, refreshToken } = result;
 
       res.cookie('refreshToken', refreshToken, {
         httpOnly: true, secure: process.env.NODE_ENV === 'production',

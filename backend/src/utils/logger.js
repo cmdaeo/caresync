@@ -9,6 +9,7 @@ if (!fs.existsSync(logDir)) {
   fs.mkdirSync(logDir, { recursive: true });
 }
 
+<<<<<<< HEAD
 // Enhanced PHI scrubbing format
 const phiScrubFormat = winston.format((info) => {
   // Scrub the message
@@ -24,10 +25,83 @@ const phiScrubFormat = winston.format((info) => {
 });
 
 // Define log format
+=======
+// ── PHI/PII Scrubber ────────────────────────────────────────────
+// Intercepts every log entry and masks sensitive data patterns
+// before they reach any transport (console, file).
+// ─────────────────────────────────────────────────────────────────
+
+const PII_PATTERNS = [
+  // JWT tokens  (eyJ...)
+  { regex: /eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}/g, replacement: '[REDACTED_JWT]' },
+  // Email addresses
+  { regex: /[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g, replacement: '[REDACTED_EMAIL]' },
+  // Phone numbers — real formats only (9+ digits, with international prefix or separators)
+  // Matches: +351 912 345 678, +1-555-0123456, (123) 456-7890, 912345678
+  // Ignores: isolated 3-digit HTTP codes (200, 404, 500), short numbers, UUIDs
+  { regex: /\+\d[\d\s()-]{8,}\d/g, replacement: '[REDACTED_PHONE]' },
+  { regex: /\(?\d{3}\)?[\s.-]\d{3}[\s.-]\d{4}/g, replacement: '[REDACTED_PHONE]' },
+  { regex: /(?<![A-Za-z0-9-])\d{9,15}(?![A-Za-z0-9-])/g, replacement: '[REDACTED_PHONE]' },
+];
+
+/**
+ * Recursively scrub a value (string, object, array).
+ */
+function scrub(value) {
+  if (typeof value === 'string') {
+    let scrubbed = value;
+    for (const { regex, replacement } of PII_PATTERNS) {
+      // Reset lastIndex for global regexes
+      regex.lastIndex = 0;
+      scrubbed = scrubbed.replace(regex, replacement);
+    }
+    return scrubbed;
+  }
+
+  if (Array.isArray(value)) {
+    return value.map(scrub);
+  }
+
+  if (value !== null && typeof value === 'object') {
+    const out = {};
+    for (const [k, v] of Object.entries(value)) {
+      out[k] = scrub(v);
+    }
+    return out;
+  }
+
+  return value;
+}
+
+const piiScrubber = winston.format((info) => {
+  // Scrub the main message
+  if (typeof info.message === 'string') {
+    info.message = scrub(info.message);
+  }
+
+  // Scrub all metadata keys (except Winston internals)
+  const SKIP_KEYS = new Set(['level', 'message', 'timestamp', 'service', 'stack']);
+  for (const key of Object.keys(info)) {
+    if (!SKIP_KEYS.has(key)) {
+      info[key] = scrub(info[key]);
+    }
+  }
+
+  // Scrub stack traces too
+  if (typeof info.stack === 'string') {
+    info.stack = scrub(info.stack);
+  }
+
+  return info;
+});
+
+// Define log format — piiScrubber runs first, before serialization
+>>>>>>> 334c55291cae4312ec1bf7e30d03d736c62c5fb3
 const logFormat = winston.format.combine(
   phiScrubFormat(),
   winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
   winston.format.errors({ stack: true }),
+  piiScrubber(),
   winston.format.json(),
   winston.format.prettyPrint()
 );
@@ -72,6 +146,7 @@ if (process.env.NODE_ENV !== 'production') {
         phiScrubFormat(),
         winston.format.colorize(),
         winston.format.simple(),
+        piiScrubber(),
         winston.format.printf(({ timestamp, level, message, service, ...meta }) => {
           return `${timestamp} [${service}] ${level}: ${message} ${
             Object.keys(meta).length ? JSON.stringify(meta, null, 2) : ''

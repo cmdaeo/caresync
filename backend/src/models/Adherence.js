@@ -15,18 +15,11 @@ module.exports = (sequelize) => {
     userId: {
       type: DataTypes.UUID,
       allowNull: false,
-      references: {
-        model: 'users',
-        key: 'id'
-      }
+      comment: 'UUID link to users table in PII database'
     },
     medicationId: {
       type: DataTypes.UUID,
       allowNull: false,
-      references: {
-        model: 'medications',
-        key: 'id'
-      }
     },
     scheduledTime: {
       type: DataTypes.DATE,

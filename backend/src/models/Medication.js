@@ -21,10 +21,7 @@ module.exports = (sequelize) => {
     userId: {
       type: DataTypes.UUID,
       allowNull: false,
-      references: {
-        model: 'users',
-        key: 'id'
-      }
+      comment: 'UUID link to users table in PII database'
     },
     name: {
       type: Encrypted(DataTypes.STRING, encryptionKey),

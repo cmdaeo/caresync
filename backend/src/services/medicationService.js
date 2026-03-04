@@ -1,7 +1,7 @@
 const { Medication, Adherence, CaregiverPatient, sequelize } = require('../models');
 const logger = require('../utils/logger');
 const { Op } = require('sequelize');
-const { AppError, AuthorizationError } = require('../middleware/errorHandler');
+const { AppError, AuthorizationError, NotFoundError } = require('../middleware/errorHandler');
 
 class MedicationService {
 
@@ -149,6 +149,7 @@ class MedicationService {
   }
 
   async deleteMedication(user, id) {
+<<<<<<< HEAD
     return await sequelize.transaction(async (t) => {
       const medication = await Medication.findOne({ 
         where: { id },
@@ -166,6 +167,18 @@ class MedicationService {
       await medication.update({ isActive: false }, { transaction: t });
       return { success: true, message: 'Medication deactivated' };
     });
+=======
+    const medication = await Medication.findOne({
+      where: { id, userId: user.id }
+    });
+
+    if (!medication) throw new AppError('Medication not found', 404);
+
+    // GDPR Art. 17 — hard delete with cascade to adherence records
+    await Adherence.destroy({ where: { medicationId: medication.id } });
+    await medication.destroy();
+    return { success: true, message: 'Medication permanently deleted' };
+>>>>>>> 334c55291cae4312ec1bf7e30d03d736c62c5fb3
   }
 
   // ==========================================
@@ -213,6 +226,7 @@ class MedicationService {
 
    async recordAdherence(user, adherenceData) {
     const { medicationId, status, takenAt, scheduledTime } = adherenceData;
+<<<<<<< HEAD
     
     // Use transaction to ensure atomicity of adherence recording and stock update
     return await sequelize.transaction(async (t) => {
@@ -230,6 +244,27 @@ class MedicationService {
       if (existingRecord) {
         throw new AppError('Adherence already recorded for this medication and scheduled time', 409);
       }
+=======
+
+    // IDOR fix: verify medication belongs to the authenticated user
+    const med = await Medication.findOne({ where: { id: medicationId, userId: user.id } });
+    if (!med) {
+      throw new NotFoundError('Medication not found');
+    }
+
+    const intake = await Adherence.create({
+      userId: user.id,
+      medicationId,
+      status: status || 'taken',
+      takenAt: takenAt || new Date(),
+      scheduledTime: scheduledTime || new Date()
+    });
+
+    // Update medication stock
+    if (status === 'taken') {
+      await med.decrement('remainingQuantity', { by: 1 });
+    }
+>>>>>>> 334c55291cae4312ec1bf7e30d03d736c62c5fb3
 
       const intake = await Adherence.create({
         userId: user.id,
