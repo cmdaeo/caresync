@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const deviceController = require('../controllers/deviceController');
 const { body, param, validationResult } = require('express-validator');
+const { authMiddleware } = require('../middleware/auth');
 
 // Validation middleware for deviceId and name
 const validateDeviceId = [
@@ -55,7 +56,7 @@ const handleValidationErrors = (req, res, next) => {
  *                           name:
  *                             type: string
  */
-router.get('/', deviceController.getDevices);
+router.get('/', authMiddleware, deviceController.getDevices);
 
 /**
  * @swagger
@@ -100,7 +101,7 @@ router.get('/', deviceController.getDevices);
  *                     device:
  *                       type: object
  */
-router.post('/', validateDeviceId, validateDeviceName, handleValidationErrors, deviceController.registerDevice);
+router.post('/', authMiddleware, validateDeviceId, validateDeviceName, handleValidationErrors, deviceController.registerDevice);
 
 /**
  * @swagger
@@ -149,7 +150,7 @@ router.post('/', validateDeviceId, validateDeviceName, handleValidationErrors, d
  *                     device:
  *                       type: object
  */
-router.post('/register-with-signature', validateDeviceId, validateDeviceName, handleValidationErrors, deviceController.registerDeviceWithSignature);
+router.post('/register-with-signature', authMiddleware, validateDeviceId, validateDeviceName, handleValidationErrors, deviceController.registerDeviceWithSignature);
 
 /**
  * @swagger
@@ -181,7 +182,7 @@ router.post('/register-with-signature', validateDeviceId, validateDeviceName, ha
  *                     device:
  *                       type: object
  */
-router.get('/:id', deviceController.getDevice);
+router.get('/:id', authMiddleware, deviceController.getDevice);
 
 /**
  * @swagger
@@ -230,7 +231,7 @@ router.get('/:id', deviceController.getDevice);
  *                     device:
  *                       type: object
  */
-router.put('/:id', deviceController.updateDevice);
+router.put('/:id', authMiddleware, deviceController.updateDevice);
 
 /**
  * @swagger
@@ -259,7 +260,7 @@ router.put('/:id', deviceController.updateDevice);
  *                 message:
  *                   type: string
  */
-router.delete('/:id', deviceController.deleteDevice);
+router.delete('/:id', authMiddleware, deviceController.deleteDevice);
 
 /**
  * @swagger
@@ -301,7 +302,7 @@ router.delete('/:id', deviceController.deleteDevice);
  *                 message:
  *                   type: string
  */
-router.post('/:deviceId/sync', deviceController.syncStatus);
+router.post('/:deviceId/sync', authMiddleware, deviceController.syncStatus);
 
 // Caregiver management routes
 /**
@@ -349,7 +350,7 @@ router.post('/:deviceId/sync', deviceController.syncStatus);
  *                     invitation:
  *                       type: object
  */
-router.post('/:deviceId/invite-caregiver', deviceController.inviteCaregiver);
+router.post('/:deviceId/invite-caregiver', authMiddleware, deviceController.inviteCaregiver);
 
 /**
  * @swagger
@@ -388,7 +389,7 @@ router.post('/:deviceId/invite-caregiver', deviceController.inviteCaregiver);
  *                     permission:
  *                       type: object
  */
-router.post('/:deviceId/caregivers/:invitationId/accept', deviceController.acceptCaregiverInvitation);
+router.post('/:deviceId/caregivers/:invitationId/accept', authMiddleware, deviceController.acceptCaregiverInvitation);
 
 /**
  * @swagger
@@ -422,7 +423,7 @@ router.post('/:deviceId/caregivers/:invitationId/accept', deviceController.accep
  *                       items:
  *                         type: object
  */
-router.get('/:deviceId/caregivers', deviceController.getDeviceCaregivers);
+router.get('/:deviceId/caregivers', authMiddleware, deviceController.getDeviceCaregivers);
 
 /**
  * @swagger
@@ -456,6 +457,6 @@ router.get('/:deviceId/caregivers', deviceController.getDeviceCaregivers);
  *                 message:
  *                   type: string
  */
-router.delete('/:deviceId/caregivers/:caregiverId', deviceController.removeCaregiver);
+router.delete('/:deviceId/caregivers/:caregiverId', authMiddleware, deviceController.removeCaregiver);
 
 module.exports = router;

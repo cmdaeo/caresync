@@ -56,7 +56,40 @@ app.use(helmet({
       connectSrc: ["'self'", "http://localhost:5000", "https://api.caresync.com", "wss:", "ws:"],
     },
   },
+  hsts: {
+    maxAge: 31536000, // 1 year
+    includeSubDomains: true,
+    preload: true
+  },
+  frameguard: {
+    action: 'deny'
+  },
+  noSniff: true,
+  xssFilter: true
 }));
+
+// Enforce TLS 1.3 for all secure connections
+app.use((req, res, next) => {
+  if (req.secure || process.env.NODE_ENV === 'development') {
+    return next();
+  }
+
+  // For production, ensure we're using TLS 1.3
+  if (req.headers['x-forwarded-proto'] === 'https') {
+    const tlsVersion = req.headers['x-forwarded-proto-version'];
+    if (tlsVersion && tlsVersion !== 'TLSv1.3') {
+      logger.warn(`TLS version ${tlsVersion} used instead of TLSv1.3`);
+    }
+    return next();
+  }
+
+  // Redirect to HTTPS for production
+  if (process.env.NODE_ENV === 'production') {
+    return res.redirect(301, `https://${req.headers.host}${req.url}`);
+  }
+
+  next();
+});
 
 
 app.use(cors({

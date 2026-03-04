@@ -1,4 +1,4 @@
-const { Medication, Adherence, CaregiverPatient } = require('../models');
+const { Medication, Adherence, CaregiverPatient, sequelize } = require('../models');
 const logger = require('../utils/logger');
 const { Op } = require('sequelize');
 const { AppError, AuthorizationError } = require('../middleware/errorHandler');
@@ -14,7 +14,7 @@ class MedicationService {
    */
   async _validateAccess(requestingUser, targetUserId) {
     if (requestingUser.id === targetUserId) return true;
-    if (['admin', 'healthcareprovider'].includes(requestingUser.role)) return true;
+    if (['admin', 'healthcare_provider'].includes(requestingUser.role)) return true;
 
     if (requestingUser.role === 'caregiver') {
       const relation = await CaregiverPatient.findOne({
@@ -118,26 +118,54 @@ class MedicationService {
   }
 
   async updateMedication(user, id, medData) {
-    const medication = await Medication.findOne({ 
-      where: { id, userId: user.id } 
+    // Use transaction to ensure atomic update with optimistic locking
+    return await sequelize.transaction(async (t) => {
+      const medication = await Medication.findOne({ 
+        where: { id },
+        transaction: t
+      });
+
+      if (!medication) throw new AppError('Medication not found', 404);
+
+      // Validate access to the medication's owner
+      if (!(await this._validateAccess(user, medication.userId))) {
+        throw new AuthorizationError('Access denied');
+      }
+
+      // Check for version mismatch
+      if (medData.version !== undefined && medData.version !== medication.version) {
+        throw new AppError('Concurrent update detected. Please refresh and try again.', 409);
+      }
+
+      // Increment version number for next update
+      const updatedData = {
+        ...medData,
+        version: medication.version + 1
+      };
+
+      await medication.update(updatedData, { transaction: t });
+      return medication;
     });
-
-    if (!medication) throw new AppError('Medication not found', 404);
-
-    await medication.update(medData);
-    return medication;
   }
 
   async deleteMedication(user, id) {
-    const medication = await Medication.findOne({ 
-      where: { id, userId: user.id } 
+    return await sequelize.transaction(async (t) => {
+      const medication = await Medication.findOne({ 
+        where: { id },
+        transaction: t
+      });
+
+      if (!medication) throw new AppError('Medication not found', 404);
+
+      // Validate access to the medication's owner
+      if (!(await this._validateAccess(user, medication.userId))) {
+        throw new AuthorizationError('Access denied');
+      }
+
+      // Soft delete: set inactive
+      await medication.update({ isActive: false }, { transaction: t });
+      return { success: true, message: 'Medication deactivated' };
     });
-
-    if (!medication) throw new AppError('Medication not found', 404);
-
-    // Soft delete: set inactive
-    await medication.update({ isActive: false });
-    return { success: true, message: 'Medication deactivated' };
   }
 
   // ==========================================
@@ -183,26 +211,44 @@ class MedicationService {
     };
   }
 
-  async recordAdherence(user, adherenceData) {
+   async recordAdherence(user, adherenceData) {
     const { medicationId, status, takenAt, scheduledTime } = adherenceData;
     
-    const intake = await Adherence.create({
-      userId: user.id,
-      medicationId,
-      status: status || 'taken',
-      takenAt: takenAt || new Date(),
-      scheduledTime: scheduledTime || new Date()
-    });
+    // Use transaction to ensure atomicity of adherence recording and stock update
+    return await sequelize.transaction(async (t) => {
+      // Check for existing adherence record to prevent double-dosing
+      const existingRecord = await Adherence.findOne({
+        where: {
+          userId: user.id,
+          medicationId,
+          scheduledTime: scheduledTime || new Date(),
+          status: 'taken'
+        },
+        transaction: t
+      });
 
-    // Update medication stock
-    if (status === 'taken') {
-      const med = await Medication.findByPk(medicationId);
-      if (med) {
-        await med.decrement('remainingQuantity', { by: 1 });
+      if (existingRecord) {
+        throw new AppError('Adherence already recorded for this medication and scheduled time', 409);
       }
-    }
 
-    return intake;
+      const intake = await Adherence.create({
+        userId: user.id,
+        medicationId,
+        status: status || 'taken',
+        takenAt: takenAt || new Date(),
+        scheduledTime: scheduledTime || new Date()
+      }, { transaction: t });
+
+      // Update medication stock atomically
+      if (status === 'taken') {
+        const med = await Medication.findByPk(medicationId, { transaction: t });
+        if (med) {
+          await med.decrement('remainingQuantity', { by: 1, transaction: t });
+        }
+      }
+
+      return intake;
+    });
   }
 
   async getAdherenceStats(user, query) {
