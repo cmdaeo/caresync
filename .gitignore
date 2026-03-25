@@ -14,7 +14,6 @@ pythonTest/
 backend/.env
 backend/.env.*
 !backend/.env.example
-logins.txt
 
 # IDE
 .idea/
