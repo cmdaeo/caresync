@@ -1,49 +1,40 @@
 const winston = require('winston');
 const path = require('path');
-
-// Create logs directory if it doesn't exist
 const fs = require('fs');
+
+// ── Environment Check ───────────────────────────────────────────
+const isProduction = process.env.NODE_ENV === 'production';
+
+// ── Directory Logic ─────────────────────────────────────────────
+// Vercel is Read-Only. We only create /logs if we are local.
 const logDir = path.join(__dirname, '../../logs');
-if (!fs.existsSync(logDir)) {
-  fs.mkdirSync(logDir, { recursive: true });
+if (!isProduction && !fs.existsSync(logDir)) {
+  try {
+    fs.mkdirSync(logDir, { recursive: true });
+  } catch (err) {
+    console.error('Failed to create log directory:', err);
+  }
 }
 
 // ── PHI/PII Scrubber ────────────────────────────────────────────
-// Intercepts every log entry and masks sensitive data patterns
-// before they reach any transport (console, file).
-// ─────────────────────────────────────────────────────────────────
-
 const PII_PATTERNS = [
-  // JWT tokens  (eyJ...)
   { regex: /eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}/g, replacement: '[REDACTED_JWT]' },
-  // Email addresses
   { regex: /[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g, replacement: '[REDACTED_EMAIL]' },
-  // Phone numbers — real formats only (9+ digits, with international prefix or separators)
-  // Matches: +351 912 345 678, +1-555-0123456, (123) 456-7890, 912345678
-  // Ignores: isolated 3-digit HTTP codes (200, 404, 500), short numbers, UUIDs
   { regex: /\+\d[\d\s()-]{8,}\d/g, replacement: '[REDACTED_PHONE]' },
   { regex: /\(?\d{3}\)?[\s.-]\d{3}[\s.-]\d{4}/g, replacement: '[REDACTED_PHONE]' },
   { regex: /(?<![A-Za-z0-9-])\d{9,15}(?![A-Za-z0-9-])/g, replacement: '[REDACTED_PHONE]' },
 ];
 
-/**
- * Recursively scrub a value (string, object, array).
- */
 function scrub(value) {
   if (typeof value === 'string') {
     let scrubbed = value;
     for (const { regex, replacement } of PII_PATTERNS) {
-      // Reset lastIndex for global regexes
       regex.lastIndex = 0;
       scrubbed = scrubbed.replace(regex, replacement);
     }
     return scrubbed;
   }
-
-  if (Array.isArray(value)) {
-    return value.map(scrub);
-  }
-
+  if (Array.isArray(value)) return value.map(scrub);
   if (value !== null && typeof value === 'object') {
     const out = {};
     for (const [k, v] of Object.entries(value)) {
@@ -51,97 +42,81 @@ function scrub(value) {
     }
     return out;
   }
-
   return value;
 }
 
 const piiScrubber = winston.format((info) => {
-  // Scrub the main message
-  if (typeof info.message === 'string') {
-    info.message = scrub(info.message);
-  }
-
-  // Scrub all metadata keys (except Winston internals)
+  if (typeof info.message === 'string') info.message = scrub(info.message);
   const SKIP_KEYS = new Set(['level', 'message', 'timestamp', 'service', 'stack']);
   for (const key of Object.keys(info)) {
-    if (!SKIP_KEYS.has(key)) {
-      info[key] = scrub(info[key]);
-    }
+    if (!SKIP_KEYS.has(key)) info[key] = scrub(info[key]);
   }
-
-  // Scrub stack traces too
-  if (typeof info.stack === 'string') {
-    info.stack = scrub(info.stack);
-  }
-
+  if (typeof info.stack === 'string') info.stack = scrub(info.stack);
   return info;
 });
 
-// Define log format — piiScrubber runs first, before serialization
-const logFormat = winston.format.combine(
-  winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
-  winston.format.errors({ stack: true }),
-  piiScrubber(),
-  winston.format.json(),
-  winston.format.prettyPrint()
-);
+// ── Transport Configuration ─────────────────────────────────────
+const logLevels = { error: 0, warn: 1, info: 2, http: 3, debug: 4 };
+const transports = [];
 
-// Define log levels
-const logLevels = {
-  error: 0,
-  warn: 1,
-  info: 2,
-  http: 3,
-  debug: 4,
-};
-
-// Create logger instance
-const logger = winston.createLogger({
-  level: process.env.LOG_LEVEL || 'info',
-  levels: logLevels,
-  format: logFormat,
-  defaultMeta: { service: 'caresync-backend' },
-  transports: [
-    // Write all logs with level 'error' and below to 'error.log'
-    new winston.transports.File({
-      filename: path.join(logDir, 'error.log'),
-      level: 'error',
-      maxsize: 5242880, // 5MB
-      maxFiles: 5,
-    }),
-    // Write all logs to 'combined.log'
-    new winston.transports.File({
-      filename: path.join(logDir, 'combined.log'),
-      maxsize: 5242880, // 5MB
-      maxFiles: 5,
-    }),
-  ],
-});
-
-// If we're not in production, log to the console with colors
-if (process.env.NODE_ENV !== 'production') {
-  logger.add(
+// 1. Console Transport (Always active, but formatted differently for Dev/Prod)
+if (isProduction) {
+  // Production Console (JSON format for Vercel/CloudWatch)
+  transports.push(
+    new winston.transports.Console({
+      format: winston.format.combine(
+        winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
+        winston.format.errors({ stack: true }),
+        piiScrubber(),
+        winston.format.json()
+      ),
+    })
+  );
+} else {
+  // Development Console (Pretty and Colorful)
+  transports.push(
     new winston.transports.Console({
       format: winston.format.combine(
         winston.format.colorize(),
-        winston.format.simple(),
+        winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
         piiScrubber(),
         winston.format.printf(({ timestamp, level, message, service, ...meta }) => {
-          return `${timestamp} [${service}] ${level}: ${message} ${
-            Object.keys(meta).length ? JSON.stringify(meta, null, 2) : ''
-          }`;
+          const serviceTag = service ? `[${service}] ` : '';
+          const metaStr = Object.keys(meta).length ? `\n${JSON.stringify(meta, null, 2)}` : '';
+          return `${timestamp} ${serviceTag}${level}: ${message}${metaStr}`;
         })
       ),
     })
   );
 }
 
-// Create a stream object with a 'write' function for Morgan
+// 2. File Transports (Only active when LOCAL)
+if (!isProduction) {
+  transports.push(
+    new winston.transports.File({
+      filename: path.join(logDir, 'error.log'),
+      level: 'error',
+      maxsize: 5242880,
+      maxFiles: 5,
+    }),
+    new winston.transports.File({
+      filename: path.join(logDir, 'combined.log'),
+      maxsize: 5242880,
+      maxFiles: 5,
+    })
+  );
+}
+
+// ── Create Logger ───────────────────────────────────────────────
+const logger = winston.createLogger({
+  level: process.env.LOG_LEVEL || (isProduction ? 'info' : 'debug'),
+  levels: logLevels,
+  defaultMeta: { service: 'caresync-backend' },
+  transports: transports,
+});
+
 logger.stream = {
-  write: (message) => {
-    logger.info(message.trim());
-  },
+  write: (message) => logger.info(message.trim()),
 };
 
-// Export logger and stream
 module.exports = logger;
