@@ -241,17 +241,24 @@ const PORT = process.env.PORT || 5000;
 
 async function syncDatabase(instance, label) {
   try {
-    // Only use PRAGMA if we are using SQLite
-    if (process.env.DB_DIALECT === 'sqlite') {
+    const isSqlite = instance.getDialect() === 'sqlite';
+    
+    if (isSqlite) {
       await instance.query('PRAGMA foreign_keys = OFF;');
     }
     
-    await instance.sync({ alter: process.env.NODE_ENV === 'development' });
+    // In production, 'alter' can be risky, but for a showcase launch, 
+    // it ensures your Supabase tables are created automatically.
+    const shouldSync = process.env.NODE_ENV === 'development' || process.env.SYNC_DB === 'true';
     
-    if (process.env.DB_DIALECT === 'sqlite') {
+    if (shouldSync) {
+      await instance.sync({ alter: true });
+      logger.info(`${label} database synchronized.`);
+    }
+    
+    if (isSqlite) {
       await instance.query('PRAGMA foreign_keys = ON;');
     }
-    logger.info(`${label} database synchronized.`);
   } catch (syncError) {
     logger.error(`${label} sync failed: ${syncError.message}`);
   }
@@ -259,34 +266,32 @@ async function syncDatabase(instance, label) {
 
 async function startServer() {
   try {
-    // Authenticate both database connections
     await sequelizePii.authenticate();
-    logger.info('PII database connection established successfully.');
     await sequelizeMedical.authenticate();
-    logger.info('Medical database connection established successfully.');
+    logger.info('Database connections established.');
+
+    // Ensure tables exist on Supabase during the first run
+    // Tip: Add SYNC_DB=true to your Vercel Env Vars for the first deploy
+    if (process.env.NODE_ENV === 'production' && process.env.SYNC_DB === 'true') {
+        await syncDatabase(sequelizePii, 'PII');
+        await syncDatabase(sequelizeMedical, 'Medical');
+    }
 
     if (process.env.NODE_ENV === 'development') {
       await syncDatabase(sequelizePii, 'PII');
       await syncDatabase(sequelizeMedical, 'Medical');
-
-      // Run sample data generator (handles checking if data exists)
       await generateSampleData();
-    } else if (process.env.NODE_ENV === 'test') {
-      await sequelizePii.query('PRAGMA foreign_keys = OFF;');
-      await sequelizePii.sync({ force: true });
-      await sequelizePii.query('PRAGMA foreign_keys = ON;');
-      await sequelizeMedical.query('PRAGMA foreign_keys = OFF;');
-      await sequelizeMedical.sync({ force: true });
-      await sequelizeMedical.query('PRAGMA foreign_keys = ON;');
-      logger.info('Both databases synchronized (FORCE) for test environment.');
     }
 
-    server.listen(PORT, () => {
-      logger.info(`🚀 CareSync Backend Server running on port ${PORT}`);
-    });
+    // Vercel ignores server.listen(), but we keep it for local dev
+    if (process.env.NODE_ENV !== 'production') {
+      server.listen(PORT, () => {
+        logger.info(`🚀 Local Server running on port ${PORT}`);
+      });
+    }
   } catch (error) {
     logger.error('Unable to start server:', error);
-    process.exit(1);
+    // Don't process.exit(1) on Vercel, it can prevent logs from flushing
   }
 }
 
