@@ -63,16 +63,17 @@ if (isProduction) {
   };
 }
 
-// Initialize Instances
-// In production, we use the DATABASE_URL connection string from environment variables
-const sequelizePii = new Sequelize(
-  isProduction ? process.env.DATABASE_URL : piiOptions, 
-  piiOptions
-);
+let sequelizePii;
+let sequelizeMedical;
 
-const sequelizeMedical = new Sequelize(
-  isProduction ? process.env.DATABASE_URL : medicalOptions, 
-  medicalOptions
-);
+if (isProduction) {
+  // Use the full URL string + the pgSharedOptions object
+  sequelizePii = new Sequelize(process.env.DATABASE_URL, piiOptions);
+  sequelizeMedical = new Sequelize(process.env.DATABASE_URL, medicalOptions);
+} else {
+  // Use the local SQLite options objects
+  sequelizePii = new Sequelize(piiOptions);
+  sequelizeMedical = new Sequelize(medicalOptions);
+}
 
 module.exports = { sequelizePii, sequelizeMedical };
