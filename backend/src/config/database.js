@@ -1,53 +1,78 @@
 const { Sequelize } = require('sequelize');
 const path = require('path');
 
+// Determine environment
 const isProduction = process.env.NODE_ENV === 'production';
 
-// ── Database Configuration ──────────────────────
 let piiOptions, medicalOptions;
 
 if (isProduction) {
-  // PRODUCTION: Supabase (Postgres)
-  const pgOptions = {
+  // --- PRODUCTION CONFIG (Supabase / Postgres) ---
+  // We explicitly require 'pg' here to ensure Vercel's bundler 
+  // includes it in the serverless function.
+  const pg = require('pg');
+
+  const pgSharedOptions = {
     dialect: 'postgres',
+    dialectModule: pg, // CRITICAL: Fixes "Please install pg package manually"
     protocol: 'postgres',
     dialectOptions: {
       ssl: {
         require: true,
-        rejectUnauthorized: false // Required for Supabase/Vercel
+        rejectUnauthorized: false // Required for Supabase external connections
       }
     },
     logging: false,
-    pool: { max: 5, min: 0, acquire: 30000, idle: 10000 }
+    pool: {
+      max: 5,
+      min: 0,
+      acquire: 30000,
+      idle: 10000,
+    },
   };
 
-  piiOptions = { ...pgOptions, database: 'postgres' }; // Both point to the same Supabase instance
-  medicalOptions = { ...pgOptions, database: 'postgres' };
+  // On Vercel, both logical DBs point to the same Supabase instance
+  piiOptions = { ...pgSharedOptions };
+  medicalOptions = { ...pgSharedOptions };
+
 } else {
-  // LOCAL: SQLite (Standard)
-  // We swap 'sqlcipher' for standard 'sqlite3' to avoid the Vercel crash
-  const sqlite3 = require('sqlite3'); 
-  
-  const localShared = {
+  // --- LOCAL CONFIG (SQLite) ---
+  // Standard sqlite3 is used locally to avoid the sqlcipher OpenSSL error
+  const sqlite3 = require('sqlite3');
+
+  const sqliteSharedOptions = {
     dialect: 'sqlite',
     dialectModule: sqlite3,
     logging: false,
-    pool: { max: 10, min: 0, acquire: 30000, idle: 10000 },
+    pool: {
+      max: 10,
+      min: 0,
+      acquire: 30000,
+      idle: 10000,
+    },
   };
 
-  piiOptions = { 
-    ...localShared, 
-    storage: process.env.DB_STORAGE_PII || path.join(__dirname, '../../pii_database.sqlite') 
+  piiOptions = {
+    ...sqliteSharedOptions,
+    storage: process.env.DB_STORAGE_PII || path.join(__dirname, '../../pii_database.sqlite'),
   };
-  
-  medicalOptions = { 
-    ...localShared, 
-    storage: process.env.DB_STORAGE_MEDICAL || path.join(__dirname, '../../medical_database.sqlite') 
+
+  medicalOptions = {
+    ...sqliteSharedOptions,
+    storage: process.env.DB_STORAGE_MEDICAL || path.join(__dirname, '../../medical_database.sqlite'),
   };
 }
 
 // Initialize Instances
-const sequelizePii = new Sequelize(isProduction ? process.env.DATABASE_URL : piiOptions, piiOptions);
-const sequelizeMedical = new Sequelize(isProduction ? process.env.DATABASE_URL : medicalOptions, medicalOptions);
+// In production, we use the DATABASE_URL connection string from environment variables
+const sequelizePii = new Sequelize(
+  isProduction ? process.env.DATABASE_URL : piiOptions, 
+  piiOptions
+);
+
+const sequelizeMedical = new Sequelize(
+  isProduction ? process.env.DATABASE_URL : medicalOptions, 
+  medicalOptions
+);
 
 module.exports = { sequelizePii, sequelizeMedical };
