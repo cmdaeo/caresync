@@ -7,7 +7,12 @@
     },
     {
       "source": "/(.*)",
-      "destination": "/frontend/$1"
+      "destination": "/frontend/dist/$1"
     }
-  ]
+  ],
+  "functions": {
+    "backend/src/app.js": {
+      "runtime": "vercel-node@latest"
+    }
+  }
 }
