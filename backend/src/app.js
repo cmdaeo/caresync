@@ -51,14 +51,18 @@ app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
-      // 'unsafe-inline' required for Framer Motion runtime inline styles.
-      // TODO: Migrate to nonce-based CSP when Framer Motion supports it.
       styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
       fontSrc: ["'self'", "https://fonts.gstatic.com", "data:"],
       scriptSrc: ["'self'"],
       imgSrc: ["'self'", "data:", "https:"],
-      // Allow localhost API and WebSockets
-      connectSrc: ["'self'", "http://localhost:5000", "https://api.caresync.com", "wss:", "ws:"],
+      // Allow BOTH localhost and your Production Vercel URL
+      connectSrc: [
+        "'self'", 
+        "http://localhost:5000", 
+        "https://caresync-pink.vercel.app", 
+        "wss:", 
+        "ws:"
+      ],
     },
   },
 }));
@@ -66,9 +70,11 @@ app.use(helmet({
 
 app.use(cors({
   origin: [
-    'http://localhost:3000',
-    'http://localhost:19006',
-    process.env.CLIENT_URL,
+    'http://localhost:5173',           // Vite (Frontend local)
+    'http://localhost:5000',           // Express (Backend local)
+    'http://localhost:3000',           // Alternative local port
+    'https://caresync-pink.vercel.app', // Production URL
+    process.env.CLIENT_URL             // The URL from your .env
   ].filter(Boolean),
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
@@ -235,17 +241,19 @@ const PORT = process.env.PORT || 5000;
 
 async function syncDatabase(instance, label) {
   try {
-    await instance.query('PRAGMA foreign_keys = OFF;');
-    await instance.sync({ alter: true });
-    await instance.query('PRAGMA foreign_keys = ON;');
-    logger.info(`${label} database synchronized (ALTER).`);
+    // Only use PRAGMA if we are using SQLite
+    if (process.env.DB_DIALECT === 'sqlite') {
+      await instance.query('PRAGMA foreign_keys = OFF;');
+    }
+    
+    await instance.sync({ alter: process.env.NODE_ENV === 'development' });
+    
+    if (process.env.DB_DIALECT === 'sqlite') {
+      await instance.query('PRAGMA foreign_keys = ON;');
+    }
+    logger.info(`${label} database synchronized.`);
   } catch (syncError) {
-    logger.warn(`${label} safe sync failed. Falling back to FORCE sync...`);
-    logger.error(syncError.message);
-    await instance.query('PRAGMA foreign_keys = OFF;');
-    await instance.sync({ force: true });
-    await instance.query('PRAGMA foreign_keys = ON;');
-    logger.info(`${label} database synchronized (FORCE).`);
+    logger.error(`${label} sync failed: ${syncError.message}`);
   }
 }
 
