@@ -266,32 +266,33 @@ async function syncDatabase(instance, label) {
 
 async function startServer() {
   try {
+    // 1. Authenticate connections
     await sequelizePii.authenticate();
     await sequelizeMedical.authenticate();
-    logger.info('Database connections established.');
+    logger.info('✅ Database connections established.');
 
-    // Ensure tables exist on Supabase during the first run
-    // Tip: Add SYNC_DB=true to your Vercel Env Vars for the first deploy
-    if (process.env.NODE_ENV === 'production' && process.env.SYNC_DB === 'true') {
-        await syncDatabase(sequelizePii, 'PII');
-        await syncDatabase(sequelizeMedical, 'Medical');
-    }
-
-    if (process.env.NODE_ENV === 'development') {
+    // 2. Run Synchronization
+    // We check for SYNC_DB or Development mode
+    const shouldSync = process.env.SYNC_DB === 'true' || process.env.NODE_ENV === 'development';
+    
+    if (shouldSync) {
+      logger.info('Syncing databases... (this may take a moment)');
       await syncDatabase(sequelizePii, 'PII');
       await syncDatabase(sequelizeMedical, 'Medical');
-      await generateSampleData();
+      
+      if (process.env.NODE_ENV === 'development') {
+        await generateSampleData();
+      }
     }
 
-    // Vercel ignores server.listen(), but we keep it for local dev
-    if (process.env.NODE_ENV !== 'production') {
+    // 3. Local Listen (Vercel ignores this, but needed for local)
+    if (process.env.NODE_ENV !== 'production' && process.env.NODE_ENV !== 'test') {
       server.listen(PORT, () => {
         logger.info(`🚀 Local Server running on port ${PORT}`);
       });
     }
   } catch (error) {
-    logger.error('Unable to start server:', error);
-    // Don't process.exit(1) on Vercel, it can prevent logs from flushing
+    logger.error('❌ Unable to start server:', error);
   }
 }
 
