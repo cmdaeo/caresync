@@ -126,18 +126,14 @@ class DeviceController {
     }
   }
 
-   /**
-   * Sync device status (Webhook/Ping endpoint) with user authentication
+  /**
+   * Sync device status (Webhook/Ping endpoint)
    */
   async syncStatus(req, res) {
     try {
       const { deviceId } = req.params;
       const statusData = req.body;
-<<<<<<< HEAD
-      await deviceService.syncStatus(deviceId, statusData, req.user);
-=======
       await deviceService.syncStatus(req.user, deviceId, statusData);
->>>>>>> 334c55291cae4312ec1bf7e30d03d736c62c5fb3
 
       const response = ApiResponse.success(
         null,

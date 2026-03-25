@@ -54,20 +54,16 @@ const errorHandler = (err, req, res, next) => {
   error.message = err.message;
   error.statusCode = err.statusCode || 500;
 
-  // Context for logs - DO NOT include stack trace in production
+  // Context for logs
   const errorLog = {
     message: err.message,
+    stack: err.stack,
     url: req.originalUrl,
     method: req.method,
     ip: req.ip,
     userId: req.user?.id || 'anonymous',
     timestamp: new Date().toISOString()
   };
-
-  // Only log stack traces in development
-  if (process.env.NODE_ENV === 'development') {
-    errorLog.stack = err.stack;
-  }
 
   // --- Specific Error Type Handling ---
 

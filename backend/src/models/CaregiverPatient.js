@@ -49,10 +49,5 @@ module.exports = (sequelize) => {
     timestamps: true
   });
 
-  // Method to check if caregiver has access to patient
-  CaregiverPatient.prototype.hasAccess = function() {
-    return this.isActive && this.isVerified;
-  };
-
   return CaregiverPatient;
 };

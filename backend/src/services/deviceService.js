@@ -5,7 +5,6 @@ const JwtUtils = require('../utils/jwtUtils');
 const { v4: uuidv4 } = require('uuid');
 const { Op } = require('sequelize');
 const { AppError, NotFoundError, ConflictError, AuthenticationError } = require('../middleware/errorHandler');
-const { maskEmail } = require('../utils/phiScrubber');
 
 class DeviceService {
 
@@ -44,7 +43,7 @@ class DeviceService {
       connectionStatus: 'offline'
     });
 
-    logger.info(`New device registered: ${name} (${deviceId}) for user ${maskEmail(user.email)}`);
+    logger.info(`New device registered: ${name} (${deviceId}) for user ${user.email}`);
 
     return device;
   }
@@ -101,7 +100,7 @@ class DeviceService {
       grantedBy: user.id
     });
 
-    logger.info(`New device registered with signature: ${name} (${deviceId}) for user ${maskEmail(user.email)}`);
+    logger.info(`New device registered with signature: ${name} (${deviceId}) for user ${user.email}`);
 
     return device;
   }
@@ -150,84 +149,25 @@ class DeviceService {
       throw new NotFoundError('Device not found');
     }
 
-<<<<<<< HEAD
-    await device.update({ isActive: false });
-    logger.info(`Device removed: ${device.name} for user ${maskEmail(user.email)}`);
-=======
     // Cascade: destroy all related permissions and invitations
     await DeviceAccessPermission.destroy({ where: { deviceId: device.id } });
     await DeviceInvitation.destroy({ where: { deviceId: device.id } });
     await device.destroy();
     logger.info(`Device hard-deleted: ${device.name} for user ${user.email}`);
->>>>>>> 334c55291cae4312ec1bf7e30d03d736c62c5fb3
 
     return { success: true, message: 'Device permanently removed' };
   }
 
   /**
-   * Check if user has permission to access a device
+   * Sync device status (Webhook/Ping endpoint)
    */
-<<<<<<< HEAD
-  async userHasDevicePermission(userId, deviceId) {
-    // Check if user owns the device
-    const device = await Device.findOne({ 
-      where: { id: deviceId, userId } 
-    });
-    
-    if (device) {
-      return true;
-    }
-
-    // Check if user has caregiver access to the device
-    const permission = await DeviceAccessPermission.findOne({ 
-      where: { 
-        deviceId, 
-        userId, 
-        isActive: true 
-      } 
-    });
-
-    return !!permission;
-  }
-
-  /**
-   * Sync device status (Webhook/Ping endpoint) with proper authorization
-   */
-  async syncStatus(deviceId, statusData, user) {
-    // First, find the device
-    const device = await Device.findOne({ where: { deviceId } });
-=======
   async syncStatus(user, deviceId, statusData) {
     const { batteryLevel, connectionStatus, status } = statusData;
 
     // IDOR fix: verify device belongs to the authenticated user
     const device = await Device.findOne({ where: { deviceId, userId: user.id } });
->>>>>>> 334c55291cae4312ec1bf7e30d03d736c62c5fb3
     if (!device) {
       throw new NotFoundError('Device not found');
-    }
-
-    // Check if user has permission to access this device
-    const userHasPermission = await this.userHasDevicePermission(user.id, device.id);
-    if (!userHasPermission) {
-      logger.warn(`Unauthorized sync attempt on device ${deviceId} by user ${maskEmail(user.email)}`);
-      throw new AuthenticationError('You do not have permission to access this device');
-    }
-
-    // Validate NFC data signature if provided
-    const { batteryLevel, connectionStatus, status, nfcData, signature } = statusData;
-    
-    if (nfcData && !signature) {
-      throw new AuthenticationError('Signature required for NFC data');
-    }
-
-    if (nfcData && signature) {
-      // Verify signature using device-specific secret or public key
-      const isValidSignature = this.verifyNfcDataSignature(nfcData, signature, device);
-      if (!isValidSignature) {
-        logger.warn(`Invalid NFC signature for device ${deviceId}`);
-        throw new AuthenticationError('Invalid NFC data signature');
-      }
     }
 
     const updates = {
@@ -245,47 +185,9 @@ class DeviceService {
       updates.lastConnection = new Date();
     }
 
-    if (nfcData && signature) {
-      updates.status = {
-        ...updates.status,
-        nfcLastScanned: new Date(),
-        nfcUid: nfcData.uid
-      };
-    }
-
     await device.update(updates);
 
     return { success: true, message: 'Device synced' };
-  }
-
-  /**
-   * Verify NFC data signature using device public key or shared secret
-   */
-  verifyNfcDataSignature(nfcData, signature, device) {
-    // Verify NFC data signature using device public key (RSA-SHA256)
-    try {
-      if (!device.devicePublicKey) {
-        logger.error('Device public key not found for signature verification');
-        return false;
-      }
-
-      const crypto = require('crypto');
-      const verify = crypto.createVerify('RSA-SHA256');
-      verify.write(JSON.stringify(nfcData));
-      verify.end();
-
-      // Verify signature with device's public key
-      const isValid = verify.verify(device.devicePublicKey, signature, 'hex');
-      
-      if (!isValid) {
-        logger.warn('NFC data signature verification failed for device:', device.deviceId);
-      }
-
-      return isValid;
-    } catch (error) {
-      logger.error('Signature verification failed:', error);
-      return false;
-    }
   }
 
   /**
@@ -330,7 +232,7 @@ class DeviceService {
       expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // 7 days from now
     });
 
-    logger.info(`Caregiver invitation created for ${maskEmail(email)} to device ${deviceId} by user ${maskEmail(user.email)}`);
+    logger.info(`Caregiver invitation created for ${email} to device ${deviceId} by user ${user.email}`);
 
     return invitation;
   }
@@ -382,7 +284,7 @@ class DeviceService {
       acceptedBy: user.id
     });
 
-    logger.info(`Caregiver invitation accepted by ${maskEmail(user.email)} for device ${deviceId}`);
+    logger.info(`Caregiver invitation accepted by ${user.email} for device ${deviceId}`);
 
     return permission;
   }
@@ -456,7 +358,7 @@ class DeviceService {
     // GDPR Art. 17 — hard delete the permission
     await permission.destroy();
 
-    logger.info(`Caregiver ${caregiverId} removed from device ${deviceId} by user ${maskEmail(user.email)}`);
+    logger.info(`Caregiver ${caregiverId} removed from device ${deviceId} by user ${user.email}`);
 
     return { success: true, message: 'Caregiver access removed successfully' };
   }

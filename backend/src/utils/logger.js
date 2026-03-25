@@ -1,6 +1,5 @@
 const winston = require('winston');
 const path = require('path');
-const { scrubPHI } = require('./phiScrubber');
 
 // Create logs directory if it doesn't exist
 const fs = require('fs');
@@ -9,23 +8,6 @@ if (!fs.existsSync(logDir)) {
   fs.mkdirSync(logDir, { recursive: true });
 }
 
-<<<<<<< HEAD
-// Enhanced PHI scrubbing format
-const phiScrubFormat = winston.format((info) => {
-  // Scrub the message
-  info.message = scrubPHI(info.message);
-  
-  // Scrub splat arguments (used for %s, %d, etc.)
-  if (info[Symbol.for('splat')]) {
-    info[Symbol.for('splat')] = info[Symbol.for('splat')].map(scrubPHI);
-  }
-  
-  // Scrub entire info object
-  return scrubPHI(info);
-});
-
-// Define log format
-=======
 // ── PHI/PII Scrubber ────────────────────────────────────────────
 // Intercepts every log entry and masks sensitive data patterns
 // before they reach any transport (console, file).
@@ -96,9 +78,7 @@ const piiScrubber = winston.format((info) => {
 });
 
 // Define log format — piiScrubber runs first, before serialization
->>>>>>> 334c55291cae4312ec1bf7e30d03d736c62c5fb3
 const logFormat = winston.format.combine(
-  phiScrubFormat(),
   winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
   winston.format.errors({ stack: true }),
   piiScrubber(),
@@ -143,7 +123,6 @@ if (process.env.NODE_ENV !== 'production') {
   logger.add(
     new winston.transports.Console({
       format: winston.format.combine(
-        phiScrubFormat(),
         winston.format.colorize(),
         winston.format.simple(),
         piiScrubber(),
@@ -156,32 +135,6 @@ if (process.env.NODE_ENV !== 'production') {
     })
   );
 }
-
-// Override logger methods to ensure scrubbing happens before any formatting
-const originalMethods = {
-  info: logger.info,
-  warn: logger.warn,
-  error: logger.error,
-  debug: logger.debug,
-  http: logger.http
-};
-
-Object.keys(originalMethods).forEach(method => {
-  logger[method] = function(...args) {
-    // Scrub all arguments before passing to winston
-    const scrubbedArgs = args.map(arg => {
-      if (arg instanceof Error) {
-        // Create a new Error instance with scrubbed message
-        const scrubbedError = new Error(scrubPHI(arg.message));
-        scrubbedError.stack = scrubPHI(arg.stack);
-        Object.assign(scrubbedError, arg);
-        return scrubbedError;
-      }
-      return scrubPHI(arg);
-    });
-    originalMethods[method].apply(this, scrubbedArgs);
-  };
-});
 
 // Create a stream object with a 'write' function for Morgan
 logger.stream = {
