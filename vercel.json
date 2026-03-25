@@ -12,7 +12,7 @@
   ],
   "functions": {
     "backend/src/app.js": {
-      "runtime": "vercel-node@latest"
+      "runtime": "@vercel/node"
     }
   }
 }
