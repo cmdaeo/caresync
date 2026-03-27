@@ -6,8 +6,8 @@
       "destination": "/api/index.js"
     },
     {
-      "source": "/((?!api/).*)", 
-      "destination": "/frontend/dist/index.html"
+      "source": "/((?!api/).*)",
+      "destination": "/index.html"
     }
   ],
   "functions": {
