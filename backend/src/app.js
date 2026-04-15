@@ -51,18 +51,19 @@ app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
+      // 'unsafe-inline' required for Framer Motion runtime inline styles.
+      // TODO: Migrate to nonce-based CSP when Framer Motion supports it.
       styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
       fontSrc: ["'self'", "https://fonts.gstatic.com", "data:"],
       scriptSrc: ["'self'"],
-      imgSrc: ["'self'", "data:", "https:"],
-      // Allow BOTH localhost and your Production Vercel URL
-      connectSrc: [
-        "'self'", 
-        "http://localhost:5000", 
-        "https://caresync-pink.vercel.app", 
-        "wss:", 
-        "ws:"
-      ],
+      imgSrc: ["'self'", "data:", "blob:", "https:"],
+      // Allow blob: for inline PDF preview (<object>) and prescription upload
+      objectSrc: ["'self'", "blob:"],
+      frameSrc: ["'self'", "blob:"],
+      // PDF.js web worker
+      workerSrc: ["'self'", "blob:"],
+      // Allow localhost API and WebSockets
+      connectSrc: ["'self'", "http://localhost:5000", "https://api.caresync.com", "wss:", "ws:"],
     },
   },
 }));
@@ -70,11 +71,9 @@ app.use(helmet({
 
 app.use(cors({
   origin: [
-    'http://localhost:5173',           // Vite (Frontend local)
-    'http://localhost:5000',           // Express (Backend local)
-    'http://localhost:3000',           // Alternative local port
-    'https://caresync-pink.vercel.app', // Production URL
-    process.env.CLIENT_URL             // The URL from your .env
+    'http://localhost:3000',
+    'http://localhost:19006',
+    process.env.CLIENT_URL,
   ].filter(Boolean),
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
@@ -241,58 +240,50 @@ const PORT = process.env.PORT || 5000;
 
 async function syncDatabase(instance, label) {
   try {
-    const isSqlite = instance.getDialect() === 'sqlite';
-    
-    if (isSqlite) {
-      await instance.query('PRAGMA foreign_keys = OFF;');
-    }
-    
-    // In production, 'alter' can be risky, but for a showcase launch, 
-    // it ensures your Supabase tables are created automatically.
-    const shouldSync = process.env.NODE_ENV === 'development' || process.env.SYNC_DB === 'true';
-    
-    if (shouldSync) {
-      await instance.sync({ alter: true });
-      logger.info(`${label} database synchronized.`);
-    }
-    
-    if (isSqlite) {
-      await instance.query('PRAGMA foreign_keys = ON;');
-    }
+    await instance.query('PRAGMA foreign_keys = OFF;');
+    await instance.sync({ alter: true });
+    await instance.query('PRAGMA foreign_keys = ON;');
+    logger.info(`${label} database synchronized (ALTER).`);
   } catch (syncError) {
-    logger.error(`${label} sync failed: ${syncError.message}`);
+    logger.warn(`${label} safe sync failed. Falling back to FORCE sync...`);
+    logger.error(syncError.message);
+    await instance.query('PRAGMA foreign_keys = OFF;');
+    await instance.sync({ force: true });
+    await instance.query('PRAGMA foreign_keys = ON;');
+    logger.info(`${label} database synchronized (FORCE).`);
   }
 }
 
 async function startServer() {
   try {
-    // 1. Authenticate connections
+    // Authenticate both database connections
     await sequelizePii.authenticate();
+    logger.info('PII database connection established successfully.');
     await sequelizeMedical.authenticate();
-    logger.info('✅ Database connections established.');
+    logger.info('Medical database connection established successfully.');
 
-    // 2. Run Synchronization
-    // We check for SYNC_DB or Development mode
-    const shouldSync = process.env.SYNC_DB === 'true' || process.env.NODE_ENV === 'development';
-    
-    if (shouldSync) {
-      logger.info('Syncing databases... (this may take a moment)');
+    if (process.env.NODE_ENV === 'development') {
       await syncDatabase(sequelizePii, 'PII');
       await syncDatabase(sequelizeMedical, 'Medical');
-      
-      if (process.env.NODE_ENV === 'development') {
-        await generateSampleData();
-      }
+
+      // Run sample data generator (handles checking if data exists)
+      await generateSampleData();
+    } else if (process.env.NODE_ENV === 'test') {
+      await sequelizePii.query('PRAGMA foreign_keys = OFF;');
+      await sequelizePii.sync({ force: true });
+      await sequelizePii.query('PRAGMA foreign_keys = ON;');
+      await sequelizeMedical.query('PRAGMA foreign_keys = OFF;');
+      await sequelizeMedical.sync({ force: true });
+      await sequelizeMedical.query('PRAGMA foreign_keys = ON;');
+      logger.info('Both databases synchronized (FORCE) for test environment.');
     }
 
-    // 3. Local Listen (Vercel ignores this, but needed for local)
-    if (process.env.NODE_ENV !== 'production' && process.env.NODE_ENV !== 'test') {
-      server.listen(PORT, () => {
-        logger.info(`🚀 Local Server running on port ${PORT}`);
-      });
-    }
+    server.listen(PORT, () => {
+      logger.info(`🚀 CareSync Backend Server running on port ${PORT}`);
+    });
   } catch (error) {
-    logger.error('❌ Unable to start server:', error);
+    logger.error('Unable to start server:', error);
+    process.exit(1);
   }
 }
 

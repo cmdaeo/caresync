@@ -7,17 +7,20 @@
  *  • All containers have max-w + overflow-hidden guards
  *  • Horizontal scroll: useScroll({ container, target }) - container = page scroll div
  */
-import { useRef, useState, useEffect, useCallback } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import {
   motion, useScroll, useTransform, useSpring,
-  AnimatePresence, useMotionValue, useInView,
+  useMotionValue, useInView,
 } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import {
   ArrowRight, Code2, Wifi, Shield, Activity, Users,
-  Globe, CircuitBoard, Briefcase, 
+  CircuitBoard, Briefcase, 
   FlaskConical, Cpu, Radio, Battery,
-  ChevronRight
+  ChevronRight,
+  CheckCircle,
+  Play,
+  Pause
 } from 'lucide-react';
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -51,7 +54,7 @@ const CSS = () => (
     }
 
     /* Oscilloscope path animation */
-    @keyframes osc { from { stroke-dashoffset: 0 } to { stroke-dashoffset: -500 } }
+    @keyframes osc { from { stroke-dashoffset: 0 } to { stroke-dashoffset: -700 } }
     .oa { animation: osc  4s linear infinite }
     .ob { animation: osc 12s linear infinite }
 
@@ -109,49 +112,6 @@ const CSS = () => (
         rgba(0,0,0,.01) 2px, rgba(0,0,0,.01) 4px);
     }
 
-    /* ─── HORIZONTAL SCROLL PIN ──────────────────────────────────────────
-       Works by making .hs-outer very tall so the page scrolls through it.
-       .hs-inner is sticky at top:0, height:100dvh - it never moves.
-       The motion.div rail slides horizontally inside it.
-
-       On mobile (< 640px): everything un-pins, cards stack vertically.
-    ──────────────────────────────────────────────────────────────────── */
-    .hs-inner {
-      position: sticky;
-      top: 20%;               /* Sticks it nicely near the top instead of flush to 0 */
-      height: 50vh;           /* Give it just enough height, not the whole screen */
-      min-height: 400px;      /* Ensure it doesn't get too small */
-      overflow: hidden;
-      display: flex;
-      align-items: center;    
-    }
-    .hs-rail {
-      display: flex;
-      gap: 16px;
-      padding-left: 6vw;
-      padding-right: 12vw;   /* ensure last card is fully visible */
-      will-change: transform;
-    }
-
-        @media (max-width: 639px) {
-      .hs-outer  { height: auto !important; }
-      .hs-inner  { 
-        position: static; 
-        height: auto; 
-        overflow: visible;
-        display: flex;
-        flex-direction: column;
-        align-items: center; /* Ensures the rail inside gets centered */
-      }
-      .hs-rail { 
-        flex-direction: column; 
-        align-items: center; /* Centers the cards inside the rail */
-        padding: 0 1rem;     /* Overrides the 6vw padding-left and 12vw padding-right */
-        gap: 16px; 
-        width: 100%;         /* Ensures the rail spans the screen */
-        transform: none !important; /* Force disables Framer Motion's X transform on mobile */
-      }
-    }
 
     /* curriculum area colours */
     .aM    { background: rgba(59,130,246,.14); color: #93c5fd; border-color: rgba(59,130,246,.3) }
@@ -196,25 +156,8 @@ const CURRICULUM_EN = [
   },
 ] as const;
 
-const CURRICULUM_PT = [
-  {
-    sem1: [['Intro. aos Sistemas Digitais','IA',6],['Intro. à Eng. Eletrotécnica','ELE',6],['Programação','I',6],['Cálculo I','M',6],['Álgebra Linear','M',6]],
-    sem2: [['Lab. de Sistemas Digitais','IA',6],['Programação por Objectos','I',6],['Cálculo II','M',6],['Circuitos I','ELE',6],['Mecânica e Oscilações','F',6]],
-  },
-  {
-    sem1: [['Métodos Numéricos','M',6],['Competências Transferíveis I','MTD',6],['Arq. de Computadores I','I',6],['Cálculo III','M',6],['Circuitos II','ELE',6]],
-    sem2: [['Campo Eletromagnético','F',6],['Dispositivos Eletrónicos','ELE',6],['Arq. de Computadores II','I',6],['Competências Transferíveis II','CENG',6],['Fund. de Sinais e Sistemas','ELEA',6]],
-  },
-  {
-    sem1: [['Redes de Telecomunicações','ELE',6],['Métodos Probabilísticos','ELE',6],['Sistemas e Controlo','ELE',6],['Circuitos Eletrónicos','ELE',6]],
-    sem2: [['Sistemas de Comunicação','ELE',6],['Propagação de Ondas EM','ELE',6],['Eletrotecnia Aplicada','ELE',6],['Eletrónica de Sistema','ELE',6]],
-    annual: [['Projeto em Eng. Eletrotécnica','ELE',12]],
-  },
-] as const;
-
 const T = {
   en: {
-    sw: 'PT',
     badge: 'LEEC · Universidade de Aveiro',
     eyebrow: 'Electrical & Computer Engineering',
     heroLines: ['Build what', 'powers', 'the world.'],
@@ -257,52 +200,8 @@ const T = {
     meet: 'Meet the Team', apply: 'Apply at UA',
     curriculum: CURRICULUM_EN,
   },
-  pt: {
-    sw: 'EN',
-    badge: 'LEEC · Universidade de Aveiro',
-    eyebrow: 'Engenharia Eletrotécnica e de Computadores',
-    heroLines: ['Constrói o que', 'alimenta', 'o mundo.'],
-    heroGrad: 1,
-    sub: '3 anos · 180 ECTS. De transístores a sistemas distribuídos - a LEEC prepara-te para cada camada da tecnologia moderna.',
-    cta1: 'Explorar o Projeto', cta2: 'Candidatar Agora', scroll: 'descer',
-    discH: 'O que vais dominar',
-    disc: [
-      { label: 'Hardware e Eletrónica',   desc: 'Routing de PCBs, FPGAs, a camada física da tecnologia.', col: '#22d3ee' },
-      { label: 'Software e Computadores', desc: 'Firmware embebido, apps full-stack, sistemas distribuídos.', col: '#60a5fa' },
-      { label: 'Redes e Energia',         desc: 'Protocolos 5G, energia renovável, controlo em tempo real.', col: '#a78bfa' },
-    ],
-    stats: [['3','anos','laboratórios práticos'],['12','eng','criaram o CareSync'],['100','%','empregabilidade'],['180','ects','créditos totais']],
-    currH: 'Plano Curricular', currSub: '6 semestres · 180 ECTS · 3 anos',
-    yr: ['Ano 1','Ano 2','Ano 3'],
-    s1: '1º Semestre', s2: '2º Semestre', sa: 'Projeto Anual',
-    carH: 'Saídas Profissionais', carSub: 'Para onde vão os licenciados da LEEC',
-    careers: [
-      { icon: Cpu,          label: 'Sistemas Eletrónicos',    desc: 'Microcontroladores, FPGAs e IoT para a indústria.' },
-      { icon: Code2,        label: 'Software e Web',          desc: 'Do firmware em tempo real a serviços cloud.' },
-      { icon: Radio,        label: 'Telecomunicações 5G',     desc: 'Protocolos e hardware para ligar o mundo.' },
-      { icon: Battery,      label: 'Energia Renovável',       desc: 'Redes inteligentes e conversores de energia.' },
-      { icon: FlaskConical, label: 'Investigação',            desc: 'Mestrado/Doutoramento nas melhores universidades.' },
-      { icon: Briefcase,    label: 'Startups e Consultoria',  desc: 'Funda empresas ou lidera transformação digital.' },
-    ],
-    projH: 'Dentro do CareSync', projSub: 'Um produto real - feito de raiz por estudantes da LEEC',
-    proj: [
-      { t: 'Hardware',       d: 'Da breadboard à PCB de produção.' },
-      { t: 'Software',       d: 'React · Node.js · C Embebido.'    },
-      { t: 'Segurança',      d: 'Zero-trust · Compatível HIPAA.'   },
-      { t: 'Linha do Tempo', d: 'Cada sprint e milestone.'         },
-      { t: 'Equipa',         d: '12 engenheiros, uma missão.'      },
-    ],
-    demoLabel: 'Demo ao Vivo', demoH: 'Vê ao vivo.',
-    demoSub: 'Lança o dashboard CareSync - uma app real de gestão de medicação construída por estudantes da LEEC.',
-    demoBtn: 'Lançar Dashboard',
-    finalH: ['O teu circuito', 'começa aqui.'],
-    finalGrad: 1,
-    finalSub: 'Junta-te a um curso onde te licencias com um portefólio, e não apenas um diploma.',
-    meet: 'Conhecer a Equipa', apply: 'Candidatar na UA',
-    curriculum: CURRICULUM_PT,
-  },
 } as const;
-type Lang = 'en' | 'pt';
+type Lang = 'en';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    SMALL ATOMS
@@ -310,7 +209,7 @@ type Lang = 'en' | 'pt';
 function OscWave() {
   return (
     <svg viewBox="0 0 500 50" preserveAspectRatio="none" className="w-full h-full">
-      <path className="oa" stroke="rgba(74,164,225,.45)" strokeWidth="1.5" fill="none" strokeDasharray="700"
+      <path className="oa" stroke="rgba(74,164,225,.45)" strokeWidth="1.5" fill="none" strokeDasharray="300 400"
         d="M0,25L15,25L22,8L30,42L38,8L46,42L53,25L80,25L87,13L95,37L103,13L111,37L118,25L145,25L152,4L160,46L168,4L176,46L183,25L210,25L217,16L225,34L233,16L241,34L248,25L275,25L282,9L290,41L298,9L306,41L313,25L340,25L347,12L355,38L363,12L371,38L378,25L405,25L412,5L420,45L428,5L436,45L443,25L470,25L477,14L485,36L493,14L500,25"/>
       <path className="ob" stroke="rgba(74,164,225,.14)" strokeWidth="1" fill="none" strokeDasharray="700"
         d="M0,25C62,25 62,8 125,8C188,8 188,42 250,42C312,42 312,8 375,8C438,8 438,42 500,42"/>
@@ -349,212 +248,558 @@ function CountUp({ n }: { n: number }) {
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   CURRICULUM
+   VIDEO SHOWCASE - Interactive project demos
 ═══════════════════════════════════════════════════════════════════════════ */
-function Curriculum({ t }: { t: typeof T[Lang] }) {
-  const [yr, setYr] = useState(0);
-  const data = t.curriculum[yr] as any;
+interface VideoItem {
+  id: string;
+  title: string;
+  description: string;
+  duration: string;
+  thumbnail: string;
+  src: string;
+  icon: any;
+  tech: string[];
+}
 
-  const areaClass = (a: string) => `chp border a${a.replace(/[^a-zA-Z]/g, '')}`;
+function VideoShowcase({ t }: { t: typeof T[Lang] }) {
+  const [currentVideo, setCurrentVideo] = useState(0);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [playbackSpeed, setPlaybackSpeed] = useState(1);
+  const [progress, setProgress] = useState(0);
+  const [volume, setVolume] = useState(1);
+  const [showControls, setShowControls] = useState(true);
+  const [isMuted, setIsMuted] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const controlsTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const SemBlock = ({ rows, title }: { rows: readonly (readonly [string, string, number])[]; title: string }) => (
-    <div className="rounded-xl overflow-hidden border border-border-subtle bg-bg-card">
-      <div className="px-3 py-2 jm text-[9px] uppercase tracking-widest text-brand-primary border-b border-border-subtle bg-brand-primary/5">
-        {title}
+  const videos: VideoItem[] = [
+    {
+      id: 'hardware',
+      title: 'Hardware Architecture',
+      description: 'From breadboard to production PCB. ESP32-S3 integration, power management, and sensor interfacing.',
+      duration: '3:24',
+      thumbnail: '/videos/thumbnails/hardware.jpg',
+      src: '/videos/caresync-hardware.mp4',
+      icon: CircuitBoard,
+      tech: ['ESP32-S3', 'KiCad', 'PCB Design']
+    },
+    {
+      id: 'software',
+      title: 'Software Stack',
+      description: 'React frontend, Node.js backend, embedded C firmware. Real-time synchronization across all layers.',
+      duration: '4:12',
+      thumbnail: '/videos/thumbnails/software.jpg',
+      src: '/videos/caresync-software.mp4',
+      icon: Code2,
+      tech: ['React', 'Node.js', 'TypeScript']
+    },
+    {
+      id: 'security',
+      title: 'Security & Compliance',
+      description: 'HIPAA-compliant architecture. End-to-end encryption, audit logs, zero-trust security model.',
+      duration: '2:58',
+      thumbnail: '/videos/thumbnails/security.jpg',
+      src: '/videos/caresync-security.mp4',
+      icon: Shield,
+      tech: ['AES-GCM', 'HIPAA', 'OAuth2']
+    },
+    {
+      id: 'timeline',
+      title: 'Development Timeline',
+      description: '14-week sprint breakdown. Agile methodology, CI/CD pipeline, automated testing at every stage.',
+      duration: '3:45',
+      thumbnail: '/videos/thumbnails/timeline.jpg',
+      src: '/videos/caresync-timeline.mp4',
+      icon: Activity,
+      tech: ['Agile', 'GitHub Actions', 'Jest']
+    },
+    {
+      id: 'team',
+      title: 'Team & Collaboration',
+      description: '12 engineers, one mission. Cross-functional teams, code reviews, knowledge sharing sessions.',
+      duration: '2:36',
+      thumbnail: '/videos/thumbnails/team.jpg',
+      src: '/videos/caresync-team.mp4',
+      icon: Users,
+      tech: ['Git', 'Figma', 'Notion']
+    }
+  ];
+
+  // Logic handlers
+  const handleTimeUpdate = () => {
+    if (videoRef.current) {
+      setProgress((videoRef.current.currentTime / videoRef.current.duration) * 100);
+    }
+  };
+
+  const togglePlay = () => {
+    if (videoRef.current) {
+      if (isPlaying) videoRef.current.pause();
+      else videoRef.current.play();
+      setIsPlaying(!isPlaying);
+    }
+  };
+
+  const handleSpeedChange = (speed: number) => {
+    if (videoRef.current) {
+      videoRef.current.playbackRate = speed;
+      setPlaybackSpeed(speed);
+    }
+  };
+
+  const handleProgressClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (videoRef.current) {
+      const rect = e.currentTarget.getBoundingClientRect();
+      const pos = (e.clientX - rect.left) / rect.width;
+      videoRef.current.currentTime = pos * videoRef.current.duration;
+    }
+  };
+
+  const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const vol = parseFloat(e.target.value);
+    setVolume(vol);
+    if (videoRef.current) {
+      videoRef.current.volume = vol;
+      setIsMuted(vol === 0);
+    }
+  };
+
+  const toggleMute = () => {
+    if (videoRef.current) {
+      videoRef.current.muted = !isMuted;
+      setIsMuted(!isMuted);
+      if (!isMuted) setVolume(0);
+      else setVolume(1);
+    }
+  };
+
+  const skip = (seconds: number) => {
+    if (videoRef.current) videoRef.current.currentTime += seconds;
+  };
+
+  const handleInteraction = () => {
+    setShowControls(true);
+    if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current);
+    if (isPlaying) {
+      controlsTimeoutRef.current = setTimeout(() => setShowControls(false), 2500);
+    }
+  };
+
+  const handleVideoEnd = () => {
+    setIsPlaying(false);
+    setProgress(100);
+    if (currentVideo < videos.length - 1) {
+      setTimeout(() => {
+        setCurrentVideo(prev => prev + 1);
+        setIsPlaying(true);
+      }, 2000);
+    }
+  };
+
+  const selectVideo = (index: number) => {
+    setCurrentVideo(index);
+    setIsPlaying(false);
+    setProgress(0);
+    setTimeout(() => {
+      if (videoRef.current) {
+        videoRef.current.load();
+        videoRef.current.play();
+        setIsPlaying(true);
+      }
+    }, 100);
+  };
+
+  const currentVid = videos[currentVideo];
+  const Icon = currentVid.icon;
+
+  return (
+    // STRICT VIEWPORT HEIGHT: We force the section to be exactly 100dvh minus padding, or min 600px.
+    // overflow-hidden prevents the page from expanding past this block if contents are too tall.
+    <section className="py-6 sm:py-10 px-4 sm:px-6 md:px-8 border-t border-border-subtle relative h-[100dvh] min-h-[600px] flex flex-col justify-center overflow-hidden">
+      <div className="max-w-[1400px] w-full mx-auto relative z-10 flex flex-col h-full max-h-[900px]">
+        
+        {/* HEADER - Kept extremely compact */}
+        <Reveal className="mb-4 sm:mb-6 shrink-0">
+          <div className="flex items-center gap-2.5 mb-1.5">
+            <div className="relative flex items-center justify-center w-1.5 h-1.5">
+              <div className="absolute w-1 h-1 rounded-full bg-brand-primary" />
+              <div className="w-full h-full rounded-full border-[0.5px] border-brand-primary border-t-transparent animate-spin [animation-duration:3s]" />
+            </div>
+            <p className="jm text-[9px] uppercase tracking-[.2em] text-brand-primary">
+              {t.projSub}
+            </p>
+          </div>
+          <h2 className="sy font-800 text-2xl sm:text-3xl md:text-4xl leading-tight">
+            {t.projH} <span className="text-brand-primary">→</span>
+          </h2>
+        </Reveal>
+
+        {/* MAIN CONTENT GRID - Fills remaining height completely */}
+        <Reveal delay={0.1} className="flex-1 min-h-0">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-6 h-full">
+            
+            {/* LEFT COLUMN: Video Player & Info (8/12 cols) */}
+            {/* flex flex-col h-full ensures it stretches but never overflows */}
+            <div className="lg:col-span-8 flex flex-col gap-3 h-full max-h-full">
+              <div 
+                className={`relative flex flex-col rounded-xl overflow-hidden border transition-all duration-500 bg-bg-card flex-1 min-h-0 ${
+                  isPlaying ? 'border-brand-primary/40 shadow-2xl shadow-brand-primary/5' : 'border-border-subtle'
+                }`}
+                onMouseMove={handleInteraction}
+                onMouseLeave={() => isPlaying && setShowControls(false)}
+              >
+                {/* Video Container - min-h-0 is crucial to prevent flex flexbox overflow */}
+                <div className={`relative bg-black transition-all duration-500 flex-1 min-h-0 ${isPlaying ? 'brightness-95' : 'brightness-100'}`}>
+                  <video
+                    ref={videoRef}
+                    src={currentVid.src}
+                    className="w-full h-full object-contain bg-[#050505]"
+                    onTimeUpdate={handleTimeUpdate}
+                    onEnded={handleVideoEnd}
+                    onClick={togglePlay}
+                    playsInline
+                    preload="metadata"
+                  />
+
+                  {/* Play Button Overlay (Initial/Paused) */}
+                  {!isPlaying && progress === 0 && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/40">
+                      <button onClick={togglePlay} className="group flex items-center gap-3 px-6 py-3 rounded-full bg-brand-primary/90 hover:bg-brand-primary text-white font-600 text-sm transition-all hover:scale-105 shadow-2xl">
+                        <Play size={18} className="ml-1 fill-current" /> Watch Demo
+                      </button>
+                    </div>
+                  )}
+
+                  {!isPlaying && progress > 0 && progress < 100 && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/30">
+                      <button onClick={togglePlay} className="w-16 h-16 rounded-full bg-brand-primary/90 hover:bg-brand-primary flex items-center justify-center text-white transition-all hover:scale-110 shadow-2xl">
+                        <Play size={24} className="ml-1 fill-current" />
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Video Controls Overlay */}
+                  <div className={`absolute bottom-0 left-0 right-0 transition-all duration-300 ${showControls || !isPlaying ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent" />
+                    
+                    <div className="relative h-1.5 mx-4 mb-2 cursor-pointer group" onClick={handleProgressClick}>
+                      <div className="absolute inset-0 bg-white/20 rounded-full" />
+                      <div className="absolute h-full bg-brand-primary rounded-full transition-all" style={{ width: `${progress}%` }} />
+                      <div className="absolute h-2.5 w-2.5 bg-white rounded-full -top-[2px] shadow-lg opacity-0 group-hover:opacity-100 transition-opacity" style={{ left: `${progress}%`, transform: 'translateX(-50%)' }} />
+                    </div>
+
+                    <div className="relative px-3 pb-3 flex items-center justify-between">
+                      <div className="flex items-center gap-1 sm:gap-2">
+                        <button onClick={togglePlay} className="p-1.5 rounded-lg hover:bg-white/10 transition-colors text-white">
+                          {isPlaying ? <Pause size={16} className="fill-current" /> : <Play size={16} className="fill-current" />}
+                        </button>
+                        <button onClick={() => skip(-10)} className="hidden sm:block p-1.5 rounded-lg hover:bg-white/10 transition-colors text-white jm text-[9px]">-10s</button>
+                        <button onClick={() => skip(10)} className="hidden sm:block p-1.5 rounded-lg hover:bg-white/10 transition-colors text-white jm text-[9px]">+10s</button>
+
+                        <div className="flex items-center gap-1 group/vol">
+                          <button onClick={toggleMute} className="p-1.5 rounded-lg hover:bg-white/10 transition-colors text-white">
+                            {isMuted || volume === 0 ? <Wifi size={14} className="rotate-45" /> : <Wifi size={14} />}
+                          </button>
+                          <input type="range" min="0" max="1" step="0.1" value={isMuted ? 0 : volume} onChange={handleVolumeChange} className="w-0 group-hover/vol:w-16 transition-all duration-200 accent-brand-primary h-1" />
+                        </div>
+
+                        <span className="jm text-[9px] text-white/80 ml-2">
+                          {videoRef.current ? `${Math.floor(videoRef.current.currentTime / 60)}:${String(Math.floor(videoRef.current.currentTime % 60)).padStart(2, '0')} / ${currentVid.duration}` : `0:00 / ${currentVid.duration}`}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center gap-1">
+                        <div className="hidden sm:flex items-center gap-0.5 bg-white/10 rounded-lg p-0.5">
+                          {[1, 1.5, 2].map(speed => (
+                            <button key={speed} onClick={() => handleSpeedChange(speed)} className={`px-2 py-1 rounded-md jm text-[9px] font-600 transition-all ${playbackSpeed === speed ? 'bg-brand-primary text-white' : 'text-white/70 hover:text-white hover:bg-white/10'}`}>
+                              {speed}x
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Video Info Bar - Fixed small height to prevent stretching */}
+                <div className="border-t border-border-subtle p-3 sm:p-4 shrink-0 bg-bg-card">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div className="flex-1 flex items-center gap-3 min-w-0">
+                      <div className="w-9 h-9 shrink-0 rounded-lg bg-brand-primary/10 border border-brand-primary/20 flex items-center justify-center">
+                        <Icon size={18} className="text-brand-primary" />
+                      </div>
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2">
+                          <h3 className="sy font-700 text-sm sm:text-base text-text-main truncate">{currentVid.title}</h3>
+                          <span className="jm text-[9px] text-text-muted border border-border-subtle px-2 py-0.5 rounded-md shrink-0">
+                            {String(currentVideo + 1).padStart(2, '0')} / {String(videos.length).padStart(2, '0')}
+                          </span>
+                        </div>
+                        <div className="flex gap-1.5 mt-1.5 overflow-hidden">
+                          {currentVid.tech.map(tech => (
+                            <span key={tech} className="jm text-[8px] px-1.5 py-0.5 rounded bg-bg-hover border border-border-subtle text-text-muted whitespace-nowrap">
+                              {tech}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* RIGHT COLUMN: Playlist (4/12 cols) */}
+            {/* Uses overflow-y-auto so the container stays strictly within the grid, but internal items scroll */}
+            <div className="lg:col-span-4 flex flex-row lg:flex-col gap-2.5 overflow-x-auto lg:overflow-y-auto lg:pr-2 snap-x snap-mandatory pb-2 lg:pb-0 custom-scrollbar h-full max-h-full">
+              {videos.map((video, index) => {
+                const VidIcon = video.icon;
+                const isActive = index === currentVideo;
+                const isCompleted = index < currentVideo;
+
+                return (
+                  <button
+                    key={video.id}
+                    onClick={() => selectVideo(index)}
+                    className={`group text-left p-3 rounded-xl border transition-all duration-300 shrink-0 w-[260px] lg:w-full snap-start ${
+                      isActive 
+                        ? 'border-brand-primary/40 bg-brand-primary/5 shadow-md shadow-brand-primary/5' 
+                        : 'border-border-subtle bg-bg-card hover:border-brand-primary/20 hover:bg-bg-hover'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-1.5">
+                      <div className={`w-6 h-6 rounded-md flex items-center justify-center transition-all ${
+                        isActive ? 'bg-brand-primary/20 text-brand-primary' 
+                        : isCompleted ? 'bg-green-500/10 text-green-400' 
+                        : 'bg-bg-hover text-text-muted group-hover:text-brand-primary/70'
+                      }`}>
+                        {isCompleted ? <CheckCircle size={12} /> : <VidIcon size={12} />}
+                      </div>
+                      <span className="jm text-[8px] text-text-muted">{video.duration}</span>
+                    </div>
+                    
+                    <h4 className={`text-xs font-600 mb-0.5 transition-colors truncate ${isActive ? 'text-brand-primary' : 'text-text-main'}`}>
+                      {index + 1}. {video.title}
+                    </h4>
+                    <p className="text-[10px] text-text-muted line-clamp-1">
+                      {video.description}
+                    </p>
+
+                    {isActive && isPlaying && (
+                      <div className="mt-2 h-[2px] bg-white/10 rounded-full overflow-hidden">
+                        <div className="h-full bg-brand-primary rounded-full transition-all" style={{ width: `${progress}%` }} />
+                      </div>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+
+          </div>
+        </Reveal>
       </div>
-      {rows.map(([name, area, ects], i) => (
-        <div key={i} className={`flex items-center gap-2 px-3 py-2.5 text-xs hover:bg-bg-hover transition-colors ${i < rows.length - 1 ? 'border-b border-border-subtle' : ''}`}>
-          <span className="flex-1 text-text-main min-w-0 leading-snug">{name}</span>
-          <span className={areaClass(area)}>{area}</span>
-          <span className="jm text-[10px] text-text-muted w-5 text-right shrink-0">{ects}</span>
-        </div>
-      ))}
-    </div>
+    </section>
   );
+}
 
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   PROJECT BREAKDOWN — BENTO GRID
+   Replaces the old horizontal scroll. Shows the 5 CareSync pillars in an
+   asymmetric bento layout. The tone is "look what we built", not "apply here".
+═══════════════════════════════════════════════════════════════════════════ */
+const BENTO_ITEMS = [
+  {
+    id: 'hardware',
+    icon: CircuitBoard,
+    col: '#22d3ee',
+    route: '/showcase/hardware',
+    title: 'Hardware',
+    headline: 'From breadboard to production PCB.',
+    body: 'We designed and routed a custom PCB around an ESP32-S3, integrating power management, sensor arrays, and BLE. Every trace, every component placed by hand.',
+    tags: ['ESP32-S3', 'KiCad', 'BLE 5.0', 'PCB'],
+    size: 'large', // spans 2 columns
+  },
+  {
+    id: 'software',
+    icon: Code2,
+    col: '#60a5fa',
+    route: '/showcase/software',
+    title: 'Software',
+    headline: 'React · Node.js · Embedded C.',
+    body: 'Three layers of code working in perfect sync — a real-time React dashboard, a Node.js REST + WebSocket backend, and bare-metal firmware flashed onto the device.',
+    tags: ['React', 'Node.js', 'TypeScript', 'C'],
+    size: 'large',
+  },
+  {
+    id: 'security',
+    icon: Shield,
+    col: '#f87171',
+    route: '/showcase/security',
+    title: 'Security',
+    headline: 'Zero-trust. HIPAA-compliant.',
+    body: 'End-to-end AES-GCM encryption, OAuth2 auth flows, immutable audit logs.',
+    tags: ['AES-GCM', 'OAuth2', 'HIPAA'],
+    size: 'small',
+  },
+  {
+    id: 'timeline',
+    icon: Activity,
+    col: '#c084fc',
+    route: '/showcase/timeline',
+    title: 'Timeline',
+    headline: '14 weeks. 0 missed deadlines.',
+    body: 'Agile sprints, GitHub Actions CI/CD, automated test suites. Delivered on time.',
+    tags: ['Agile', 'CI/CD', 'Jest'],
+    size: 'small',
+  },
+  {
+    id: 'team',
+    icon: Users,
+    col: '#4ade80',
+    route: '/showcase/team',
+    title: 'Team',
+    headline: '12 engineers. One mission.',
+    body: 'Cross-functional squads, async-first culture, weekly demos. No bus factor.',
+    tags: ['Git', 'Figma', 'Notion'],
+    size: 'small',
+  },
+] as const;
+
+function ProjectBreakdown({ t }: { t: typeof T[Lang] }) {
   return (
     <section className="py-14 sm:py-20 px-4 sm:px-6 md:px-10 border-t border-border-subtle">
       <div className="max-w-5xl mx-auto">
-        <Reveal className="mb-8">
-          <p className="jm text-[10px] uppercase tracking-[.2em] text-brand-primary mb-2">{t.currH}</p>
-          <h2 className="sy font-800 text-3xl sm:text-4xl mb-1">{t.currH} <GText>-</GText></h2>
-          <p className="jm text-xs text-text-muted">{t.currSub}</p>
+
+        {/* Header */}
+        <Reveal className="mb-10">
+          <p className="jm text-[10px] uppercase tracking-[.2em] text-brand-primary mb-2">
+            {t.projSub}
+          </p>
+          <h2 className="sy font-800 text-3xl sm:text-4xl leading-tight">
+            {t.projH} <GText>→</GText>
+          </h2>
         </Reveal>
 
-        {/* Tabs */}
-        <div className="flex gap-1 mb-5 p-1 bg-bg-card border border-border-subtle rounded-lg w-fit">
-          {t.yr.map((y, i) => (
-            <button key={i} onClick={() => setYr(i)}
-              className={`px-4 py-1.5 rounded-md jm text-xs font-700 transition-all duration-200 ${yr === i ? 'bg-brand-primary text-white shadow' : 'text-text-muted hover:text-text-main'}`}>
-              {y}
-            </button>
-          ))}
-        </div>
+        {/* ── ROW 1: two large cards ──────────────────────────────────── */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
+          {BENTO_ITEMS.filter(b => b.size === 'large').map((item, i) => {
+            const Icon = item.icon;
+            return (
+              <Reveal key={item.id} delay={i * 0.06}>
+                <Link
+                  to={item.route}
+                  style={{ '--col': item.col } as React.CSSProperties}
+                  className="lft group flex flex-col h-full min-h-[220px] p-6 rounded-2xl
+                    bg-bg-card border border-border-subtle
+                    hover:border-(--col) transition-all duration-300 relative overflow-hidden"
+                >
+                  {/* Subtle tinted corner glow */}
+                  <div
+                    className="absolute -top-10 -right-10 w-32 h-32 rounded-full opacity-0
+                      group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"
+                    style={{ background: `radial-gradient(circle, ${item.col}22 0%, transparent 70%)` }}
+                  />
 
-        <AnimatePresence mode="wait">
-          <motion.div key={yr}
-            initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}
-            transition={{ duration: .25 }}>
-            <div className="grid sm:grid-cols-2 gap-3">
-              <SemBlock rows={data.sem1} title={t.s1} />
-              <SemBlock rows={data.sem2} title={t.s2} />
-            </div>
-            {data.annual && (
-              <div className="mt-3">
-                <SemBlock rows={data.annual} title={t.sa} />
-              </div>
-            )}
-            <p className="jm text-[10px] text-right mt-2 text-text-muted">
-              Total: <span className="text-brand-primary">60 ECTS</span>
-            </p>
-          </motion.div>
-        </AnimatePresence>
-      </div>
-    </section>
-  );
-}
-
-/* ═══════════════════════════════════════════════════════════════════════════
-   HORIZONTAL SCROLL
-   scrollRef = the page's overflow-y container
-   outerRef  = the tall outer div (target for useScroll)
-═══════════════════════════════════════════════════════════════════════════ */
-const PROJ_ROUTES = ['/showcase/hardware', '/showcase/software', '/showcase/security', '/showcase/timeline', '/showcase/team'];
-const PROJ_ICONS = [CircuitBoard, Code2, Shield, Activity, Users];
-const PROJ_COLS = ['#22d3ee', '#60a5fa', '#f87171', '#c084fc', '#4ade80'];
-
-function HScroll({ t, scrollRef }: { t: typeof T[Lang]; scrollRef: React.RefObject<HTMLDivElement> }) {
-  const outerRef = useRef<HTMLDivElement>(null);
-  const railRef = useRef<HTMLDivElement>(null);
-  const [travel, setTravel] = useState(0);
-  const [ready, setReady] = useState(false);
-
-  const measure = useCallback(() => {
-    if (!railRef.current) return;
-    const rw = railRef.current.scrollWidth;
-    const vw = window.innerWidth;
-    
-    // Disable horizontal scroll logic on mobile viewports
-    if (vw < 640) {
-      setTravel(0);
-      setReady(false);
-      return;
-    }
-    
-    // Multiply by 2.5 to slow down the scroll speed by 2.5x. 
-    const SCROLL_MULTIPLIER = 5; 
-    const t = Math.max(rw - vw, 0) * SCROLL_MULTIPLIER;
-    
-    setTravel(t);
-    if (t > 0) setReady(true);
-  }, []);
-
-  useEffect(() => {
-    // Defer measurement until layout is complete
-    const id = setTimeout(measure, 100);
-    const ro = new ResizeObserver(measure);
-    if (railRef.current) ro.observe(railRef.current);
-    window.addEventListener('resize', measure);
-    return () => { clearTimeout(id); ro.disconnect(); window.removeEventListener('resize', measure); };
-  }, [measure]);
-
-  // KEY FIX: pass the page scroll container as `container`
-  // so framer-motion tracks scroll position within that div, not window
-  const { scrollYProgress } = useScroll({
-    container: scrollRef as React.RefObject<HTMLElement>,
-    target: outerRef,
-    offset: ['start start', 'end end'],
-  });
-
-  const x = useTransform(scrollYProgress, [0, 1], ['0px', `-${travel / 5}px`]);
-
-  // outerHeight: 100dvh (the sticky viewport) + travel distance
-  const outerH = ready ? `calc(max(50vh, 400px) + ${travel}px)` : 'auto';
-
-  return (
-    <section className="border-t border-border-subtle">
-      {/* Section header - sits in normal document flow, above sticky zone */}
-      <div className="px-4 sm:px-6 md:px-10 pt-12 sm:pt-16 pb-6 max-w-5xl mx-auto">
-        <Reveal>
-          <p className="jm text-[10px] uppercase tracking-[.2em] text-brand-primary mb-1">{t.projSub}</p>
-          <h2 className="sy font-800 text-3xl sm:text-4xl">{t.projH}</h2>
-        </Reveal>
-      </div>
-
-      {/* Tall outer - scroll target */}
-      <div ref={outerRef} className="hs-outer relative" style={{ height: outerH }}>
-        <div className="hs-inner relative w-full overflow-hidden">
-
-          {/* Edge fade masks */}
-          <div className="pointer-events-none absolute left-0 top-0 bottom-0 w-10 sm:w-20 z-10 hidden sm:block"
-            style={{ background: 'linear-gradient(90deg, var(--bg-page, #020617), transparent)' }} />
-          <div className="pointer-events-none absolute right-0 top-0 bottom-0 w-10 sm:w-20 z-10 hidden sm:block"
-            style={{ background: 'linear-gradient(270deg, var(--bg-page, #020617), transparent)' }} />
-
-          {/* The sliding rail */}
-          <motion.div ref={railRef} className="hs-rail" style={{ x }}>
-            {t.proj.map((p, i) => {
-              const Icon = PROJ_ICONS[i];
-              const col = PROJ_COLS[i];
-              return (
-                <Link key={p.t} to={PROJ_ROUTES[i]}
-                  style={{
-                    '--col': col,
-                    width: 'min(70vw, 280px)',
-                    minWidth: '220px',
-                    minHeight: '180px',    // Enough room for the icons and text
-                    borderColor: `rgba(255,255,255,.08)`,
-                  } as React.CSSProperties}
-                  className="lft group flex flex-col shrink-0 rounded-2xl bg-bg-card border p-5
-                    hover:border-(--col) transition-all duration-300">
-                  <div className="flex items-center justify-between">
-                    <div className="chp border" style={{ background: `${col}18`, borderColor: `${col}44`, color: col }}>
-                      0{i + 1}
+                  {/* Top row */}
+                  <div className="flex items-center justify-between mb-auto">
+                    <div className="chp border" style={{ background: `${item.col}18`, borderColor: `${item.col}44`, color: item.col }}>
+                      {item.title}
                     </div>
-                    <Icon size={16} className="text-text-muted transition-colors group-hover:text-(--col)" />
+                    <Icon size={15} className="text-text-muted group-hover:text-(--col) transition-colors" />
                   </div>
-                  <div className="mt-auto">
-                    <h3 className="sy font-700 text-lg text-text-main mb-1 group-hover:text-(--col) transition-colors">{p.t}</h3>
-                    <p className="text-xs text-text-muted leading-relaxed mb-4">{p.d}</p>
-                    <div className="flex items-center gap-1 jm text-[9px] uppercase tracking-widest text-text-muted group-hover:text-(--col) transition-colors">
-                      Explore <ArrowRight size={9} className="group-hover:translate-x-1 transition-transform" />
+
+                  {/* Content — pushed to bottom */}
+                  <div className="mt-8">
+                    <h3 className="sy font-700 text-xl sm:text-2xl text-text-main mb-2 leading-tight
+                      group-hover:text-(--col) transition-colors">
+                      {item.headline}
+                    </h3>
+                    <p className="text-sm text-text-muted leading-relaxed mb-4">{item.body}</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {item.tags.map(tag => (
+                        <span key={tag} className="jm text-[9px] px-2 py-0.5 rounded border"
+                          style={{ background: `${item.col}10`, borderColor: `${item.col}30`, color: item.col }}>
+                          {tag}
+                        </span>
+                      ))}
                     </div>
+                  </div>
+
+                  {/* Arrow */}
+                  <div className="flex items-center gap-1 jm text-[9px] uppercase tracking-widest
+                    text-text-muted group-hover:text-(--col) transition-colors mt-5">
+                    Explore <ArrowRight size={9} className="group-hover:translate-x-1 transition-transform" />
                   </div>
                 </Link>
-              );
-            })}
-          </motion.div>
-
-          {/* Progress dots */}
-          <div className="absolute bottom-6 left-1/2 -translate-x-1/2 hidden sm:flex gap-2 z-20">
-            {t.proj.map((_, i) => (
-              <div key={i} className="h-0.5 w-6 rounded-full bg-white/10 overflow-hidden">
-                <motion.div className="h-full bg-brand-primary rounded-full origin-left"
-                  style={{
-                    scaleX: useTransform(scrollYProgress,
-                      [i / t.proj.length, (i + 1) / t.proj.length], [0, 1])
-                  }} />
-              </div>
-            ))}
-          </div>
-
-          {/* Hint */}
-          <motion.div
-            style={{ opacity: useTransform(scrollYProgress, [0, .08], [1, 0]) }}
-            className="absolute bottom-6 right-6 sm:right-10 hidden sm:flex items-center gap-1.5 jm text-[9px] uppercase tracking-widest text-text-muted z-20 pointer-events-none">
-            scroll <ArrowRight size={9} />
-          </motion.div>
+              </Reveal>
+            );
+          })}
         </div>
+
+        {/* ── ROW 2: three small cards ────────────────────────────────── */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          {BENTO_ITEMS.filter(b => b.size === 'small').map((item, i) => {
+            const Icon = item.icon;
+            return (
+              <Reveal key={item.id} delay={0.12 + i * 0.06}>
+                <Link
+                  to={item.route}
+                  style={{ '--col': item.col } as React.CSSProperties}
+                  className="lft group flex flex-col h-full min-h-[160px] p-5 rounded-2xl
+                    bg-bg-card border border-border-subtle
+                    hover:border-(--col) transition-all duration-300 relative overflow-hidden"
+                >
+                  <div
+                    className="absolute -top-8 -right-8 w-24 h-24 rounded-full opacity-0
+                      group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"
+                    style={{ background: `radial-gradient(circle, ${item.col}1e 0%, transparent 70%)` }}
+                  />
+
+                  <div className="flex items-center justify-between mb-auto">
+                    <div className="chp border" style={{ background: `${item.col}18`, borderColor: `${item.col}44`, color: item.col }}>
+                      {item.title}
+                    </div>
+                    <Icon size={14} className="text-text-muted group-hover:text-(--col) transition-colors" />
+                  </div>
+
+                  <div className="mt-6">
+                    <h3 className="sy font-700 text-base sm:text-lg text-text-main mb-1.5 leading-tight
+                      group-hover:text-(--col) transition-colors">
+                      {item.headline}
+                    </h3>
+                    <p className="text-xs text-text-muted leading-relaxed mb-3">{item.body}</p>
+                    <div className="flex flex-wrap gap-1">
+                      {item.tags.map(tag => (
+                        <span key={tag} className="jm text-[8px] px-1.5 py-0.5 rounded border"
+                          style={{ background: `${item.col}10`, borderColor: `${item.col}30`, color: item.col }}>
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-1 jm text-[9px] uppercase tracking-widest
+                    text-text-muted group-hover:text-(--col) transition-colors mt-4">
+                    Explore <ArrowRight size={9} className="group-hover:translate-x-1 transition-transform" />
+                  </div>
+                </Link>
+              </Reveal>
+            );
+          })}
+        </div>
+
       </div>
     </section>
   );
 }
+
 
 /* ═══════════════════════════════════════════════════════════════════════════
    MAIN COMPONENT
 ═══════════════════════════════════════════════════════════════════════════ */
 export default function LandingPage() {
-  const [lang, setLang] = useState<Lang>('en');
+  const lang: Lang = 'en';
   const t = T[lang];
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -579,22 +824,6 @@ export default function LandingPage() {
   return (
     <>
       <CSS />
-
-      {/* Lang toggle - fixed overlay */}
-      <motion.button
-        initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: .9 }}
-        onClick={() => setLang(l => l === 'en' ? 'pt' : 'en')}
-        className="fixed top-3 right-3 z-50 flex items-center gap-1.5 px-2.5 py-1.5 rounded-full
-          bg-bg-card/85 backdrop-blur-sm border border-border-subtle
-          hover:border-brand-primary/40 transition-all jm text-[10px] text-text-muted hover:text-text-main shadow-sm">
-        <Globe size={10} />
-        <AnimatePresence mode="wait">
-          <motion.span key={lang}
-            initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 4 }}
-            transition={{ duration: .1 }}>{t.sw}
-          </motion.span>
-        </AnimatePresence>
-      </motion.button>
 
       {/* ── PAGE SCROLL CONTAINER ──────────────────────────────────────── */}
       <div
@@ -766,9 +995,9 @@ export default function LandingPage() {
         </section>
 
         {/* ════════════════════════════════════════════════════════════════
-            CURRICULUM
+            VideoShowcase
         ════════════════════════════════════════════════════════════════ */}
-        <Curriculum t={t} />
+        <VideoShowcase t={t} />
 
         {/* ════════════════════════════════════════════════════════════════
             CAREERS
@@ -828,9 +1057,9 @@ export default function LandingPage() {
         </section>
 
         {/* ════════════════════════════════════════════════════════════════
-            HORIZONTAL SCROLL CARDS
+            PROJECT BREAKDOWN — BENTO GRID
         ════════════════════════════════════════════════════════════════ */}
-        <HScroll t={t} scrollRef={scrollRef as React.RefObject<HTMLDivElement>} />
+        <ProjectBreakdown t={t} />
 
         {/* ════════════════════════════════════════════════════════════════
             DEMO BANNER
@@ -879,55 +1108,6 @@ export default function LandingPage() {
     </div>
   </Reveal>
 </section>
-
-        {/* ════════════════════════════════════════════════════════════════
-            FINAL CTA
-        ════════════════════════════════════════════════════════════════ */}
-        <section className="relative py-24 sm:py-32 px-5 text-center border-t border-border-subtle overflow-hidden bpg">
-          <div className="absolute inset-0 pointer-events-none"
-            style={{ background: 'radial-gradient(ellipse 70% 55% at 50% 50%, rgba(74,164,225,.09), transparent)' }} />
-          <div className="relative z-10 max-w-xl mx-auto">
-            <Reveal>
-
-              {/* Same safe sizing as hero */}
-              {t.finalH.map((line, i) => (
-                <div key={i} className="overflow-hidden">
-                  <h2 className={`sy font-800 leading-[.9] tracking-tight mb-1
-                    text-4xl sm:text-5xl md:text-6xl lg:text-7xl
-                    ${i === t.finalGrad ? '' : 'text-text-main'}`}
-                    style={i === t.finalGrad ? {
-                      background: 'linear-gradient(135deg,#4AA4E1 0%,#22d3ee 45%,#4AA4E1 100%)',
-                      WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text',
-                    } : {}}>
-                    {line}
-                  </h2>
-                </div>
-              ))}
-
-              <p className="text-text-muted text-sm sm:text-base max-w-md mx-auto mt-5 mb-8 leading-relaxed">{t.finalSub}</p>
-              <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-                <Link to="/showcase/team"
-                  className="shm group flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl
-                    bg-text-main text-bg-page font-700 text-sm hover:scale-105 transition-all shadow-2xl w-full sm:w-auto">
-                  {t.meet}
-                  <Users size={14} className="group-hover:translate-x-0.5 transition-transform" />
-                </Link>
-                <a href="https://www.ua.pt/pt/curso/480" target="_blank" rel="noreferrer"
-                  className="group flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl
-                    border border-border-subtle text-text-muted font-600 text-sm
-                    hover:text-text-main hover:bg-bg-card hover:border-brand-primary/40 transition-all w-full sm:w-auto">
-                  {t.apply}
-                  <ArrowRight size={14} className="group-hover:translate-x-0.5 transition-transform" />
-                </a>
-              </div>
-            </Reveal>
-          </div>
-          <div className="relative z-10 mt-14 flex items-center justify-center gap-4 opacity-20">
-            <div className="h-px w-8 sm:w-12 bg-brand-primary" />
-            <span className="jm text-[8px] uppercase tracking-[.28em] text-text-muted">LEEC · DETI · UA · 2026</span>
-            <div className="h-px w-8 sm:w-12 bg-brand-primary" />
-          </div>
-        </section>
 
       </div>{/* end scroll root */}
     </>

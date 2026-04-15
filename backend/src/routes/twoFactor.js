@@ -3,8 +3,7 @@ const router = express.Router();
 const crypto = require('crypto');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-// otplib @12.0.1 uses this destructuring for CommonJS
-const { authenticator } = require('otplib'); 
+const otplib = require('otplib');
 const QRCode = require('qrcode');
 const { User } = require('../models');
 const authService = require('../services/authService');
@@ -63,9 +62,14 @@ async function issueFullTokens(user, res) {
 /**
  * @swagger
  * /api/auth/2fa/setup:
- * post:
- * tags: [Two-Factor Authentication]
- * summary: Begin 2FA setup — generates secret + QR code
+ *   post:
+ *     tags: [Two-Factor Authentication]
+ *     summary: Begin 2FA setup — generates secret + QR code
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: QR code and secret for authenticator app
  */
 router.post(
   '/setup',
@@ -75,15 +79,18 @@ router.post(
     if (!user) throw new AppError('User not found', 404);
 
     if (user.isTwoFactorEnabled) {
-      throw new AppError('2FA already enabled.', 400, 'TWO_FACTOR_ALREADY_ENABLED');
+      throw new AppError('2FA is already enabled. Disable it first to reconfigure.', 400, 'TWO_FACTOR_ALREADY_ENABLED');
     }
 
-    // otplib v12 Syntax: authenticator.generateSecret()
-    const secret = authenticator.generateSecret();
+    const secret = otplib.generateSecret();
     await user.update({ twoFactorSecret: secret });
 
-    // otplib v12 Syntax: authenticator.keyuri()
-    const otpauthUrl = authenticator.keyuri(user.email, 'CareSync', secret);
+    const otpauthUrl = otplib.generateURI({
+      issuer: 'CareSync',
+      label: user.email,
+      secret,
+      type: 'totp',
+    });
 
     const qrCodeDataUrl = await QRCode.toDataURL(otpauthUrl);
 
@@ -99,30 +106,50 @@ router.post(
 /**
  * @swagger
  * /api/auth/2fa/confirm-setup:
- * post:
- * tags: [Two-Factor Authentication]
- * summary: Confirm 2FA setup
+ *   post:
+ *     tags: [Two-Factor Authentication]
+ *     summary: Confirm 2FA setup by verifying a TOTP code from the authenticator app
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [token]
+ *             properties:
+ *               token:
+ *                 type: string
+ *                 pattern: '^\d{6}$'
+ *     responses:
+ *       200:
+ *         description: 2FA enabled, recovery codes returned
  */
 router.post(
   '/confirm-setup',
   authMiddleware,
   [
-    body('token').isString().matches(/^\d{6}$/).withMessage('Token must be a 6-digit code'),
+    body('token')
+      .isString()
+      .matches(/^\d{6}$/)
+      .withMessage('Token must be a 6-digit code'),
   ],
   handleValidationErrors,
   asyncHandler(async (req, res) => {
     const user = await User.findByPk(req.user.id);
     if (!user) throw new AppError('User not found', 404);
 
+    if (user.isTwoFactorEnabled) {
+      throw new AppError('2FA is already enabled', 400, 'TWO_FACTOR_ALREADY_ENABLED');
+    }
     if (!user.twoFactorSecret) {
-      throw new AppError('No 2FA setup in progress.', 400, 'TWO_FACTOR_NO_SETUP');
+      throw new AppError('No 2FA setup in progress. Call /setup first.', 400, 'TWO_FACTOR_NO_SETUP');
     }
 
-    // otplib v12 Syntax: authenticator.check(token, secret)
-    const isValid = authenticator.check(req.body.token, user.twoFactorSecret);
-    
-    if (!isValid) {
-      throw new AppError('Invalid TOTP code.', 401, 'INVALID_TOTP');
+    const result = await otplib.verify({ token: req.body.token, secret: user.twoFactorSecret });
+    if (!result.valid) {
+      throw new AppError('Invalid TOTP code. Please try again.', 401, 'INVALID_TOTP');
     }
 
     const plainCodes = generateRecoveryCodes(10);
@@ -134,7 +161,7 @@ router.post(
 
     res.json({
       success: true,
-      message: '2FA enabled. Save your recovery codes.',
+      message: '2FA has been enabled successfully. Save your recovery codes in a safe place.',
       data: { recoveryCodes: plainCodes },
     });
   })
@@ -143,9 +170,25 @@ router.post(
 /**
  * @swagger
  * /api/auth/2fa/verify:
- * post:
- * tags: [Two-Factor Authentication]
- * summary: Verify TOTP code during login
+ *   post:
+ *     tags: [Two-Factor Authentication]
+ *     summary: Verify TOTP code during login (partial auth state)
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [tempToken, token]
+ *             properties:
+ *               tempToken:
+ *                 type: string
+ *               token:
+ *                 type: string
+ *                 pattern: '^\d{6}$'
+ *     responses:
+ *       200:
+ *         description: Full JWT tokens returned
  */
 router.post(
   '/verify',
@@ -161,7 +204,11 @@ router.post(
     try {
       decoded = jwt.verify(tempToken, process.env.JWT_SECRET, { algorithms: ['HS256'] });
     } catch {
-      throw new AppError('Invalid temporary token.', 401, 'INVALID_TEMP_TOKEN');
+      throw new AppError('Invalid or expired temporary token. Please login again.', 401, 'INVALID_TEMP_TOKEN');
+    }
+
+    if (decoded.type !== '2fa_pending') {
+      throw new AppError('Invalid token type', 401, 'INVALID_TEMP_TOKEN');
     }
 
     const user = await User.findByPk(decoded.userId);
@@ -169,10 +216,8 @@ router.post(
       throw new AppError('2FA verification failed', 401, 'TWO_FACTOR_ERROR');
     }
 
-    // otplib v12 Syntax: authenticator.check(token, secret)
-    const isValid = authenticator.check(token, user.twoFactorSecret);
-    
-    if (!isValid) {
+    const result = await otplib.verify({ token, secret: user.twoFactorSecret });
+    if (!result.valid) {
       logger.warn(`Failed 2FA attempt for user ${user.id}`);
       throw new AppError('Invalid TOTP code', 401, 'INVALID_TOTP');
     }
@@ -192,15 +237,31 @@ router.post(
 /**
  * @swagger
  * /api/auth/2fa/recovery:
- * post:
- * tags: [Two-Factor Authentication]
- * summary: Use a recovery code
+ *   post:
+ *     tags: [Two-Factor Authentication]
+ *     summary: Use a recovery code to complete login when TOTP device is unavailable
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [tempToken, recoveryCode]
+ *             properties:
+ *               tempToken:
+ *                 type: string
+ *               recoveryCode:
+ *                 type: string
+ *                 pattern: '^[A-F0-9]{4}-[A-F0-9]{4}$'
+ *     responses:
+ *       200:
+ *         description: Full JWT tokens returned
  */
 router.post(
   '/recovery',
   [
     body('tempToken').isString().notEmpty().withMessage('Temporary token is required'),
-    body('recoveryCode').isString().matches(/^[A-F0-9]{4}-[A-F0-9]{4}$/i).withMessage('Recovery code invalid format'),
+    body('recoveryCode').isString().matches(/^[A-F0-9]{4}-[A-F0-9]{4}$/i).withMessage('Recovery code must be in XXXX-XXXX format'),
   ],
   handleValidationErrors,
   asyncHandler(async (req, res) => {
@@ -210,7 +271,11 @@ router.post(
     try {
       decoded = jwt.verify(tempToken, process.env.JWT_SECRET, { algorithms: ['HS256'] });
     } catch {
-      throw new AppError('Invalid temporary token', 401, 'INVALID_TEMP_TOKEN');
+      throw new AppError('Invalid or expired temporary token', 401, 'INVALID_TEMP_TOKEN');
+    }
+
+    if (decoded.type !== '2fa_pending') {
+      throw new AppError('Invalid token type', 401, 'INVALID_TEMP_TOKEN');
     }
 
     const user = await User.findByPk(decoded.userId);
@@ -231,19 +296,23 @@ router.post(
     }
 
     if (matchedIndex === -1) {
-      throw new AppError('Invalid recovery code', 401, 'INVALID_RECOVERY_CODE');
+      logger.warn(`Failed recovery code attempt for user ${user.id}`);
+      throw new AppError('Invalid or already used recovery code', 401, 'INVALID_RECOVERY_CODE');
     }
 
     const updatedCodes = [...codes];
     updatedCodes[matchedIndex] = { ...updatedCodes[matchedIndex], used: true };
     await user.update({ recoveryCodes: updatedCodes });
 
+    const remainingCodes = updatedCodes.filter(c => !c.used).length;
+    logger.info(`Recovery code used for user ${user.id}. ${remainingCodes} codes remaining.`);
+
     const accessToken = await issueFullTokens(user, res);
 
     res.json({
       success: true,
-      message: 'Authentication complete via recovery code.',
-      data: { token: accessToken, user: user.toJSON() },
+      message: `Authentication complete. ${remainingCodes} recovery codes remaining.`,
+      data: { token: accessToken, user: user.toJSON(), remainingRecoveryCodes: remainingCodes },
     });
   })
 );
@@ -251,29 +320,49 @@ router.post(
 /**
  * @swagger
  * /api/auth/2fa/disable:
- * post:
- * tags: [Two-Factor Authentication]
- * summary: Disable 2FA
+ *   post:
+ *     tags: [Two-Factor Authentication]
+ *     summary: Disable 2FA (requires password confirmation)
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [password]
+ *             properties:
+ *               password:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: 2FA disabled
  */
 router.post(
   '/disable',
   authMiddleware,
   [
-    body('password').isString().notEmpty().withMessage('Password required'),
+    body('password').isString().notEmpty().withMessage('Current password is required to disable 2FA'),
   ],
   handleValidationErrors,
   asyncHandler(async (req, res) => {
     const user = await User.findByPk(req.user.id);
-    if (!user || !user.isTwoFactorEnabled) {
-      throw new AppError('2FA is not enabled', 400);
+    if (!user) throw new AppError('User not found', 404);
+
+    if (!user.isTwoFactorEnabled) {
+      throw new AppError('2FA is not enabled', 400, 'TWO_FACTOR_NOT_ENABLED');
     }
 
     const isPasswordValid = await user.comparePassword(req.body.password);
-    if (!isPasswordValid) throw new AppError('Invalid password', 401);
+    if (!isPasswordValid) {
+      throw new AppError('Invalid password', 401, 'INVALID_PASSWORD');
+    }
 
     await user.update({ isTwoFactorEnabled: false, twoFactorSecret: null, recoveryCodes: null });
 
     logger.info(`2FA disabled for user ${user.id}`);
+
     res.json({ success: true, message: '2FA has been disabled' });
   })
 );
@@ -281,9 +370,14 @@ router.post(
 /**
  * @swagger
  * /api/auth/2fa/status:
- * get:
- * tags: [Two-Factor Authentication]
- * summary: Check 2FA status
+ *   get:
+ *     tags: [Two-Factor Authentication]
+ *     summary: Check if 2FA is enabled for the current user
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: 2FA status
  */
 router.get(
   '/status',
@@ -292,7 +386,8 @@ router.get(
     const user = await User.findByPk(req.user.id, {
       attributes: ['id', 'isTwoFactorEnabled', 'recoveryCodes'],
     });
-    
+    if (!user) throw new AppError('User not found', 404);
+
     const codes = user.recoveryCodes || [];
     const remainingCodes = codes.filter(c => !c.used).length;
 

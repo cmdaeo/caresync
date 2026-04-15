@@ -4,6 +4,7 @@ import { Layers, Code2, Shield, Activity, Users, ArrowRight, Menu, X } from 'luc
 import { useState, useEffect } from 'react';
 import clsx from 'clsx';
 import { AnimatePresence, motion } from 'framer-motion';
+import logo from '../../../assets/caresync.svg';
 
 export const Navbar = () => {
   const location = useLocation();
@@ -37,15 +38,19 @@ export const Navbar = () => {
       <div className="relative z-10 max-w-480 mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-14 lg:h-16">
           
-          {/* Logo - Enhanced with better shadow and animation */}
+          {/* Logo - Updated with actual SVG */}
           <Link to="/showcase" className="flex items-center gap-2.5 group shrink-0">
             <div className="relative">
-              {/* Glow effect on logo */}
-              <div className="absolute inset-0 bg-linear-to-br from-blue-500 to-cyan-500 rounded-lg blur-md opacity-50 group-hover:opacity-75 transition-opacity" />
-              <div className="relative w-8 h-8 lg:w-9 lg:h-9 rounded-lg bg-linear-to-br from-blue-500 to-cyan-500 flex items-center justify-center shadow-lg shadow-blue-500/25 transition-all duration-300 group-hover:scale-110 group-hover:shadow-blue-500/40">
-                <span className="text-white font-bold text-lg lg:text-xl">C</span>
+
+              <div className="relative w-8 h-8 lg:w-9 lg:h-9 flex items-center justify-center transition-all duration-300 group-hover:scale-110">
+                <img 
+                  src={logo} 
+                  alt="CareSync Logo" 
+                  className="w-full h-full object-contain" 
+                />
               </div>
             </div>
+            
             <span className="text-lg lg:text-xl font-bold bg-linear-to-r from-text-main via-text-main to-text-muted bg-clip-text text-transparent hidden xs:block transition-all group-hover:tracking-wide">
               CareSync
             </span>
