@@ -1,14 +1,10 @@
-require('dotenv').config();
+require('dotenv').config({ path: '../.env' });
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
-const morgan = require('morgan');
 const compression = require('compression');
 const rateLimit = require('express-rate-limit');
 const cookieParser = require('cookie-parser');
-const { doubleCsrf } = require('csrf-csrf');
-const { Server } = require('socket.io');
-const http = require('http');
 
 // Import routes
 const authRoutes = require('./routes/auth');
@@ -27,6 +23,8 @@ const apiDocsRoutes = require('./routes/api-docs');
 // Import middleware
 const { authMiddleware } = require('./middleware/auth');
 const { errorHandler } = require('./middleware/errorHandler');
+const { csrfProtection, generateToken, CSRF_COOKIE_NAME } = require('./middleware/csrf');
+const { logRequest, generateRequestId } = require('./middleware/requestLogger');
 const logger = require('./utils/logger');
 const { sequelizePii, sequelizeMedical } = require('./config/database');
 const generateSampleData = require('./utils/sampleDataGenerator');
@@ -35,39 +33,25 @@ const generateSampleData = require('./utils/sampleDataGenerator');
 const { specs, swaggerUi } = require('./swagger');
 
 const app = express();
-const server = http.createServer(app);
 
-const io = new Server(server, {
-  cors: {
-    origin: process.env.CLIENT_URL || "http://localhost:3000",
-    methods: ["GET", "POST"]
-  }
-});
-app.set('io', io);
-
+// Trust proxy for Vercel deployment
 app.set('trust proxy', 1);
 
 app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
-      // 'unsafe-inline' required for Framer Motion runtime inline styles.
-      // TODO: Migrate to nonce-based CSP when Framer Motion supports it.
       styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
       fontSrc: ["'self'", "https://fonts.gstatic.com", "data:"],
       scriptSrc: ["'self'"],
       imgSrc: ["'self'", "data:", "blob:", "https:"],
-      // Allow blob: for inline PDF preview (<object>) and prescription upload
       objectSrc: ["'self'", "blob:"],
       frameSrc: ["'self'", "blob:"],
-      // PDF.js web worker
       workerSrc: ["'self'", "blob:"],
-      // Allow localhost API and WebSockets
       connectSrc: ["'self'", "http://localhost:5000", "https://api.caresync.com", "wss:", "ws:"],
     },
   },
 }));
-
 
 app.use(cors({
   origin: [
@@ -80,110 +64,103 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization', 'x-device-id', 'x-app-version', 'x-csrf-token'],
 }));
 
-// --- HTTPS enforcement for production (behind reverse proxy) ---
-if (process.env.NODE_ENV === 'production') {
-  app.use((req, res, next) => {
-    if (req.headers['x-forwarded-proto'] !== 'https') {
-      return res.redirect(301, `https://${req.headers.host}${req.url}`);
-    }
-    next();
-  });
-}
-
 app.use(compression());
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(cookieParser());
 
+// Request ID and logging middleware
+app.use((req, res, next) => {
+  req.requestId = generateRequestId();
+  logRequest(req);
+  next();
+});
+
+// Database initialization middleware (lazy, serverless-compatible)
 let dbInitialized = false;
 
 async function initializeDatabase() {
   if (dbInitialized) return;
-  
+
   try {
-    // Authenticate both database connections
+    logger.info('Initializing database connections...');
+
     await sequelizePii.authenticate();
-    logger.info('PII database connection established successfully.');
+    logger.info('PII database connection established.');
+
     await sequelizeMedical.authenticate();
-    logger.info('Medical database connection established successfully.');
+    logger.info('Medical database connection established.');
 
     if (process.env.NODE_ENV === 'development') {
       await syncDatabase(sequelizePii, 'PII');
       await syncDatabase(sequelizeMedical, 'Medical');
       await generateSampleData();
-    } else if (process.env.NODE_ENV === 'test') {
-      const dialectPii = sequelizePii.getDialect();
-      const dialectMed = sequelizeMedical.getDialect();
-      
-      if (dialectPii === 'sqlite') {
-        await sequelizePii.query('PRAGMA foreign_keys = OFF;');
-      }
-      await sequelizePii.sync({ force: true });
-      if (dialectPii === 'sqlite') {
-        await sequelizePii.query('PRAGMA foreign_keys = ON;');
-      }
-      
-      if (dialectMed === 'sqlite') {
-        await sequelizeMedical.query('PRAGMA foreign_keys = OFF;');
-      }
-      await sequelizeMedical.sync({ force: true });
-      if (dialectMed === 'sqlite') {
-        await sequelizeMedical.query('PRAGMA foreign_keys = ON;');
-      }
-      logger.info('Both databases synchronized (FORCE) for test environment.');
     }
-    
+
     dbInitialized = true;
+    logger.info('Database initialization complete.');
   } catch (error) {
-    logger.error('Database initialization failed:', error);
+    logger.error('Database initialization failed:', {
+      error: error.message,
+      stack: error.stack,
+      code: error.code,
+    });
     throw error;
   }
 }
 
-// Initialize DB before first request
+// Lazy database init for serverless
 app.use(async (req, res, next) => {
   if (!dbInitialized) {
     try {
       await initializeDatabase();
     } catch (error) {
-      logger.error('Failed to initialize database:', error);
-      return res.status(500).json({ success: false, message: 'Database connection failed' });
+      logger.error('Database init failed on request:', {
+        requestId: req.requestId,
+        url: req.url,
+        error: error.message,
+      });
+      return res.status(500).json({
+        success: false,
+        message: 'Database connection failed',
+        requestId: req.requestId
+      });
     }
   }
   next();
 });
 
-// --- CSRF Protection (Double Submit Cookie via csrf-csrf) ---
-const { doubleCsrfProtection, generateCsrfToken } = doubleCsrf({
-  getSecret: () => process.env.CSRF_SECRET || process.env.SESSION_SECRET,
-  getSessionIdentifier: (req) => req.ip || req.headers['x-forwarded-for']?.split(',')[0] || 'unknown',
-  getTokenFromRequest: (req) => req.headers['x-csrf-token'],
-  cookieName: process.env.NODE_ENV === 'production'
-    ? '__Host-caresync.x-csrf-token'
-    : '_csrf',
-  cookieOptions: {
-    httpOnly: true,
-    sameSite: 'strict',
-    secure: process.env.NODE_ENV === 'production',
-    path: '/',
-  },
-  size: 64,
-  ignoredMethods: ['GET', 'HEAD', 'OPTIONS'],
-  errorConfig: {
-    statusCode: 403,
-    message: 'Invalid or missing CSRF token',
-    code: 'ERR_BAD_CSRF_TOKEN',
-  },
-});
-
-// Endpoint to issue a CSRF token (must be called before any mutating request)
+// CSRF token endpoint
 app.get('/api/csrf-token', (req, res) => {
-  const token = generateCsrfToken(req, res);
-  res.json({ success: true, data: { csrfToken: token } });
+  try {
+    const token = generateToken();
+    res.cookie(CSRF_COOKIE_NAME, token, {
+      httpOnly: true,
+      sameSite: 'strict',
+      secure: process.env.NODE_ENV === 'production',
+      path: '/',
+      maxAge: 60 * 60 * 1000, // 1 hour
+    });
+    res.json({
+      success: true,
+      data: { csrfToken: token },
+      requestId: req.requestId
+    });
+  } catch (error) {
+    logger.error('CSRF token generation failed:', {
+      requestId: req.requestId,
+      error: error.message,
+    });
+    res.status(500).json({
+      success: false,
+      message: 'Failed to generate CSRF token',
+      requestId: req.requestId
+    });
+  }
 });
 
 // Apply CSRF protection globally to all mutating API routes
-app.use(doubleCsrfProtection);
+app.use(csrfProtection);
 
 // --- Rate Limiting ---
 const globalLimiter = rateLimit({
@@ -207,7 +184,6 @@ app.use('/api/auth/register', authLimiter);
 app.use('/api/auth/forgot-password', authLimiter);
 app.use('/api/auth/reset-password', authLimiter);
 
-// Strict rate limiter for 2FA endpoints (brute-force protection for 6-digit codes)
 const twoFactorLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 5,
@@ -226,25 +202,6 @@ const reportLimiter = rateLimit({
   message: { success: false, message: 'Too many report requests, please try again later.' }
 });
 app.use('/api/reports', reportLimiter);
-
-// DETAILED REQUEST LOGGER
-app.use((req, res, next) => {
-  const safeBody = { ...req.body };
-  if (safeBody.password) safeBody.password = '[REDACTED]';
-  if (safeBody.newPassword) safeBody.newPassword = '[REDACTED]';
-  if (safeBody.token) safeBody.token = '[REDACTED]';
-
-  logger.info(`Incoming: ${req.method} ${req.originalUrl}`, {
-    ip: req.ip,
-    query: req.query,
-    body: safeBody
-  });
-  next();
-});
-
-if (process.env.NODE_ENV !== 'test') {
-  app.use(morgan('combined', { stream: { write: message => logger.info(message.trim()) } }));
-}
 
 app.get('/health', (req, res) => {
   res.status(200).json({
@@ -274,31 +231,32 @@ if (process.env.NODE_ENV === 'development') {
   app.use('/api/api-docs', apiDocsRoutes);
 }
 
-// Socket.IO
-io.on('connection', (socket) => {
-  logger.info(`User connected: ${socket.id}`);
-  socket.on('join-user', (userId) => socket.join(`user-${userId}`));
-  socket.on('join-caregiver', (caregiverId) => socket.join(`caregiver-${caregiverId}`));
-  socket.on('disconnect', () => logger.info(`User disconnected: ${socket.id}`));
-});
+// Socket.IO disabled for serverless deployment
+if (process.env.VERCEL !== '1' && !process.env.AWS_LAMBDA_FUNCTION_NAME) {
+  logger.info('Socket.IO disabled in serverless environment');
+}
 
 // 404 Handler
 app.use((req, res) => {
   logger.warn(`404 Not Found: ${req.method} ${req.originalUrl}`, {
+    requestId: req.requestId,
     ip: req.ip,
     userId: req.user?.id || 'anonymous',
     message: 'Frontend requested a non-existent route'
   });
-  res.status(404).json({ success: false, message: 'Route not found', path: req.originalUrl });
+  res.status(404).json({
+    success: false,
+    message: 'Route not found',
+    path: req.originalUrl,
+    requestId: req.requestId
+  });
 });
 
 app.use(errorHandler);
 
-const PORT = process.env.PORT || 5000;
-
 async function syncDatabase(instance, label) {
   const dialect = instance.getDialect();
-  
+
   try {
     if (dialect === 'sqlite') {
       await instance.query('PRAGMA foreign_keys = OFF;');
@@ -359,19 +317,5 @@ process.on('uncaughtException', (err) => {
   process.exit(1);
 });
 
-// Only start server in local/development environments, not in serverless
-if (process.env.VERCEL !== '1' && !process.env.AWS_LAMBDA_FUNCTION_NAME) {
-  (async () => {
-    try {
-      await initializeDatabase();
-      server.listen(PORT, () => {
-        logger.info(`🚀 CareSync Backend Server running on port ${PORT}`);
-      });
-    } catch (error) {
-      logger.error('Unable to start server:', error);
-      process.exit(1);
-    }
-  })();
-}
-
+// Export app for serverless deployment
 module.exports = app;

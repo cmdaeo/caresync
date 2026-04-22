@@ -65,26 +65,34 @@ function csrfProtection(req, res, next) {
     return next();
   }
 
-  const token = req.headers[CSRF_HEADER_NAME] || req.body?._csrf || req.query?._csrf;
-  
-  if (!token) {
-    const error = new Error('CSRF token is required');
-    error.statusCode = 403;
-    error.code = 'MISSING_CSRF_TOKEN';
-    error.isOperational = true;
-    return next(error);
-  }
+  try {
+    const token = req.headers[CSRF_HEADER_NAME] || req.body?._csrf || req.query?._csrf;
 
-  const validation = validateToken(token);
-  if (!validation.valid) {
-    const error = new Error(validation.message);
-    error.statusCode = 403;
-    error.code = validation.error;
-    error.isOperational = true;
-    return next(error);
-  }
+    if (!token) {
+      const error = new Error('CSRF token is required');
+      error.statusCode = 403;
+      error.code = 'MISSING_CSRF_TOKEN';
+      error.isOperational = true;
+      return next(error);
+    }
 
-  next();
+    const validation = validateToken(token);
+    if (!validation.valid) {
+      const error = new Error(validation.message);
+      error.statusCode = 403;
+      error.code = validation.error;
+      error.isOperational = true;
+      return next(error);
+    }
+
+    next();
+  } catch (error) {
+    const csrfError = new Error('CSRF validation failed');
+    csrfError.statusCode = 403;
+    csrfError.code = 'CSRF_VALIDATION_ERROR';
+    csrfError.isOperational = true;
+    next(csrfError);
+  }
 }
 
 module.exports = {

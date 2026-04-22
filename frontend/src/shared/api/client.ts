@@ -15,15 +15,20 @@ export const client = axios.create({
   },
 })
 
-// --- CSRF token management (Double Submit Cookie pattern) ---
+// --- CSRF token management (Stateless token pattern) ---
 let csrfToken: string | null = null
 
 export async function fetchCsrfToken(): Promise<string> {
-  const res = await axios.get(`${SERVER_BASE_URL}/api/csrf-token`, {
-    withCredentials: true,
-  })
-  csrfToken = res.data.data.csrfToken
-  return csrfToken!
+  try {
+    const res = await axios.get(`${SERVER_BASE_URL}/api/csrf-token`, {
+      withCredentials: true,
+    })
+    csrfToken = res.data.data.csrfToken
+    return csrfToken!
+  } catch (error) {
+    console.error('Failed to fetch CSRF token:', error)
+    throw error
+  }
 }
 
 // Eagerly fetch a CSRF token on app load
