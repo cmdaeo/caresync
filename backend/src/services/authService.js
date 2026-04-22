@@ -3,12 +3,37 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const { Op } = require('sequelize');
-const { User, Medication, Adherence, Prescription, Device, Notification,
-        DeviceAccessPermission, DeviceInvitation, CaregiverPatient, ConsentLog,
-        sequelizePii, sequelizeMedical } = require('../models');
 const logger = require('../utils/logger');
 const { AppError, AuthenticationError, ConflictError } = require('../middleware/errorHandler');
-const AuditLogService = require('./auditLogService');
+
+// Lazy model imports for serverless compatibility
+let modelsLoaded = false;
+let User, Medication, Adherence, Prescription, Device, Notification,
+    DeviceAccessPermission, DeviceInvitation, CaregiverPatient, ConsentLog,
+    sequelizePii, sequelizeMedical, AuditLogService;
+
+function loadModels() {
+  if (modelsLoaded) return;
+
+  const models = require('../models');
+  User = models.User;
+  Medication = models.Medication;
+  Adherence = models.Adherence;
+  Prescription = models.Prescription;
+  Device = models.Device;
+  Notification = models.Notification;
+  DeviceAccessPermission = models.DeviceAccessPermission;
+  DeviceInvitation = models.DeviceInvitation;
+  CaregiverPatient = models.CaregiverPatient;
+  ConsentLog = models.ConsentLog;
+  sequelizePii = models.sequelizePii;
+  sequelizeMedical = models.sequelizeMedical;
+
+  AuditLogService = require('./auditLogService');
+
+  modelsLoaded = true;
+}
+
 const { encrypt } = require('../utils/encryption');
 
 const generateToken = (user) => {
@@ -30,35 +55,50 @@ const compareRefreshToken = async (token, hash) => await bcrypt.compare(token, h
 
 class AuthService {
   async register(userData) {
-    const { email, password, firstName, lastName, role = 'patient', phone, dateOfBirth } = userData;
+    loadModels(); // Ensure models are loaded
 
-    const existingUser = await User.findOne({ where: { email } });
-    if (existingUser) throw new ConflictError('User already exists with this email');
+    try {
+      const { email, password, firstName, lastName, role = 'patient', phone, dateOfBirth } = userData;
 
-    const emailVerificationToken = crypto.randomBytes(32).toString('hex');
+      logger.info('Attempting user registration', { email, role });
 
-    const user = await User.create({
-      email, password, firstName, lastName, role, phone, dateOfBirth, emailVerificationToken
-    });
+      const existingUser = await User.findOne({ where: { email } });
+      if (existingUser) throw new ConflictError('User already exists with this email');
 
-    const token = generateToken(user);
-    const refreshToken = generateRefreshToken(user.id);
-    const refreshTokenHash = await hashRefreshToken(refreshToken);
+      const emailVerificationToken = crypto.randomBytes(32).toString('hex');
 
-    user.refreshTokenHash = refreshTokenHash;
-    await user.save();
+      const user = await User.create({
+        email, password, firstName, lastName, role, phone, dateOfBirth, emailVerificationToken
+      });
 
-    logger.info(`New user registered: ${email}`);
+      const token = generateToken(user);
+      const refreshToken = generateRefreshToken(user.id);
+      const refreshTokenHash = await hashRefreshToken(refreshToken);
 
-    await AuditLogService.logAction({
-      userId: user.id, action: 'USER_REGISTERED', entityType: 'User', entityId: user.id,
-      newValues: { email: user.email, role: user.role }
-    });
+      user.refreshTokenHash = refreshTokenHash;
+      await user.save();
 
-    return { user, token, refreshToken };
+      logger.info(`New user registered: ${email}`);
+
+      await AuditLogService.logAction({
+        userId: user.id, action: 'USER_REGISTERED', entityType: 'User', entityId: user.id,
+        newValues: { email: user.email, role: user.role }
+      });
+
+      return { user, token, refreshToken };
+    } catch (error) {
+      logger.error('Registration failed:', {
+        error: error.message,
+        stack: error.stack,
+        userData: { ...userData, password: '[REDACTED]' }
+      });
+      throw error;
+    }
   }
 
   async login(email, password, context = {}) {
+    loadModels(); // Ensure models are loaded
+
     const user = await User.findOne({ where: { email } });
     if (!user) throw new AuthenticationError('Invalid credentials');
     if (!user.isActive) throw new AuthenticationError('Account is inactive. Please contact support.');
@@ -105,10 +145,18 @@ class AuthService {
   }
 
   async getProfile(user) {
-    return user;
+    loadModels(); // Ensure models are loaded
+
+    const userData = await User.findByPk(user.id, {
+      attributes: { exclude: ['password', 'refreshTokenHash', 'emailVerificationToken'] }
+    });
+    if (!userData) throw new AuthenticationError('User not found');
+    return userData;
   }
 
   async updateProfile(user, profileData) {
+    loadModels(); // Ensure models are loaded
+
     const { firstName, lastName, phone, dateOfBirth, preferences, emergencyContact } = profileData;
 
     if (firstName !== undefined) user.firstName = firstName;
@@ -124,6 +172,8 @@ class AuthService {
   }
 
   async changePassword(userId, currentPassword, newPassword) {
+    loadModels(); // Ensure models are loaded
+
     const user = await User.findByPk(userId);
     const isCurrentPasswordValid = await user.comparePassword(currentPassword);
     if (!isCurrentPasswordValid) throw new AppError('Current password is incorrect', 400);
@@ -137,18 +187,36 @@ class AuthService {
   }
 
   async refreshToken(refreshToken) {
+    loadModels(); // Ensure models are loaded
+
     if (!refreshToken) throw new AuthenticationError('Refresh token is required');
 
-    const decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET || process.env.JWT_SECRET);
-    if (decoded.type !== 'refresh') throw new AuthenticationError('Invalid token type');
+    try {
+      const decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET || process.env.JWT_SECRET);
+      if (decoded.type !== 'refresh') throw new AuthenticationError('Invalid refresh token');
 
-    const user = await User.findByPk(decoded.id);
-    if (!user || !user.isActive) throw new AuthenticationError('User not found or inactive');
+      const user = await User.findByPk(decoded.id);
+      if (!user || !user.refreshTokenHash) throw new AuthenticationError('Invalid refresh token');
 
-    if (user.refreshTokenHash) {
-      const isValid = await compareRefreshToken(refreshToken, user.refreshTokenHash);
-      if (!isValid) throw new AuthenticationError('Invalid refresh token');
+      const isRefreshTokenValid = await compareRefreshToken(refreshToken, user.refreshTokenHash);
+      if (!isRefreshTokenValid) throw new AuthenticationError('Invalid refresh token');
+
+      const token = generateToken(user);
+      const newRefreshToken = generateRefreshToken(user.id);
+      const newRefreshTokenHash = await hashRefreshToken(newRefreshToken);
+
+      user.refreshTokenHash = newRefreshTokenHash;
+      await user.save();
+
+      logger.info(`Token refreshed for user: ${user.email}`);
+      return { token, refreshToken: newRefreshToken };
+    } catch (error) {
+      if (error.name === 'TokenExpiredError') {
+        throw new AuthenticationError('Refresh token has expired');
+      }
+      throw new AuthenticationError('Invalid refresh token');
     }
+  }
 
     const newToken = generateToken(user);
     const newRefreshToken = generateRefreshToken(user.id);

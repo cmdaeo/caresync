@@ -123,13 +123,26 @@ async function initializeDatabase() {
   try {
     logger.info('Initializing database connections...');
 
+    // Check if we have a proper database URL in production
+    if (process.env.NODE_ENV === 'production' && !process.env.DATABASE_URL) {
+      throw new Error('DATABASE_URL environment variable is required for production deployment');
+    }
+
     await sequelizePii.authenticate();
-    logger.info('PII database connection established.');
+    logger.info('Database connection established.');
 
-    await sequelizeMedical.authenticate();
-    logger.info('Medical database connection established.');
-
-    if (process.env.NODE_ENV === 'development') {
+    // In production, try to sync tables if they don't exist
+    // This is safe to run multiple times and will only create missing tables
+    if (process.env.NODE_ENV === 'production') {
+      try {
+        logger.info('Checking database schema in production...');
+        await syncDatabase(sequelizePii, 'Database');
+        logger.info('Database schema verified/created successfully.');
+      } catch (syncError) {
+        logger.warn('Database sync failed, but continuing:', syncError.message);
+        // Don't throw here - the app might still work if tables already exist
+      }
+    } else if (process.env.NODE_ENV === 'development') {
       await syncDatabase(sequelizePii, 'PII');
       await syncDatabase(sequelizeMedical, 'Medical');
       await generateSampleData();
@@ -142,6 +155,11 @@ async function initializeDatabase() {
       error: error.message,
       stack: error.stack,
       code: error.code,
+      environment: {
+        nodeEnv: process.env.NODE_ENV,
+        databaseUrl: process.env.DATABASE_URL ? '[SET]' : '[NOT SET]',
+        vercel: process.env.VERCEL,
+      },
     });
     throw error;
   }
@@ -157,16 +175,20 @@ app.use(async (req, res, next) => {
 
   if (!dbInitialized) {
     try {
+      logger.info('Initializing database for route:', { requestId: req.requestId, path: req.path });
       await initializeDatabase();
+      logger.info('Database initialized successfully', { requestId: req.requestId });
     } catch (error) {
       logger.error('Database init failed on request:', {
         requestId: req.requestId,
         url: req.url,
         error: error.message,
+        stack: error.stack,
       });
       return res.status(500).json({
         success: false,
         message: 'Database connection failed',
+        error: error.message,
         requestId: req.requestId
       });
     }

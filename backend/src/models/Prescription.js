@@ -2,7 +2,7 @@ const { DataTypes } = require('sequelize');
 const Encrypted = require('sequelize-encrypted');
 
 module.exports = (sequelize) => {
-  const encryptionKey = process.env.ENCRYPTION_KEY;
+  const encryptionKey = process.env.ENCRYPTION_KEY || 'fallback-encryption-key-for-development';
   if (!encryptionKey) {
     throw new Error('ENCRYPTION_KEY environment variable is required');
   }

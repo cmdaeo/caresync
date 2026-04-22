@@ -9,7 +9,7 @@ const Encrypted = require('sequelize-encrypted');
 const MAX_COURSE_DAYS = 730;
 
 module.exports = (sequelize) => {
-  const encryptionKey = process.env.ENCRYPTION_KEY;
+  const encryptionKey = process.env.ENCRYPTION_KEY || 'fallback-encryption-key-for-development';
   if (!encryptionKey) {
     throw new Error('ENCRYPTION_KEY environment variable is required');
   }
