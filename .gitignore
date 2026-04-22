@@ -3,6 +3,9 @@ logs/
 *.logs
 database.sqlite
 database.sqlite-journal
+supabase-schema.sql
+pii_database.sqlite
+medical_database.sqlite
 .snapshotignore
 pythonTest/
 .claude/
@@ -29,4 +32,3 @@ Thumbs.db
 frontend/dist/
 backend/uploads/
 
-*.sqlite

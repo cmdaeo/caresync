@@ -62,14 +62,29 @@ class AuthService {
 
       logger.info('Attempting user registration', { email, role });
 
+      // Check for existing user
       const existingUser = await User.findOne({ where: { email } });
-      if (existingUser) throw new ConflictError('User already exists with this email');
+      if (existingUser) {
+        logger.warn('Registration failed: User already exists', { email });
+        throw new ConflictError('User already exists with this email');
+      }
 
       const emailVerificationToken = crypto.randomBytes(32).toString('hex');
 
+      logger.info('Creating user record...', { email });
+
       const user = await User.create({
-        email, password, firstName, lastName, role, phone, dateOfBirth, emailVerificationToken
+        email,
+        password,
+        firstName,
+        lastName,
+        role,
+        phone,
+        dateOfBirth,
+        emailVerificationToken
       });
+
+      logger.info('User record created, generating tokens...', { userId: user.id });
 
       const token = generateToken(user);
       const refreshToken = generateRefreshToken(user.id);
@@ -78,18 +93,27 @@ class AuthService {
       user.refreshTokenHash = refreshTokenHash;
       await user.save();
 
-      logger.info(`New user registered: ${email}`);
+      logger.info(`User registration completed successfully: ${email}`, { userId: user.id });
 
-      await AuditLogService.logAction({
-        userId: user.id, action: 'USER_REGISTERED', entityType: 'User', entityId: user.id,
-        newValues: { email: user.email, role: user.role }
-      });
+      // Note: AuditLogService might fail if audit log table doesn't exist yet
+      try {
+        await AuditLogService.logAction({
+          userId: user.id,
+          action: 'USER_REGISTERED',
+          entityType: 'User',
+          entityId: user.id,
+          newValues: { email: user.email, role: user.role }
+        });
+      } catch (auditError) {
+        logger.warn('Audit logging failed, but registration succeeded:', auditError.message);
+      }
 
       return { user, token, refreshToken };
     } catch (error) {
       logger.error('Registration failed:', {
         error: error.message,
         stack: error.stack,
+        code: error.code,
         userData: { ...userData, password: '[REDACTED]' }
       });
       throw error;

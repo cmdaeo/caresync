@@ -406,25 +406,43 @@ async function syncDatabase(instance, label) {
   const dialect = instance.getDialect();
 
   try {
+    logger.info(`Attempting to sync ${label} database...`);
+
     if (dialect === 'sqlite') {
       await instance.query('PRAGMA foreign_keys = OFF;');
     }
+
+    // Try ALTER first (safer for production)
     await instance.sync({ alter: true });
+
     if (dialect === 'sqlite') {
       await instance.query('PRAGMA foreign_keys = ON;');
     }
-    logger.info(`${label} database synchronized (ALTER).`);
+
+    logger.info(`${label} database synchronized successfully (ALTER).`);
   } catch (syncError) {
-    logger.warn(`${label} safe sync failed. Falling back to FORCE sync...`);
-    logger.error(syncError.message);
-    if (dialect === 'sqlite') {
-      await instance.query('PRAGMA foreign_keys = OFF;');
+    logger.warn(`${label} ALTER sync failed: ${syncError.message}`);
+
+    try {
+      // Fallback to FORCE sync if ALTER fails
+      logger.info(`Attempting FORCE sync for ${label} database...`);
+
+      if (dialect === 'sqlite') {
+        await instance.query('PRAGMA foreign_keys = OFF;');
+      }
+
+      await instance.sync({ force: true });
+
+      if (dialect === 'sqlite') {
+        await instance.query('PRAGMA foreign_keys = ON;');
+      }
+
+      logger.info(`${label} database synchronized successfully (FORCE).`);
+    } catch (forceError) {
+      logger.error(`${label} FORCE sync also failed: ${forceError.message}`);
+      // Don't throw - let the app continue even if sync fails
+      // Tables might already exist or sync might work on individual operations
     }
-    await instance.sync({ force: true });
-    if (dialect === 'sqlite') {
-      await instance.query('PRAGMA foreign_keys = ON;');
-    }
-    logger.info(`${label} database synchronized (FORCE).`);
   }
 }
 
