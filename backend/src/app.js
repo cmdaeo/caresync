@@ -95,10 +95,68 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(cookieParser());
 
+let dbInitialized = false;
+
+async function initializeDatabase() {
+  if (dbInitialized) return;
+  
+  try {
+    // Authenticate both database connections
+    await sequelizePii.authenticate();
+    logger.info('PII database connection established successfully.');
+    await sequelizeMedical.authenticate();
+    logger.info('Medical database connection established successfully.');
+
+    if (process.env.NODE_ENV === 'development') {
+      await syncDatabase(sequelizePii, 'PII');
+      await syncDatabase(sequelizeMedical, 'Medical');
+      await generateSampleData();
+    } else if (process.env.NODE_ENV === 'test') {
+      const dialectPii = sequelizePii.getDialect();
+      const dialectMed = sequelizeMedical.getDialect();
+      
+      if (dialectPii === 'sqlite') {
+        await sequelizePii.query('PRAGMA foreign_keys = OFF;');
+      }
+      await sequelizePii.sync({ force: true });
+      if (dialectPii === 'sqlite') {
+        await sequelizePii.query('PRAGMA foreign_keys = ON;');
+      }
+      
+      if (dialectMed === 'sqlite') {
+        await sequelizeMedical.query('PRAGMA foreign_keys = OFF;');
+      }
+      await sequelizeMedical.sync({ force: true });
+      if (dialectMed === 'sqlite') {
+        await sequelizeMedical.query('PRAGMA foreign_keys = ON;');
+      }
+      logger.info('Both databases synchronized (FORCE) for test environment.');
+    }
+    
+    dbInitialized = true;
+  } catch (error) {
+    logger.error('Database initialization failed:', error);
+    throw error;
+  }
+}
+
+// Initialize DB before first request
+app.use(async (req, res, next) => {
+  if (!dbInitialized) {
+    try {
+      await initializeDatabase();
+    } catch (error) {
+      logger.error('Failed to initialize database:', error);
+      return res.status(500).json({ success: false, message: 'Database connection failed' });
+    }
+  }
+  next();
+});
+
 // --- CSRF Protection (Double Submit Cookie via csrf-csrf) ---
 const { doubleCsrfProtection, generateCsrfToken } = doubleCsrf({
   getSecret: () => process.env.CSRF_SECRET || process.env.SESSION_SECRET,
-  getSessionIdentifier: (req) => req.ip || '',
+  getSessionIdentifier: (req) => req.ip || req.headers['x-forwarded-for']?.split(',')[0] || 'unknown',
   getTokenFromRequest: (req) => req.headers['x-csrf-token'],
   cookieName: process.env.NODE_ENV === 'production'
     ? '__Host-caresync.x-csrf-token'
@@ -263,64 +321,6 @@ async function syncDatabase(instance, label) {
     logger.info(`${label} database synchronized (FORCE).`);
   }
 }
-
-let dbInitialized = false;
-
-async function initializeDatabase() {
-  if (dbInitialized) return;
-  
-  try {
-    // Authenticate both database connections
-    await sequelizePii.authenticate();
-    logger.info('PII database connection established successfully.');
-    await sequelizeMedical.authenticate();
-    logger.info('Medical database connection established successfully.');
-
-    if (process.env.NODE_ENV === 'development') {
-      await syncDatabase(sequelizePii, 'PII');
-      await syncDatabase(sequelizeMedical, 'Medical');
-      await generateSampleData();
-    } else if (process.env.NODE_ENV === 'test') {
-      const dialectPii = sequelizePii.getDialect();
-      const dialectMed = sequelizeMedical.getDialect();
-      
-      if (dialectPii === 'sqlite') {
-        await sequelizePii.query('PRAGMA foreign_keys = OFF;');
-      }
-      await sequelizePii.sync({ force: true });
-      if (dialectPii === 'sqlite') {
-        await sequelizePii.query('PRAGMA foreign_keys = ON;');
-      }
-      
-      if (dialectMed === 'sqlite') {
-        await sequelizeMedical.query('PRAGMA foreign_keys = OFF;');
-      }
-      await sequelizeMedical.sync({ force: true });
-      if (dialectMed === 'sqlite') {
-        await sequelizeMedical.query('PRAGMA foreign_keys = ON;');
-      }
-      logger.info('Both databases synchronized (FORCE) for test environment.');
-    }
-    
-    dbInitialized = true;
-  } catch (error) {
-    logger.error('Database initialization failed:', error);
-    throw error;
-  }
-}
-
-// Initialize DB before first request
-app.use(async (req, res, next) => {
-  if (!dbInitialized) {
-    try {
-      await initializeDatabase();
-    } catch (error) {
-      logger.error('Failed to initialize database:', error);
-      return res.status(500).json({ success: false, message: 'Database connection failed' });
-    }
-  }
-  next();
-});
 
 // Graceful shutdown (for local development)
 process.on('SIGTERM', async () => {
