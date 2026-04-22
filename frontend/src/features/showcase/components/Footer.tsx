@@ -1,6 +1,7 @@
 // frontend/src/features/showcase/components/Footer.tsx
 import { useTheme } from '../../../context/ThemeContext';
-import { Moon, Sun, Monitor, Github, Twitter, Linkedin } from 'lucide-react';
+import { Moon, Sun, Monitor } from 'lucide-react';
+import { GithubIcon, LinkedinIcon, TwitterIcon} from '../icons/SocialIcons';
 import clsx from 'clsx';
 import { motion } from 'framer-motion';
 
@@ -40,7 +41,7 @@ export const Footer = () => {
           
           {/* Social icons */}
           <div className="flex items-center gap-1 text-text-muted/70">
-            {[Github, Twitter, Linkedin].map((Icon, i) => (
+            {[GithubIcon, TwitterIcon, LinkedinIcon].map((Icon, i) => (
               <a
                 key={i}
                 href="#"

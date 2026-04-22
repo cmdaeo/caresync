@@ -225,7 +225,7 @@ io.on('connection', (socket) => {
 });
 
 // 404 Handler
-app.use('*', (req, res) => {
+app.use((req, res) => {
   logger.warn(`404 Not Found: ${req.method} ${req.originalUrl}`, {
     ip: req.ip,
     userId: req.user?.id || 'anonymous',

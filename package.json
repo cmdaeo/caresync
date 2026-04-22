@@ -9,7 +9,10 @@
     "dev:frontend": "npm run dev --prefix frontend",
     "dev": "concurrently -n \"BACKEND,FRONTEND\" -c \"blue,green\" \"npm run dev:backend\" \"npm run dev:frontend\"",
     "build": "npm run install:all && cd frontend && npm run build",
-    "start": "cd backend && node src/app.js"
+    "start": "cd backend && node src/app.js",
+    "upgrade:all": "npm run upgrade:backend && npm run upgrade:frontend",
+    "upgrade:backend": "npx npm-check-updates -u --cwd backend && npm install --prefix backend",
+    "upgrade:frontend": "npx npm-check-updates -u --cwd frontend && npm install --prefix frontend"
   },
   "repository": {
     "type": "git",

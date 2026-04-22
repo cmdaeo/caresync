@@ -63,7 +63,7 @@
 
 > Visual improvements, landing page, and showcase pages for presentation/demo.
 
-- [ ] **Wave animation fix** *(Retificar a animação da landing page)* — Convert `.oa` SVG path from `M`/`L` (sharp corners) to `C`/`S` (Bézier curves), add `stroke-linecap="round"`. *(README #1 / Sprint Plan 2.1 / Custom list #2)*
+- [ ] **Wave animation fix** *(Retificar a animação da landing page)* — Convert `.oa` SVG path from `M`/`L` (sharp corners) to `C`/`S` (Bézier curves), add `strokeLinecap="round"`. *(README #1 / Sprint Plan 2.1 / Custom list #2)*
 - [ ] **"Inside CareSync" section redesign** — Replace `HScroll` horizontal scroll with vertical bento-grid layout. *(Sprint Plan 2.2 / Custom list #3)*
 - [ ] **Hardware & Timeline pages + Team photos** *(Páginas de Hardware, Timeline, fotos da equipa)* — Create real content for placeholder showcase pages: PCB renders, sprint timeline, team photo grid. *(Sprint Plan 2.3 / Custom list #4)*
 - [ ] **Security showcase polish** — Interactive security dashboard with ASVS coverage, test pass rates, architecture diagram. *(Sprint Plan 2.4 / Custom list #5)*
