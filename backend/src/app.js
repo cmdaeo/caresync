@@ -264,7 +264,11 @@ async function syncDatabase(instance, label) {
   }
 }
 
-async function startServer() {
+let dbInitialized = false;
+
+async function initializeDatabase() {
+  if (dbInitialized) return;
+  
   try {
     // Authenticate both database connections
     await sequelizePii.authenticate();
@@ -275,8 +279,6 @@ async function startServer() {
     if (process.env.NODE_ENV === 'development') {
       await syncDatabase(sequelizePii, 'PII');
       await syncDatabase(sequelizeMedical, 'Medical');
-
-      // Run sample data generator (handles checking if data exists)
       await generateSampleData();
     } else if (process.env.NODE_ENV === 'test') {
       const dialectPii = sequelizePii.getDialect();
@@ -299,46 +301,52 @@ async function startServer() {
       }
       logger.info('Both databases synchronized (FORCE) for test environment.');
     }
-    // For production (NODE_ENV === 'production'), skip sync and just use existing schema
-
-    server.listen(PORT, () => {
-      logger.info(`🚀 CareSync Backend Server running on port ${PORT}`);
-    });
+    
+    dbInitialized = true;
   } catch (error) {
-    logger.error('Unable to start server:', error);
-    process.exit(1);
+    logger.error('Database initialization failed:', error);
+    throw error;
   }
 }
 
-// Graceful shutdown
+// Initialize DB before first request
+app.use(async (req, res, next) => {
+  if (!dbInitialized) {
+    try {
+      await initializeDatabase();
+    } catch (error) {
+      logger.error('Failed to initialize database:', error);
+      return res.status(500).json({ success: false, message: 'Database connection failed' });
+    }
+  }
+  next();
+});
+
+// Graceful shutdown (for local development)
 process.on('SIGTERM', async () => {
   logger.info('SIGTERM received. Shutting down gracefully...');
-  server.close(async () => {
-    try {
-      await sequelizePii.close();
-      await sequelizeMedical.close();
-      logger.info('Both database connections closed.');
-      process.exit(0);
-    } catch (error) {
-      logger.error('Error during shutdown:', error);
-      process.exit(1);
-    }
-  });
+  try {
+    await sequelizePii.close();
+    await sequelizeMedical.close();
+    logger.info('Both database connections closed.');
+    process.exit(0);
+  } catch (error) {
+    logger.error('Error during shutdown:', error);
+    process.exit(1);
+  }
 });
 
 process.on('SIGINT', async () => {
   logger.info('SIGINT received. Shutting down gracefully...');
-  server.close(async () => {
-    try {
-      await sequelizePii.close();
-      await sequelizeMedical.close();
-      logger.info('Both database connections closed.');
-      process.exit(0);
-    } catch (error) {
-      logger.error('Error during shutdown:', error);
-      process.exit(1);
-    }
-  });
+  try {
+    await sequelizePii.close();
+    await sequelizeMedical.close();
+    logger.info('Both database connections closed.');
+    process.exit(0);
+  } catch (error) {
+    logger.error('Error during shutdown:', error);
+    process.exit(1);
+  }
 });
 
 process.on('unhandledRejection', (err) => {
@@ -351,6 +359,19 @@ process.on('uncaughtException', (err) => {
   process.exit(1);
 });
 
-startServer();
+// Only start server in local/development environments, not in serverless
+if (process.env.VERCEL !== '1' && !process.env.AWS_LAMBDA_FUNCTION_NAME) {
+  (async () => {
+    try {
+      await initializeDatabase();
+      server.listen(PORT, () => {
+        logger.info(`🚀 CareSync Backend Server running on port ${PORT}`);
+      });
+    } catch (error) {
+      logger.error('Unable to start server:', error);
+      process.exit(1);
+    }
+  })();
+}
 
 module.exports = app;
