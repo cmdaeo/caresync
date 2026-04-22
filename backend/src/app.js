@@ -118,51 +118,7 @@ const dbRequiredRoutes = [
 let dbInitialized = false;
 
 async function initializeDatabase() {
-  if (dbInitialized) return;
-
-  try {
-    logger.info('Initializing database connections...');
-
-    // Check if we have a proper database URL in production
-    if (process.env.NODE_ENV === 'production' && !process.env.DATABASE_URL) {
-      throw new Error('DATABASE_URL environment variable is required for production deployment');
-    }
-
-    await sequelizePii.authenticate();
-    logger.info('Database connection established.');
-
-    // In production, try to sync tables if they don't exist
-    // This is safe to run multiple times and will only create missing tables
-    if (process.env.NODE_ENV === 'production') {
-      try {
-        logger.info('Checking database schema in production...');
-        await syncDatabase(sequelizePii, 'Database');
-        logger.info('Database schema verified/created successfully.');
-      } catch (syncError) {
-        logger.warn('Database sync failed, but continuing:', syncError.message);
-        // Don't throw here - the app might still work if tables already exist
-      }
-    } else if (process.env.NODE_ENV === 'development') {
-      await syncDatabase(sequelizePii, 'PII');
-      await syncDatabase(sequelizeMedical, 'Medical');
-      await generateSampleData();
-    }
-
-    dbInitialized = true;
-    logger.info('Database initialization complete.');
-  } catch (error) {
-    logger.error('Database initialization failed:', {
-      error: error.message,
-      stack: error.stack,
-      code: error.code,
-      environment: {
-        nodeEnv: process.env.NODE_ENV,
-        databaseUrl: process.env.DATABASE_URL ? '[SET]' : '[NOT SET]',
-        vercel: process.env.VERCEL,
-      },
-    });
-    throw error;
-  }
+  throw new Error('Deprecated: Database initialization now happens directly in middleware');
 }
 
 // Lazy database init for serverless - only initialize for routes that need it
@@ -176,8 +132,37 @@ app.use(async (req, res, next) => {
   if (!dbInitialized) {
     try {
       logger.info('Initializing database for route:', { requestId: req.requestId, path: req.path });
-      await initializeDatabase();
-      logger.info('Database initialized successfully', { requestId: req.requestId });
+
+      // Ensure database is properly loaded before trying to use it
+      const { sequelizePii: sPii, sequelizeMedical: sMed } = require('./config/database');
+
+      if (!sPii) {
+        throw new Error('Database connection object is undefined');
+      }
+
+      logger.info('Database module loaded successfully');
+
+      await sPii.authenticate();
+      logger.info('Database connection established.');
+
+      // In production, try to sync tables if they don't exist
+      if (process.env.NODE_ENV === 'production') {
+        try {
+          logger.info('Checking database schema in production...');
+          await syncDatabase(sPii, 'Database');
+          logger.info('Database schema verified/created successfully.');
+        } catch (syncError) {
+          logger.warn('Database sync failed, but continuing:', syncError.message);
+        }
+      } else if (process.env.NODE_ENV === 'development') {
+        await syncDatabase(sPii, 'PII');
+        await syncDatabase(sMed, 'Medical');
+        const generateSampleData = require('./utils/sampleDataGenerator');
+        await generateSampleData();
+      }
+
+      dbInitialized = true;
+      logger.info('Database initialization complete.', { requestId: req.requestId });
     } catch (error) {
       logger.error('Database init failed on request:', {
         requestId: req.requestId,
