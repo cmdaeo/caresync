@@ -15,23 +15,39 @@ let User, Medication, Adherence, Prescription, Device, Notification,
 function loadModels() {
   if (modelsLoaded) return;
 
-  const models = require('../models');
-  User = models.User;
-  Medication = models.Medication;
-  Adherence = models.Adherence;
-  Prescription = models.Prescription;
-  Device = models.Device;
-  Notification = models.Notification;
-  DeviceAccessPermission = models.DeviceAccessPermission;
-  DeviceInvitation = models.DeviceInvitation;
-  CaregiverPatient = models.CaregiverPatient;
-  ConsentLog = models.ConsentLog;
-  sequelizePii = models.sequelizePii;
-  sequelizeMedical = models.sequelizeMedical;
+  logger.info('Loading models...');
+  try {
+    const models = require('../models');
+    logger.info('Models imported successfully');
 
-  AuditLogService = require('./auditLogService');
+    User = models.User;
+    logger.info('User model loaded');
 
-  modelsLoaded = true;
+    Medication = models.Medication;
+    Adherence = models.Adherence;
+    Prescription = models.Prescription;
+    Device = models.Device;
+    Notification = models.Notification;
+    DeviceAccessPermission = models.DeviceAccessPermission;
+    DeviceInvitation = models.DeviceInvitation;
+    CaregiverPatient = models.CaregiverPatient;
+    ConsentLog = models.ConsentLog;
+    sequelizePii = models.sequelizePii;
+    sequelizeMedical = models.sequelizeMedical;
+
+    logger.info('All models loaded successfully');
+
+    AuditLogService = require('./auditLogService');
+    logger.info('AuditLogService loaded');
+
+    modelsLoaded = true;
+  } catch (error) {
+    logger.error('Model loading failed:', {
+      error: error.message,
+      stack: error.stack,
+    });
+    throw error;
+  }
 }
 
 const { encrypt } = require('../utils/encryption');
@@ -55,7 +71,18 @@ const compareRefreshToken = async (token, hash) => await bcrypt.compare(token, h
 
 class AuthService {
   async register(userData) {
-    loadModels(); // Ensure models are loaded
+    logger.info('AuthService.register called');
+
+    try {
+      loadModels(); // Ensure models are loaded
+      logger.info('Models loaded successfully');
+    } catch (loadError) {
+      logger.error('Failed to load models in register:', {
+        error: loadError.message,
+        stack: loadError.stack,
+      });
+      throw loadError;
+    }
 
     try {
       const { email, password, firstName, lastName, role = 'patient', phone, dateOfBirth } = userData;
@@ -63,12 +90,14 @@ class AuthService {
       logger.info('Attempting user registration', { email, role });
 
       // Check for existing user
+      logger.info('Checking for existing user...');
       const existingUser = await User.findOne({ where: { email } });
       if (existingUser) {
         logger.warn('Registration failed: User already exists', { email });
         throw new ConflictError('User already exists with this email');
       }
 
+      logger.info('User does not exist, proceeding with creation');
       const emailVerificationToken = crypto.randomBytes(32).toString('hex');
 
       logger.info('Creating user record...', { email });

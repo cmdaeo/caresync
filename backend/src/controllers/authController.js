@@ -6,17 +6,35 @@ const ApiResponse = require('../utils/ApiResponse');
 class AuthController {
   async register(req, res) {
     try {
+      logger.info('Register endpoint called', { requestId: req.requestId });
+
       const userData = req.body;
+      logger.info('Registration data received', {
+        requestId: req.requestId,
+        email: userData.email,
+        firstName: userData.firstName,
+        lastName: userData.lastName,
+      });
+
       const { user, token, refreshToken } = await authService.register(userData);
+
+      logger.info('Registration successful, setting cookies', { requestId: req.requestId, userId: user.id });
 
       res.cookie('refreshToken', refreshToken, {
         httpOnly: true, secure: process.env.NODE_ENV === 'production',
         sameSite: 'strict', maxAge: 30 * 24 * 60 * 60 * 1000
       });
 
+      logger.info('Returning registration response', { requestId: req.requestId });
+
       res.status(201).json(ApiResponse.success({ user: user.toJSON(), token }, 'User registered successfully', 201));
     } catch (error) {
-      logger.error('Registration error:', error);
+      logger.error('Registration controller error:', {
+        requestId: req.requestId,
+        error: error.message,
+        stack: error.stack,
+        code: error.code,
+      });
       throw error;
     }
   }
