@@ -13,7 +13,6 @@
     "generate-docs": "node scripts/generateApiDocs.js"
   },
   "dependencies": {
-    "@journeyapps/sqlcipher": "^5.3.1",
     "bcryptjs": "^3.0.3",
     "compression": "^1.8.1",
     "cookie-parser": "^1.4.7",
@@ -39,6 +38,7 @@
     "sequelize": "^6.37.8",
     "sequelize-encrypted": "^1.0.0",
     "socket.io": "^4.8.3",
+    "sqlite3": "^6.0.1",
     "swagger-jsdoc": "^6.2.8",
     "swagger-ui-express": "^5.0.1",
     "uuid": "^14.0.0",
