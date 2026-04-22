@@ -72,53 +72,22 @@ const logger = winston.createLogger({
   level: process.env.LOG_LEVEL || 'info',
   format: logFormat,
   defaultMeta: { service: 'caresync-backend' },
-  transports: [],
+  transports: [
+    // Only use console transport in serverless environments
+    new winston.transports.Console({
+      format: winston.format.combine(
+        winston.format.colorize(),
+        winston.format.simple(),
+        piiScrubber(),
+        winston.format.printf(({ timestamp, level, message, service, ...meta }) => {
+          return `${timestamp} [${service}] ${level}: ${message} ${
+            Object.keys(meta).length ? JSON.stringify(meta, null, 2) : ''
+          }`;
+        })
+      ),
+    })
+  ],
 });
-
-// Always add console transport (works in serverless)
-logger.add(
-  new winston.transports.Console({
-    format: winston.format.combine(
-      winston.format.colorize(),
-      winston.format.simple(),
-      piiScrubber(),
-      winston.format.printf(({ timestamp, level, message, service, ...meta }) => {
-        return `${timestamp} [${service}] ${level}: ${message} ${
-          Object.keys(meta).length ? JSON.stringify(meta, null, 2) : ''
-        }`;
-      })
-    ),
-  })
-);
-
-// Only add file transports in non-serverless environments
-if (process.env.VERCEL !== '1' && !process.env.AWS_LAMBDA_FUNCTION_NAME && process.env.NODE_ENV !== 'production') {
-  try {
-    const path = require('path');
-    const fs = require('fs');
-
-    const logDir = path.join(__dirname, '../../logs');
-    if (!fs.existsSync(logDir)) {
-      fs.mkdirSync(logDir, { recursive: true });
-    }
-
-    logger.add(new winston.transports.File({
-      filename: path.join(logDir, 'error.log'),
-      level: 'error',
-      maxsize: 5242880,
-      maxFiles: 5,
-    }));
-
-    logger.add(new winston.transports.File({
-      filename: path.join(logDir, 'combined.log'),
-      maxsize: 5242880,
-      maxFiles: 5,
-    }));
-  } catch (error) {
-    // Silently fail if file logging is not available
-    console.warn('File logging not available in this environment');
-  }
-}
 
 // Create a stream object with a 'write' function for Morgan
 logger.stream = {

@@ -6,31 +6,55 @@ const compression = require('compression');
 const rateLimit = require('express-rate-limit');
 const cookieParser = require('cookie-parser');
 
-// Import routes
-const authRoutes = require('./routes/auth');
-const userRoutes = require('./routes/users');
-const medicationRoutes = require('./routes/medications');
-const caregiverRoutes = require('./routes/caregivers');
-const patientRoutes = require('./routes/patients');
-const deviceRoutes = require('./routes/devices');
-const notificationRoutes = require('./routes/notifications');
-const reportsRoutes = require('./routes/reports');
-const consentRoutes = require('./routes/consent');
-const twoFactorRoutes = require('./routes/twoFactor');
-const prescriptionRoutes = require('./routes/prescriptions');
-const apiDocsRoutes = require('./routes/api-docs');
-
-// Import middleware
-const { authMiddleware } = require('./middleware/auth');
+// Import middleware (core functionality)
 const { errorHandler } = require('./middleware/errorHandler');
 const { csrfProtection, generateToken, CSRF_COOKIE_NAME } = require('./middleware/csrf');
 const { logRequest, generateRequestId } = require('./middleware/requestLogger');
 const logger = require('./utils/logger');
-const { sequelizePii, sequelizeMedical } = require('./config/database');
-const generateSampleData = require('./utils/sampleDataGenerator');
 
-// Swagger setup
-const { specs, swaggerUi } = require('./swagger');
+// Lazy load routes and database (only when needed)
+let routesLoaded = false;
+let authRoutes, userRoutes, medicationRoutes, caregiverRoutes, patientRoutes,
+    deviceRoutes, notificationRoutes, reportsRoutes, consentRoutes,
+    twoFactorRoutes, prescriptionRoutes, apiDocsRoutes;
+let authMiddleware, sequelizePii, sequelizeMedical, generateSampleData, specs, swaggerUi;
+
+function loadRoutes() {
+  if (routesLoaded) return;
+
+  try {
+    // Import routes
+    authRoutes = require('./routes/auth');
+    userRoutes = require('./routes/users');
+    medicationRoutes = require('./routes/medications');
+    caregiverRoutes = require('./routes/caregivers');
+    patientRoutes = require('./routes/patients');
+    deviceRoutes = require('./routes/devices');
+    notificationRoutes = require('./routes/notifications');
+    reportsRoutes = require('./routes/reports');
+    consentRoutes = require('./routes/consent');
+    twoFactorRoutes = require('./routes/twoFactor');
+    prescriptionRoutes = require('./routes/prescriptions');
+    apiDocsRoutes = require('./routes/api-docs');
+
+    // Import middleware and database
+    authMiddleware = require('./middleware/auth').authMiddleware;
+    const db = require('./config/database');
+    sequelizePii = db.sequelizePii;
+    sequelizeMedical = db.sequelizeMedical;
+    generateSampleData = require('./utils/sampleDataGenerator');
+
+    // Swagger setup
+    const swagger = require('./swagger');
+    specs = swagger.specs;
+    swaggerUi = swagger.swaggerUi;
+
+    routesLoaded = true;
+  } catch (error) {
+    logger.error('Failed to load routes:', error);
+    throw error;
+  }
+}
 
 const app = express();
 
@@ -76,6 +100,20 @@ app.use((req, res, next) => {
   next();
 });
 
+// Routes that require database access
+const dbRequiredRoutes = [
+  '/api/auth',
+  '/api/users',
+  '/api/medications',
+  '/api/caregivers',
+  '/api/patients',
+  '/api/devices',
+  '/api/notifications',
+  '/api/reports',
+  '/api/consent',
+  '/api/prescriptions'
+];
+
 // Database initialization middleware (lazy, serverless-compatible)
 let dbInitialized = false;
 
@@ -109,8 +147,14 @@ async function initializeDatabase() {
   }
 }
 
-// Lazy database init for serverless
+// Lazy database init for serverless - only initialize for routes that need it
 app.use(async (req, res, next) => {
+  // Skip database initialization for routes that don't need it
+  const needsDb = dbRequiredRoutes.some(route => req.path.startsWith(route));
+  if (!needsDb) {
+    return next();
+  }
+
   if (!dbInitialized) {
     try {
       await initializeDatabase();
@@ -130,10 +174,13 @@ app.use(async (req, res, next) => {
   next();
 });
 
-// CSRF token endpoint
+// CSRF token endpoint (no database required)
 app.get('/api/csrf-token', (req, res) => {
   try {
+    logger.info('Generating CSRF token', { requestId: req.requestId });
     const token = generateToken();
+    logger.info('CSRF token generated successfully', { requestId: req.requestId });
+
     res.cookie(CSRF_COOKIE_NAME, token, {
       httpOnly: true,
       sameSite: 'strict',
@@ -141,6 +188,7 @@ app.get('/api/csrf-token', (req, res) => {
       path: '/',
       maxAge: 60 * 60 * 1000, // 1 hour
     });
+
     res.json({
       success: true,
       data: { csrfToken: token },
@@ -150,13 +198,25 @@ app.get('/api/csrf-token', (req, res) => {
     logger.error('CSRF token generation failed:', {
       requestId: req.requestId,
       error: error.message,
+      stack: error.stack,
     });
     res.status(500).json({
       success: false,
       message: 'Failed to generate CSRF token',
+      error: error.message,
       requestId: req.requestId
     });
   }
+});
+
+// Health check endpoint (no database required)
+app.get('/health', (req, res) => {
+  res.json({
+    status: 'OK',
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
+    requestId: req.requestId
+  });
 });
 
 // Apply CSRF protection globally to all mutating API routes
@@ -211,24 +271,89 @@ app.get('/health', (req, res) => {
   });
 });
 
-// Swagger UI route
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(specs));
+// Swagger UI route (lazy loaded)
+app.use('/api-docs', (req, res, next) => {
+  loadRoutes();
+  swaggerUi.serve(req, res, next);
+}, (req, res) => {
+  loadRoutes();
+  swaggerUi.setup(specs)(req, res);
+});
 
-// --- API ROUTES ---
-app.use('/api/auth', authRoutes);
-app.use('/api/auth/2fa', twoFactorRoutes);
-app.use('/api/users', authMiddleware, userRoutes);
-app.use('/api/medications', authMiddleware, medicationRoutes);
-app.use('/api/caregivers', authMiddleware, caregiverRoutes);
-app.use('/api/patients', authMiddleware, patientRoutes);
-app.use('/api/devices', authMiddleware, deviceRoutes);
-app.use('/api/notifications', authMiddleware, notificationRoutes);
-app.use('/api/reports', authMiddleware, reportsRoutes);
-app.use('/api/consent', consentRoutes);
-app.use('/api/prescriptions', authMiddleware, prescriptionRoutes);
+// --- API ROUTES (lazy loaded) ---
+app.use('/api/auth', (req, res, next) => {
+  loadRoutes();
+  authRoutes(req, res, next);
+});
+app.use('/api/auth/2fa', (req, res, next) => {
+  loadRoutes();
+  twoFactorRoutes(req, res, next);
+});
+app.use('/api/users', (req, res, next) => {
+  loadRoutes();
+  authMiddleware(req, res, (err) => {
+    if (err) return next(err);
+    userRoutes(req, res, next);
+  });
+});
+app.use('/api/medications', (req, res, next) => {
+  loadRoutes();
+  authMiddleware(req, res, (err) => {
+    if (err) return next(err);
+    medicationRoutes(req, res, next);
+  });
+});
+app.use('/api/caregivers', (req, res, next) => {
+  loadRoutes();
+  authMiddleware(req, res, (err) => {
+    if (err) return next(err);
+    caregiverRoutes(req, res, next);
+  });
+});
+app.use('/api/patients', (req, res, next) => {
+  loadRoutes();
+  authMiddleware(req, res, (err) => {
+    if (err) return next(err);
+    patientRoutes(req, res, next);
+  });
+});
+app.use('/api/devices', (req, res, next) => {
+  loadRoutes();
+  authMiddleware(req, res, (err) => {
+    if (err) return next(err);
+    deviceRoutes(req, res, next);
+  });
+});
+app.use('/api/notifications', (req, res, next) => {
+  loadRoutes();
+  authMiddleware(req, res, (err) => {
+    if (err) return next(err);
+    notificationRoutes(req, res, next);
+  });
+});
+app.use('/api/reports', (req, res, next) => {
+  loadRoutes();
+  authMiddleware(req, res, (err) => {
+    if (err) return next(err);
+    reportsRoutes(req, res, next);
+  });
+});
+app.use('/api/consent', (req, res, next) => {
+  loadRoutes();
+  consentRoutes(req, res, next);
+});
+app.use('/api/prescriptions', (req, res, next) => {
+  loadRoutes();
+  authMiddleware(req, res, (err) => {
+    if (err) return next(err);
+    prescriptionRoutes(req, res, next);
+  });
+});
 if (process.env.NODE_ENV === 'development') {
-  const apiDocsRoutes = require('./routes/api-docs');
-  app.use('/api/api-docs', apiDocsRoutes);
+  app.use('/api/api-docs', (req, res, next) => {
+    loadRoutes();
+    apiDocsRoutes(req, res, next);
+  });
 }
 
 // Socket.IO disabled for serverless deployment
@@ -255,6 +380,7 @@ app.use((req, res) => {
 app.use(errorHandler);
 
 async function syncDatabase(instance, label) {
+  loadRoutes(); // Ensure database is loaded
   const dialect = instance.getDialect();
 
   try {
@@ -284,9 +410,11 @@ async function syncDatabase(instance, label) {
 process.on('SIGTERM', async () => {
   logger.info('SIGTERM received. Shutting down gracefully...');
   try {
-    await sequelizePii.close();
-    await sequelizeMedical.close();
-    logger.info('Both database connections closed.');
+    if (routesLoaded && sequelizePii && sequelizeMedical) {
+      await sequelizePii.close();
+      await sequelizeMedical.close();
+      logger.info('Both database connections closed.');
+    }
     process.exit(0);
   } catch (error) {
     logger.error('Error during shutdown:', error);
@@ -297,9 +425,11 @@ process.on('SIGTERM', async () => {
 process.on('SIGINT', async () => {
   logger.info('SIGINT received. Shutting down gracefully...');
   try {
-    await sequelizePii.close();
-    await sequelizeMedical.close();
-    logger.info('Both database connections closed.');
+    if (routesLoaded && sequelizePii && sequelizeMedical) {
+      await sequelizePii.close();
+      await sequelizeMedical.close();
+      logger.info('Both database connections closed.');
+    }
     process.exit(0);
   } catch (error) {
     logger.error('Error during shutdown:', error);
