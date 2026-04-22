@@ -239,17 +239,27 @@ app.use(errorHandler);
 const PORT = process.env.PORT || 5000;
 
 async function syncDatabase(instance, label) {
+  const dialect = instance.getDialect();
+  
   try {
-    await instance.query('PRAGMA foreign_keys = OFF;');
+    if (dialect === 'sqlite') {
+      await instance.query('PRAGMA foreign_keys = OFF;');
+    }
     await instance.sync({ alter: true });
-    await instance.query('PRAGMA foreign_keys = ON;');
+    if (dialect === 'sqlite') {
+      await instance.query('PRAGMA foreign_keys = ON;');
+    }
     logger.info(`${label} database synchronized (ALTER).`);
   } catch (syncError) {
     logger.warn(`${label} safe sync failed. Falling back to FORCE sync...`);
     logger.error(syncError.message);
-    await instance.query('PRAGMA foreign_keys = OFF;');
+    if (dialect === 'sqlite') {
+      await instance.query('PRAGMA foreign_keys = OFF;');
+    }
     await instance.sync({ force: true });
-    await instance.query('PRAGMA foreign_keys = ON;');
+    if (dialect === 'sqlite') {
+      await instance.query('PRAGMA foreign_keys = ON;');
+    }
     logger.info(`${label} database synchronized (FORCE).`);
   }
 }
@@ -269,14 +279,27 @@ async function startServer() {
       // Run sample data generator (handles checking if data exists)
       await generateSampleData();
     } else if (process.env.NODE_ENV === 'test') {
-      await sequelizePii.query('PRAGMA foreign_keys = OFF;');
+      const dialectPii = sequelizePii.getDialect();
+      const dialectMed = sequelizeMedical.getDialect();
+      
+      if (dialectPii === 'sqlite') {
+        await sequelizePii.query('PRAGMA foreign_keys = OFF;');
+      }
       await sequelizePii.sync({ force: true });
-      await sequelizePii.query('PRAGMA foreign_keys = ON;');
-      await sequelizeMedical.query('PRAGMA foreign_keys = OFF;');
+      if (dialectPii === 'sqlite') {
+        await sequelizePii.query('PRAGMA foreign_keys = ON;');
+      }
+      
+      if (dialectMed === 'sqlite') {
+        await sequelizeMedical.query('PRAGMA foreign_keys = OFF;');
+      }
       await sequelizeMedical.sync({ force: true });
-      await sequelizeMedical.query('PRAGMA foreign_keys = ON;');
+      if (dialectMed === 'sqlite') {
+        await sequelizeMedical.query('PRAGMA foreign_keys = ON;');
+      }
       logger.info('Both databases synchronized (FORCE) for test environment.');
     }
+    // For production (NODE_ENV === 'production'), skip sync and just use existing schema
 
     server.listen(PORT, () => {
       logger.info(`🚀 CareSync Backend Server running on port ${PORT}`);
