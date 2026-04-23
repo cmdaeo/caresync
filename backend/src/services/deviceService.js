@@ -2,7 +2,7 @@ const { Device, DeviceAccessPermission, DeviceInvitation, User } = require('../m
 const { hydrateWithUsers } = require('../utils/crossDbHelper');
 const logger = require('../utils/logger');
 const JwtUtils = require('../utils/jwtUtils');
-const { v4: uuidv4 } = require('uuid');
+const { randomUUID } = require('crypto');
 const { Op } = require('sequelize');
 const { AppError, NotFoundError, ConflictError, AuthenticationError } = require('../middleware/errorHandler');
 
@@ -220,7 +220,7 @@ class DeviceService {
     }
 
     // Generate unique invitation token
-    const invitationToken = uuidv4();
+    const invitationToken = randomUUID();
 
     // Create invitation
     const invitation = await DeviceInvitation.create({
