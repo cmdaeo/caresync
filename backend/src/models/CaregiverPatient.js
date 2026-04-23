@@ -32,7 +32,7 @@ module.exports = (sequelize) => {
       allowNull: false
     },
     permissions: {
-      type: DataTypes.JSON,
+      type: DataTypes.JSONB,
       defaultValue: {
         canViewMedications: true,
         canViewAdherence: true,

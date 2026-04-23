@@ -162,8 +162,8 @@ export const SoftwareArchitecturePage = () => {
                       title="Data Layer" 
                       icon={Database} 
                       items={[
-                        { label: 'Sequelize ORM', description: "Provides type-safe database queries and automatic migration management.", detail: "Works with SQLite, Postgres, MySQL" },
-                        { label: 'SQLite3 / PG', description: "SQLite for edge deployment simplicity, Postgres for scalable cloud instances.", detail: "Same ORM for both databases" },
+                        { label: 'Sequelize ORM', description: "Provides type-safe database queries and automatic migration management.", detail: "Works with Postgres, MySQL, and more" },
+                        { label: 'PostgreSQL', description: "Supabase-hosted PostgreSQL for scalable, production-ready cloud database.", detail: "Managed PostgreSQL with SSL" },
                         { label: 'Redis', description: "High-performance caching layer for session storage and rate limiting.", detail: "Sub-millisecond latency" },
                         { label: 'AES-256', description: "Field-level encryption for sensitive patient data at rest.", detail: "Military-grade encryption" }
                       ]} 

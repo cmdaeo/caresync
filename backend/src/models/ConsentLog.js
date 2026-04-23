@@ -40,7 +40,7 @@ module.exports = (sequelize) => {
       allowNull: true
     },
     metadata: {
-      type: DataTypes.JSON,
+      type: DataTypes.JSONB,
       allowNull: true
     }
   }, {

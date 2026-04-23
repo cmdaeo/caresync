@@ -10,18 +10,18 @@ module.exports = (sequelize) => {
     userId: {
       type: DataTypes.UUID,
       allowNull: false,
-      unique: false, // CRITICAL: blocks SQLite alter-sync from leaking standalone UNIQUE from the composite index
+      unique: false, // Only the COMPOSITE index should be unique, not this column alone
       comment: 'UUID link to users table in PII database'
     },
     medicationId: {
       type: DataTypes.UUID,
       allowNull: false,
-      unique: false, // CRITICAL: same — only the COMPOSITE index (userId+medicationId+scheduledTime) should be unique
+      unique: false, // Only the COMPOSITE index (userId+medicationId+scheduledTime) should be unique
     },
     scheduledTime: {
       type: DataTypes.DATE,
       allowNull: false,
-      unique: false, // CRITICAL: same — prevent standalone UNIQUE leak from the composite index
+      unique: false, // Prevent standalone UNIQUE — only the composite index should enforce uniqueness
     },
     takenAt: {
       type: DataTypes.DATE,

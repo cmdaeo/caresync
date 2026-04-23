@@ -1,4 +1,5 @@
-require('dotenv').config({ path: '../.env' });
+const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '../../.env') }); // Adjust the '..' based on where your .env actually is!
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
@@ -145,18 +146,17 @@ app.use(async (req, res, next) => {
       await sPii.authenticate();
       logger.info('Database connection established.');
 
-      // In production, try to sync tables if they don't exist
-      if (process.env.NODE_ENV === 'production') {
-        try {
-          logger.info('Checking database schema in production...');
-          await syncDatabase(sPii, 'Database');
-          logger.info('Database schema verified/created successfully.');
-        } catch (syncError) {
-          logger.warn('Database sync failed, but continuing:', syncError.message);
-        }
-      } else if (process.env.NODE_ENV === 'development') {
-        await syncDatabase(sPii, 'PII');
-        await syncDatabase(sMed, 'Medical');
+      // Sync database schema — both sequelizePii and sequelizeMedical
+      // point to the same PostgreSQL instance, so we only sync once.
+      try {
+        logger.info('Checking database schema...');
+        await sPii.sync({ alter: true });
+        logger.info('Database schema verified/created successfully.');
+      } catch (syncError) {
+        logger.warn('Database sync failed, but continuing:', syncError.message);
+      }
+
+      if (process.env.NODE_ENV === 'development') {
         const generateSampleData = require('./utils/sampleDataGenerator');
         await generateSampleData();
       }
@@ -387,47 +387,17 @@ app.use((req, res) => {
 app.use(errorHandler);
 
 async function syncDatabase(instance, label) {
-  loadRoutes(); // Ensure database is loaded
-  const dialect = instance.getDialect();
+  loadRoutes(); // Ensure models are loaded
 
   try {
     logger.info(`Attempting to sync ${label} database...`);
-
-    if (dialect === 'sqlite') {
-      await instance.query('PRAGMA foreign_keys = OFF;');
-    }
-
-    // Try ALTER first (safer for production)
     await instance.sync({ alter: true });
-
-    if (dialect === 'sqlite') {
-      await instance.query('PRAGMA foreign_keys = ON;');
-    }
-
     logger.info(`${label} database synchronized successfully (ALTER).`);
   } catch (syncError) {
+    // On Supabase/production, never force-sync (it drops all data).
+    // Just log the error — tables should be created via the SQL schema.
     logger.warn(`${label} ALTER sync failed: ${syncError.message}`);
-
-    try {
-      // Fallback to FORCE sync if ALTER fails
-      logger.info(`Attempting FORCE sync for ${label} database...`);
-
-      if (dialect === 'sqlite') {
-        await instance.query('PRAGMA foreign_keys = OFF;');
-      }
-
-      await instance.sync({ force: true });
-
-      if (dialect === 'sqlite') {
-        await instance.query('PRAGMA foreign_keys = ON;');
-      }
-
-      logger.info(`${label} database synchronized successfully (FORCE).`);
-    } catch (forceError) {
-      logger.error(`${label} FORCE sync also failed: ${forceError.message}`);
-      // Don't throw - let the app continue even if sync fails
-      // Tables might already exist or sync might work on individual operations
-    }
+    logger.warn(`Tables should be created via supabase-schema.sql if they don't exist.`);
   }
 }
 
@@ -471,6 +441,17 @@ process.on('uncaughtException', (err) => {
   logger.error('Uncaught Exception:', err);
   process.exit(1);
 });
+
+// Start server only when NOT running as a deployed serverless function.
+// VERCEL_URL is only set in deployed Vercel environments.
+const isDeployedServerless = (process.env.VERCEL && process.env.VERCEL_URL) || process.env.AWS_LAMBDA_FUNCTION_NAME;
+if (!isDeployedServerless) {
+  const PORT = 5000; // Hardcode to 5000 locally so Vite proxy always finds it
+  app.listen(PORT, () => {
+    console.log(`🚀 Server is awake and listening on port ${PORT}`);
+    console.log(`💡 Current DB URL: ${process.env.DATABASE_URL ? 'Loaded!' : 'MISSING!'}`);
+  });
+}
 
 // Export app for serverless deployment
 module.exports = app;

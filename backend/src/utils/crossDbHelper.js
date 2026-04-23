@@ -1,13 +1,15 @@
 /**
  * Cross-Database Helper
  *
- * Since PII data (User) and Medical data (Medication, Prescription, etc.)
- * live in separate SQLite databases, Sequelize `include` / JOINs cannot
- * cross the boundary. This helper provides application-level hydration:
+ * Provides application-level hydration for joining User data with
+ * Medical records. Although both now live in the same PostgreSQL
+ * database, this helper avoids Sequelize cross-model `include` JOINs
+ * (which would require formal foreign key associations between PII
+ * and Medical models). Instead it:
  *
- *   1. Query medical DB to get records.
+ *   1. Query medical models to get records.
  *   2. Collect unique userId UUIDs.
- *   3. Batch-fetch the matching User rows from the PII DB.
+ *   3. Batch-fetch the matching User rows from the PII models.
  *   4. Merge them in memory under a chosen alias.
  */
 
@@ -16,7 +18,7 @@ const { User } = require('../models');
 /**
  * Hydrate an array of Sequelize model instances with User data.
  *
- * @param {Array}  records       - Array of Sequelize instances (medical DB)
+ * @param {Array}  records       - Array of Sequelize instances (medical models)
  * @param {string} userIdField   - The field name containing the user UUID (e.g. 'userId', 'grantedBy')
  * @param {string} alias         - Key name for the attached user object in the output (e.g. 'user', 'reviewer')
  * @param {Array}  attributes    - User attributes to fetch (e.g. ['id', 'firstName', 'lastName'])
@@ -32,7 +34,7 @@ async function hydrateWithUsers(records, userIdField, alias, attributes = ['id',
       .filter(Boolean)
   )];
 
-  // Batch-fetch users from the PII database
+  // Batch-fetch users
   let userMap = {};
   if (ids.length > 0) {
     const { Op } = require('sequelize');

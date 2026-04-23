@@ -14,7 +14,15 @@ export default defineConfig({
     },
   },
   server: {
-    port: 5173,
+    port: process.env.PORT ? parseInt(process.env.PORT) : 5173,
     strictPort: true,
+    proxy: {
+      // Proxy /api requests to the backend during local development
+      '/api': {
+        target: 'http://localhost:5000',
+        changeOrigin: true,
+        secure: false,
+      },
+    },
   },
 });

@@ -8,6 +8,7 @@
     "start": "node src/app.js",
     "dev": "nodemon src/app.js",
     "test": "echo \"No tests configured\" && exit 0",
+    "setup-db": "node setup-db.js",
     "migrate": "npx sequelize-cli db:migrate",
     "seed": "npx sequelize-cli db:seed:all",
     "generate-docs": "node scripts/generateApiDocs.js"
@@ -39,7 +40,6 @@
     "sequelize": "^6.37.8",
     "sequelize-encrypted": "^1.0.0",
     "socket.io": "^4.8.3",
-    "sqlite3": "^6.0.1",
     "swagger-jsdoc": "^6.2.8",
     "swagger-ui-express": "^5.0.1",
     "uuid": "^14.0.0",

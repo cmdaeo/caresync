@@ -67,7 +67,7 @@ module.exports = (sequelize) => {
       defaultValue: true
     },
     status: {
-      type: DataTypes.JSON,
+      type: DataTypes.JSONB,
       allowNull: true
     }
   }, {

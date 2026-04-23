@@ -91,7 +91,7 @@ module.exports = (sequelize) => {
       allowNull: true
     },
     preferences: {
-      type: DataTypes.JSON,
+      type: DataTypes.JSONB,
       defaultValue: {
         language: 'en',
         notifications: {
@@ -107,7 +107,7 @@ module.exports = (sequelize) => {
       }
     },
     emergencyContact: {
-      type: DataTypes.JSON,
+      type: DataTypes.JSONB,
       defaultValue: {
         name: '',
         phone: '',
@@ -124,7 +124,7 @@ module.exports = (sequelize) => {
       allowNull: true
     },
     recoveryCodes: {
-      type: DataTypes.JSON,
+      type: DataTypes.JSONB,
       allowNull: true,
       defaultValue: null
     }

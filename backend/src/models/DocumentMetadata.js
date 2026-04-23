@@ -54,7 +54,7 @@ module.exports = (sequelize) => {
       defaultValue: false
     },
     metadata: {
-      type: DataTypes.JSON,
+      type: DataTypes.JSONB,
       allowNull: true
     },
     accessCount: {

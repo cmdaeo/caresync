@@ -17,7 +17,7 @@ const DeviceInvitationModel = require('./DeviceInvitation');
 const DocumentMetadataModel = require('./DocumentMetadata');
 
 // ──────────────────────────────────────────────
-// PII Database models (identity + governance)
+// PII models (identity + governance)
 // ──────────────────────────────────────────────
 const User = UserModel(sequelizePii);
 const CaregiverPatient = CaregiverPatientModel(sequelizePii);
@@ -26,7 +26,7 @@ const ConsentLog = ConsentLogModel(sequelizePii);
 const Notification = NotificationModel(sequelizePii);
 
 // ──────────────────────────────────────────────
-// Medical Database models (clinical data)
+// Medical models (clinical data)
 // ──────────────────────────────────────────────
 const Medication = MedicationModel(sequelizeMedical);
 const Prescription = PrescriptionModel(sequelizeMedical);
@@ -76,11 +76,9 @@ Prescription.belongsTo(Medication, { foreignKey: { name: 'medicationId', unique:
 
 // Medication ↔ Adherence
 // CRITICAL FIX: belongsTo() defaults to unique:true on the FK column during
-// SQLite sync({ alter: true }), which injects a STANDALONE unique constraint
+// sync({ alter: true }), which injects a STANDALONE unique constraint
 // on medicationId — separate from the composite unique index defined in
-// Adherence.js. This phantom constraint is what causes the 409 "medicationId
-// must be unique" error when a user records a second dose for the same med.
-// Explicitly setting unique:false tells Sequelize the FK is NOT a 1:1 column.
+// Adherence.js. Explicitly setting unique:false tells Sequelize the FK is NOT a 1:1 column.
 Medication.hasMany(Adherence, { foreignKey: { name: 'medicationId', unique: false }, as: 'adherence' });
 Adherence.belongsTo(Medication, { foreignKey: { name: 'medicationId', unique: false } });
 

@@ -271,15 +271,6 @@ class AuthService {
     }
   }
 
-    const newToken = generateToken(user);
-    const newRefreshToken = generateRefreshToken(user.id);
-    const newRefreshTokenHash = await hashRefreshToken(newRefreshToken);
-
-    user.refreshTokenHash = newRefreshTokenHash;
-    await user.save();
-
-    return { token: newToken, refreshToken: newRefreshToken };
-  }
 
   async logout(user) {
     user.refreshTokenHash = null;

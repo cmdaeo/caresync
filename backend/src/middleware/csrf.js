@@ -65,7 +65,7 @@ function validateToken(token) {
     return { valid: false, error: 'TOKEN_EXPIRED', message: 'CSRF token has expired' };
   }
 
-  const secret = Buffer.from(getSecret(), 'hex').slice(0, 32);
+  const secret = Buffer.from(getSecret(), 'utf8').slice(0, 32);
   const expectedSignature = crypto
     .createHmac('sha256', secret)
     .update(`${tokenValue}.${timestampStr}`)
