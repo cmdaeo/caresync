@@ -3,7 +3,7 @@ const router = express.Router();
 const crypto = require('crypto');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const otplib = require('otplib');
+const speakeasy = require('speakeasy');
 const QRCode = require('qrcode');
 const { User } = require('../models');
 const authService = require('../services/authService');
@@ -82,15 +82,15 @@ router.post(
       throw new AppError('2FA is already enabled. Disable it first to reconfigure.', 400, 'TWO_FACTOR_ALREADY_ENABLED');
     }
 
-    const secret = otplib.generateSecret();
+    const secretData = speakeasy.generateSecret({ 
+      length: 20, 
+      name: `CareSync (${user.email})`, 
+      issuer: 'CareSync' 
+    });
+    const secret = secretData.base32;
     await user.update({ twoFactorSecret: secret });
 
-    const otpauthUrl = otplib.generateURI({
-      issuer: 'CareSync',
-      label: user.email,
-      secret,
-      type: 'totp',
-    });
+    const otpauthUrl = secretData.otpauth_url;
 
     const qrCodeDataUrl = await QRCode.toDataURL(otpauthUrl);
 
@@ -147,8 +147,13 @@ router.post(
       throw new AppError('No 2FA setup in progress. Call /setup first.', 400, 'TWO_FACTOR_NO_SETUP');
     }
 
-    const result = await otplib.verify({ token: req.body.token, secret: user.twoFactorSecret });
-    if (!result.valid) {
+    const isValid = speakeasy.totp.verify({
+      secret: user.twoFactorSecret,
+      encoding: 'base32',
+      token: req.body.token,
+      window: 1
+    });
+    if (!isValid) {
       throw new AppError('Invalid TOTP code. Please try again.', 401, 'INVALID_TOTP');
     }
 
@@ -216,8 +221,13 @@ router.post(
       throw new AppError('2FA verification failed', 401, 'TWO_FACTOR_ERROR');
     }
 
-    const result = await otplib.verify({ token, secret: user.twoFactorSecret });
-    if (!result.valid) {
+    const isValid = speakeasy.totp.verify({
+      secret: user.twoFactorSecret,
+      encoding: 'base32',
+      token,
+      window: 1
+    });
+    if (!isValid) {
       logger.warn(`Failed 2FA attempt for user ${user.id}`);
       throw new AppError('Invalid TOTP code', 401, 'INVALID_TOTP');
     }
