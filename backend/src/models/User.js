@@ -3,9 +3,12 @@ const bcrypt = require('bcryptjs');
 const Encrypted = require('sequelize-encrypted');
 
 module.exports = (sequelize) => {
-  const encryptionKey = process.env.ENCRYPTION_KEY || 'fallback-encryption-key-for-development';
+  const encryptionKey = process.env.ENCRYPTION_KEY;
   if (!encryptionKey) {
-    throw new Error('ENCRYPTION_KEY environment variable is required');
+    throw new Error(
+      'ENCRYPTION_KEY environment variable is required for PII encryption. ' +
+      'Generate one with: node -e "console.log(require(\'crypto\').randomBytes(32).toString(\'base64\'))"'
+    );
   }
 
   const User = sequelize.define('User', {
@@ -134,7 +137,7 @@ module.exports = (sequelize) => {
     hooks: {
       beforeCreate: async (user) => {
         if (user.password) {
-          user.password = await bcrypt.hash(user.password, 10);
+          user.password = await bcrypt.hash(user.password, 12);
         }
         // Convert empty strings to null for optional fields
         if (user.phone === '') user.phone = null;
@@ -142,7 +145,7 @@ module.exports = (sequelize) => {
       },
       beforeUpdate: async (user) => {
         if (user.changed('password')) {
-          user.password = await bcrypt.hash(user.password, 10);
+          user.password = await bcrypt.hash(user.password, 12);
         }
         // Convert empty strings to null for optional fields
         if (user.phone === '') user.phone = null;

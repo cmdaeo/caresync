@@ -169,8 +169,9 @@ const requirePatientAccess = async (req, res, next) => {
       }
     }
 
-    // Admin and healthcare providers can access all data
-    if (req.user.role === 'admin' || req.user.role === 'healthcare_provider') {
+    // Only admin has unrestricted access to all patient data.
+    // Healthcare providers must have an explicit CaregiverPatient relationship.
+    if (req.user.role === 'admin') {
       return next();
     }
 

@@ -5,11 +5,14 @@ const CSRF_HEADER_NAME = 'x-csrf-token';
 const TOKEN_SIZE = 32;
 
 function getSecret() {
-  // In serverless environments, use a fallback secret if none provided
-  // This is acceptable for CSRF tokens that are short-lived and don't store sensitive data
-  const secret = process.env.CSRF_SECRET ||
-                 process.env.SESSION_SECRET ||
-                 'fallback-csrf-secret-for-serverless-deployment';
+  const secret = process.env.CSRF_SECRET || process.env.SESSION_SECRET;
+
+  if (!secret) {
+    throw new Error(
+      'CSRF_SECRET or SESSION_SECRET environment variable is required. ' +
+      'Generate one with: node -e "console.log(require(\'crypto\').randomBytes(32).toString(\'hex\'))"'
+    );
+  }
 
   if (secret.length < 16) {
     throw new Error('CSRF secret must be at least 16 characters long');
@@ -85,6 +88,13 @@ function csrfProtection(req, res, next) {
   }
 
   try {
+    const origin = req.headers.origin;
+    const isMobile = origin === 'capacitor://localhost' || origin === 'http://localhost';
+
+    if (isMobile) {
+      return next();
+    }
+
     const token = req.headers[CSRF_HEADER_NAME] || req.body?._csrf || req.query?._csrf;
 
     if (!token) {

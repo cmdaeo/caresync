@@ -16,8 +16,8 @@ const logger = require('./utils/logger');
 // Lazy load routes and database (only when needed)
 let routesLoaded = false;
 let authRoutes, userRoutes, medicationRoutes, caregiverRoutes, patientRoutes,
-    deviceRoutes, notificationRoutes, reportsRoutes, consentRoutes,
-    twoFactorRoutes, prescriptionRoutes, apiDocsRoutes;
+  deviceRoutes, notificationRoutes, reportsRoutes, consentRoutes,
+  twoFactorRoutes, prescriptionRoutes, apiDocsRoutes, statusRoutes;
 let authMiddleware, sequelizePii, sequelizeMedical, generateSampleData, specs, swaggerUi;
 
 function loadRoutes() {
@@ -37,6 +37,7 @@ function loadRoutes() {
     twoFactorRoutes = require('./routes/twoFactor');
     prescriptionRoutes = require('./routes/prescriptions');
     apiDocsRoutes = require('./routes/api-docs');
+    statusRoutes = require('./routes/status');
 
     // Import middleware and database
     authMiddleware = require('./middleware/auth').authMiddleware;
@@ -82,6 +83,8 @@ app.use(cors({
   origin: [
     'http://localhost:3000',
     'http://localhost:19006',
+    'capacitor://localhost',
+    'http://localhost',
     process.env.CLIENT_URL,
   ].filter(Boolean),
   credentials: true,
@@ -190,7 +193,7 @@ app.get('/api/csrf-token', (req, res) => {
 
     res.cookie(CSRF_COOKIE_NAME, token, {
       httpOnly: true,
-      sameSite: 'strict',
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'strict',
       secure: process.env.NODE_ENV === 'production',
       path: '/',
       maxAge: 60 * 60 * 1000, // 1 hour
@@ -229,6 +232,7 @@ app.get('/health', (req, res) => {
 // Apply CSRF protection globally to all mutating API routes
 app.use(csrfProtection);
 
+
 // --- Rate Limiting ---
 const globalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -241,7 +245,7 @@ app.use(globalLimiter);
 
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 10,
+  max: 30,
   standardHeaders: true,
   legacyHeaders: false,
   message: { success: false, message: 'Too many authentication attempts, please try again later.' }
@@ -269,14 +273,6 @@ const reportLimiter = rateLimit({
   message: { success: false, message: 'Too many report requests, please try again later.' }
 });
 app.use('/api/reports', reportLimiter);
-
-app.get('/health', (req, res) => {
-  res.status(200).json({
-    status: 'OK',
-    timestamp: new Date().toISOString(),
-    uptime: process.uptime()
-  });
-});
 
 // Swagger UI route (lazy loaded)
 app.use('/api-docs', (req, res, next) => {
@@ -363,6 +359,12 @@ if (process.env.NODE_ENV === 'development') {
   });
 }
 
+// Status endpoint (public + admin-detailed)
+app.use('/api/status', (req, res, next) => {
+  loadRoutes();
+  statusRoutes(req, res, next);
+});
+
 // Socket.IO disabled for serverless deployment
 if (process.env.VERCEL !== '1' && !process.env.AWS_LAMBDA_FUNCTION_NAME) {
   logger.info('Socket.IO disabled in serverless environment');
@@ -446,8 +448,8 @@ process.on('uncaughtException', (err) => {
 // VERCEL_URL is only set in deployed Vercel environments.
 const isDeployedServerless = (process.env.VERCEL && process.env.VERCEL_URL) || process.env.AWS_LAMBDA_FUNCTION_NAME;
 if (!isDeployedServerless) {
-  const PORT = 5000; // Hardcode to 5000 locally so Vite proxy always finds it
-  app.listen(PORT, () => {
+  const PORT = process.env.PORT || 5000;
+  app.listen(PORT, '0.0.0.0', () => {
     console.log(`🚀 Server is awake and listening on port ${PORT}`);
     console.log(`💡 Current DB URL: ${process.env.DATABASE_URL ? 'Loaded!' : 'MISSING!'}`);
   });

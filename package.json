@@ -12,7 +12,11 @@
     "start": "cd backend && node src/app.js",
     "upgrade:all": "npm run upgrade:backend && npm run upgrade:frontend",
     "upgrade:backend": "npx npm-check-updates -u --cwd backend && npm install --prefix backend",
-    "upgrade:frontend": "npx npm-check-updates -u --cwd frontend && npm install --prefix frontend"
+    "upgrade:frontend": "npx npm-check-updates -u --cwd frontend && npm install --prefix frontend",
+    "build:android": "cd frontend && npm run build && npx cap sync android",
+    "open:android": "cd frontend && npx cap open android",
+    "build:apk:win": "npm run build:android && cd frontend/android && gradlew clean assembleDebug",
+    "build:apk:mac": "npm run build:android && cd frontend/android && ./gradlew clean assembleDebug"
   },
   "repository": {
     "type": "git",

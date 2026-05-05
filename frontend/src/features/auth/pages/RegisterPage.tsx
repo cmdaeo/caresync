@@ -212,6 +212,13 @@ export const RegisterPage = () => {
             </>
           )}
         </button>
+
+        <p className="text-center text-[11px] text-text-muted mt-4 px-2">
+          By creating an account, you agree to our{' '}
+          <Link to="/legal/terms" className="underline hover:text-brand-primary transition-colors">Terms of Use</Link>
+          {' '}and{' '}
+          <Link to="/legal/privacy" className="underline hover:text-brand-primary transition-colors">Privacy Policy</Link>.
+        </p>
       </form>
     </div>
   );

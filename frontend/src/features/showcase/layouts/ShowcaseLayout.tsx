@@ -17,7 +17,7 @@ export const ShowcaseLayout = () => {
       <main className="flex-1 min-h-0 w-full relative overflow-y-auto overflow-x-hidden themed-scrollbar flex flex-col">
         
         {/* Content grows to fill space or pushes footer down */}
-        <div className="flex-1">
+        <div className="flex-1 flex flex-col">
           <Outlet />
         </div>
 

@@ -21,8 +21,10 @@ class AuthController {
       logger.info('Registration successful, setting cookies', { requestId: req.requestId, userId: user.id });
 
       res.cookie('refreshToken', refreshToken, {
-        httpOnly: true, secure: process.env.NODE_ENV === 'production',
-        sameSite: 'strict', maxAge: 30 * 24 * 60 * 60 * 1000
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'strict',
+        maxAge: 30 * 24 * 60 * 60 * 1000
       });
 
       logger.info('Returning registration response', { requestId: req.requestId });
@@ -57,8 +59,10 @@ class AuthController {
       const { user, token, refreshToken } = result;
 
       res.cookie('refreshToken', refreshToken, {
-        httpOnly: true, secure: process.env.NODE_ENV === 'production',
-        sameSite: 'strict', maxAge: 30 * 24 * 60 * 60 * 1000
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'strict',
+        maxAge: 30 * 24 * 60 * 60 * 1000
       });
 
       res.json(ApiResponse.success({ user: user.toJSON(), token }, 'Login successful'));
@@ -105,8 +109,10 @@ class AuthController {
       const { token, refreshToken: newRefreshToken } = await authService.refreshToken(refreshToken);
 
       res.cookie('refreshToken', newRefreshToken, {
-        httpOnly: true, secure: process.env.NODE_ENV === 'production',
-        sameSite: 'strict', maxAge: 30 * 24 * 60 * 60 * 1000
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'strict',
+        maxAge: 30 * 24 * 60 * 60 * 1000
       });
 
       res.json(ApiResponse.success({ token }));
@@ -120,7 +126,9 @@ class AuthController {
     try {
       await authService.logout(req.user);
       res.clearCookie('refreshToken', {
-        httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: 'strict'
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'strict'
       });
       res.json(ApiResponse.success(null, 'Logged out successfully'));
     } catch (error) {
@@ -134,7 +142,9 @@ class AuthController {
       const { password } = req.body;
       await authService.deleteAccount(req.user, password);
       res.clearCookie('refreshToken', {
-        httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: 'strict'
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'strict'
       });
       res.json(ApiResponse.success(null, 'Account deleted successfully'));
     } catch (error) {

@@ -193,13 +193,17 @@ class CaregiverService {
    * Remove a caregiver
    */
   async removeCaregiver(user, id) {
-    let link = await CaregiverPatient.findByPk(id);
+    const { Op } = require('sequelize');
 
-    if (!link) {
-      link = await CaregiverPatient.findOne({
-        where: { caregiverId: id, patientId: user.id }
-      });
-    }
+    // Always scope to the authenticated user to prevent IDOR
+    const link = await CaregiverPatient.findOne({
+      where: {
+        [Op.or]: [
+          { id, patientId: user.id },
+          { caregiverId: id, patientId: user.id }
+        ]
+      }
+    });
 
     if (!link) {
       throw new NotFoundError('Relationship not found');
