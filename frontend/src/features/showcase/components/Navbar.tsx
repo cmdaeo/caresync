@@ -13,10 +13,10 @@ export const Navbar = () => {
   useEffect(() => setMobileMenuOpen(false), [location]);
 
   const navLinks = [
-    { path: '/showcase/hardware', label: 'Hardware', icon: Layers },
+    { path: '/showcase', label: 'Home', icon: Layers },
+    { path: '/showcase/hardware', label: 'Hardware', icon: Activity },
     { path: '/showcase/software', label: 'Software', icon: Code2 },
-    { path: '/showcase/security', label: 'Security', icon: Shield },
-    { path: '/showcase/timeline', label: 'Timeline', icon: Activity },
+    { path: '/showcase/api', label: 'API Docs', icon: Shield },
     { path: '/showcase/team', label: 'Team', icon: Users },
   ];
 

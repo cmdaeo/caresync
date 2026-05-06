@@ -13,7 +13,9 @@ import {
   AlertCircle,
   Loader2,
   X,
+  Smartphone
 } from 'lucide-react'
+import { isNativePlatform } from '../../../shared/lib/native-bridge'
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
@@ -45,6 +47,8 @@ export const DevicesPage = () => {
   const [addName, setAddName] = useState('')
   const [addSubmitting, setAddSubmitting] = useState(false)
   const [deletingId, setDeletingId] = useState<string | null>(null)
+
+  const isNative = isNativePlatform()
 
   const fetchDevices = async () => {
     try {
@@ -117,13 +121,15 @@ export const DevicesPage = () => {
             {devices.length} device{devices.length !== 1 && 's'} linked
           </p>
         </div>
-        <button
-          onClick={() => setShowAdd(true)}
-          className="inline-flex items-center gap-2 px-4 py-2.5 bg-brand-primary hover:bg-brand-light text-white text-sm font-semibold rounded-lg transition-colors"
-        >
-          <Plus size={16} />
-          Link New Device
-        </button>
+        {isNative && (
+          <button
+            onClick={() => setShowAdd(true)}
+            className="inline-flex items-center gap-2 px-4 py-2.5 bg-brand-primary hover:bg-brand-light text-white text-sm font-semibold rounded-lg transition-colors"
+          >
+            <Plus size={16} />
+            Link New Device
+          </button>
+        )}
       </div>
 
       {/* Error */}
@@ -141,13 +147,20 @@ export const DevicesPage = () => {
           <Cpu size={40} className="mx-auto mb-4 text-text-muted opacity-40" />
           <h2 className="text-lg font-semibold">No devices linked</h2>
           <p className="text-sm text-text-muted mt-1 mb-6">Link a CareBox device to start syncing your medication data.</p>
-          <button
-            onClick={() => setShowAdd(true)}
-            className="inline-flex items-center gap-2 px-5 py-2.5 bg-brand-primary hover:bg-brand-light text-white text-sm font-semibold rounded-lg transition-colors"
-          >
-            <Plus size={16} />
-            Link New Device
-          </button>
+          {isNative ? (
+            <button
+              onClick={() => setShowAdd(true)}
+              className="inline-flex items-center gap-2 px-5 py-2.5 bg-brand-primary hover:bg-brand-light text-white text-sm font-semibold rounded-lg transition-colors"
+            >
+              <Plus size={16} />
+              Link New Device
+            </button>
+          ) : (
+            <div className="inline-flex items-center gap-2 px-4 py-2 bg-brand-primary/10 text-brand-primary text-sm rounded-lg">
+              <Smartphone size={16} />
+              Download the mobile app to link devices via NFC/Bluetooth
+            </div>
+          )}
         </div>
       )}
 

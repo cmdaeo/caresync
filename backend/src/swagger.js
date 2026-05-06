@@ -8,12 +8,18 @@ const options = {
     info: {
       title: 'CareSync API Documentation',
       version: '1.0.0',
-      description: 'API documentation for the CareSync health/caregiving application',
+      description: 'API documentation for the CareSync health/caregiving application. ' +
+        'All endpoints require authentication via Bearer JWT token unless otherwise noted. ' +
+        'CSRF tokens are required for all mutating (POST/PUT/PATCH/DELETE) requests.',
+      contact: {
+        name: 'CareSync Development Team',
+        email: 'dev@caresync.com',
+      },
     },
     servers: [
       {
-        url: 'http://localhost:5000',
-        description: 'Development server',
+        url: process.env.CLIENT_URL ? `${process.env.CLIENT_URL.replace(/\/$/, '')}` : 'http://localhost:5000',
+        description: process.env.NODE_ENV === 'production' ? 'Production server' : 'Development server',
       },
     ],
     components: {
@@ -22,6 +28,12 @@ const options = {
           type: 'http',
           scheme: 'bearer',
           bearerFormat: 'JWT',
+        },
+        apiKeyAuth: {
+          type: 'apiKey',
+          in: 'header',
+          name: 'X-API-Key',
+          description: 'Developer API key for external integrations',
         },
       },
     },

@@ -1,8 +1,10 @@
 import axios from 'axios'
+import { Capacitor } from '@capacitor/core'
 import { useAuthStore } from '../store/authStore'
 
-const API_BASE_URL =
-  import.meta.env.VITE_API_URL || '/api'
+const API_BASE_URL = Capacitor.isNativePlatform()
+  ? 'https://caresync-pink.vercel.app/api'
+  : (import.meta.env.VITE_API_URL || '/api')
 
 // Base URL without the /api suffix (for the CSRF endpoint which lives at server root)
 const SERVER_BASE_URL = API_BASE_URL.replace(/\/api$/, '')

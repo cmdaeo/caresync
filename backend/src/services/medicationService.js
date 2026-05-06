@@ -52,10 +52,13 @@ class MedicationService {
    */
   async _validateAccess(requestingUser, targetUserId) {
     if (requestingUser.id === targetUserId) return true;
-    if (["admin", "healthcareprovider"].includes(requestingUser.role))
-      return true;
 
-    if (requestingUser.role === "caregiver") {
+    // Only admin has unrestricted access to all patient data.
+    if (requestingUser.role === 'admin') return true;
+
+    // Caregivers AND healthcare providers must have an explicit,
+    // active, verified relationship to access patient data.
+    if (requestingUser.role === 'caregiver' || requestingUser.role === 'healthcare_provider') {
       const relation = await CaregiverPatient.findOne({
         where: {
           caregiverId: requestingUser.id,

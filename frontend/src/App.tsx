@@ -18,15 +18,17 @@ import { ResetPasswordPage } from './features/auth/pages/ResetPasswordPage'
 // Showcase Pages
 import LandingPage from './features/showcase/pages/LandingPage'
 import { HardwareEvolutionPage } from './features/showcase/pages/HardwareEvolutionPage'
-import { SecurityDeepDivePage } from './features/showcase/pages/SecurityDeepDivePage'
+import { ApiDocsPage } from './features/showcase/pages/ApiDocsPage'
 import { SoftwareArchitecturePage } from './features/showcase/pages/SoftwareArchitecturePage'
 import { UnifiedTimelinePage } from './features/showcase/pages/UnifiedTimelinePage'
 import { TeamPage } from './features/showcase/pages/TeamPage'
+import { LegalPage } from './features/showcase/pages/LegalPage'
 
 // Dashboard Pages
 import { PatientDashboard } from './features/dashboard/pages/PatientDashboard'
 import { CaregiverDashboard } from './features/dashboard/pages/CaregiverDashboard'
 import { SecuritySettings } from './features/dashboard/pages/SecuritySettings'
+import { StatusPage } from './features/dashboard/pages/StatusPage'
 
 // Medication Pages
 import { MyMedicationsPage } from './features/medications/pages/MyMedicationsPage'
@@ -65,10 +67,20 @@ export function App() {
         <Route path="/showcase" element={<ShowcaseLayout />}>
           <Route path="hardware" element={<HardwareEvolutionPage />} />
           <Route path="software" element={<SoftwareArchitecturePage />} />
-          <Route path="security" element={<SecurityDeepDivePage />} />
+          <Route path="api" element={<ApiDocsPage />} />
           <Route path="timeline" element={<UnifiedTimelinePage />} />
           <Route path="team" element={<TeamPage />} />
-          <Route index element={<Navigate to="hardware" replace />} />
+        </Route>
+
+        {/* LEGAL PAGES */}
+        <Route path="/legal" element={<ShowcaseLayout />}>
+          <Route index element={<LegalPage />} />
+          <Route path=":docId" element={<LegalPage />} />
+        </Route>
+
+        {/* STATUS PAGE (PUBLIC) */}
+        <Route path="/status" element={<ShowcaseLayout />}>
+          <Route index element={<StatusPage />} />
         </Route>
 
         {/* ─── PROTECTED DASHBOARD (nested under DashboardLayout) ─── */}

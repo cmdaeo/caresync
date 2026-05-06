@@ -1,34 +1,111 @@
-import { registerPlugin } from '@capacitor/core';
+import { Capacitor, registerPlugin } from '@capacitor/core';
 
-// 1. Define the Interface (The Contract)
-// This matches the Java methods: @PluginMethod public void startScan(), etc.
+// ─── NFC Plugin Contract ───
+// Matches @CapacitorPlugin(name = "CustomNfc") in the Android/iOS native code
 export interface NfcPluginContract {
   startScan(): Promise<void>;
   stopScan(): Promise<void>;
-  // The Java code emits 'nfcTagDetected' with { tagId: string, timestamp: long }
   addListener(
-    eventName: 'nfcTagDetected', 
+    eventName: 'nfcTagDetected',
     listenerFunc: (data: { tagId: string; timestamp: number }) => void
   ): Promise<any>;
   removeAllListeners(): Promise<void>;
 }
 
-// 2. Register the Plugin
-// 'CustomNfc' must match @CapacitorPlugin(name = "CustomNfc") in Java
+// ─── BLE Device Result ───
+export interface BleDeviceResult {
+  deviceId: string;
+  name: string;
+  rssi?: number;
+}
+
 const CustomNfc = registerPlugin<NfcPluginContract>('CustomNfc');
 
-// 3. Export a Safe Wrapper (The AbZXstraction)
-// This ensures the app doesn't crash if run in a browser where the plugin is missing.
+// ─── Platform Detection ───
+export const isNativePlatform = (): boolean => Capacitor.isNativePlatform();
+export const getPlatform = (): 'web' | 'android' | 'ios' => Capacitor.getPlatform() as any;
+
+// ─── Safe Wrappers ───
+// These ensure the app doesn't crash when running in a browser
+// where native plugins are unavailable.
 export const NativeBridge = {
   nfc: CustomNfc,
-  
-  // Helper to check if we can actually scan
-  canScan: async (): Promise<boolean> => {
+
+  /** Check if NFC scanning is available (native only) */
+  canScanNfc: async (): Promise<boolean> => {
+    if (!isNativePlatform()) return false;
     try {
-      // In a real app, you might check permissions here or strict platform checks
-      return true; 
-    } catch (e) {
+      // On Android, NFC availability is checked natively
+      return true;
+    } catch {
       return false;
     }
-  }
+  },
+
+  /** Check if BLE scanning is available (native only) */
+  canScanBle: async (): Promise<boolean> => {
+    if (!isNativePlatform()) return false;
+    try {
+      const { BleClient } = await import('@capacitor-community/bluetooth-le');
+      await BleClient.initialize();
+      return true;
+    } catch {
+      return false;
+    }
+  },
+
+  /** Scan for nearby BLE devices for a given timeout */
+  scanBleDevices: async (timeoutMs = 5000): Promise<BleDeviceResult[]> => {
+    if (!isNativePlatform()) return [];
+    try {
+      const { BleClient } = await import('@capacitor-community/bluetooth-le');
+      await BleClient.initialize();
+
+      const devices: BleDeviceResult[] = [];
+      const seen = new Set<string>();
+
+      await BleClient.requestLEScan({}, (result) => {
+        if (result.device.name && !seen.has(result.device.deviceId)) {
+          seen.add(result.device.deviceId);
+          devices.push({
+            deviceId: result.device.deviceId,
+            name: result.device.name,
+            rssi: result.rssi,
+          });
+        }
+      });
+
+      await new Promise((resolve) => setTimeout(resolve, timeoutMs));
+      await BleClient.stopLEScan();
+
+      return devices;
+    } catch (err) {
+      console.warn('[NativeBridge] BLE scan failed:', err);
+      return [];
+    }
+  },
+
+  /** Connect to a BLE device by ID */
+  connectBle: async (deviceId: string): Promise<boolean> => {
+    if (!isNativePlatform()) return false;
+    try {
+      const { BleClient } = await import('@capacitor-community/bluetooth-le');
+      await BleClient.connect(deviceId);
+      return true;
+    } catch (err) {
+      console.warn('[NativeBridge] BLE connect failed:', err);
+      return false;
+    }
+  },
+
+  /** Disconnect from a BLE device */
+  disconnectBle: async (deviceId: string): Promise<void> => {
+    if (!isNativePlatform()) return;
+    try {
+      const { BleClient } = await import('@capacitor-community/bluetooth-le');
+      await BleClient.disconnect(deviceId);
+    } catch (err) {
+      console.warn('[NativeBridge] BLE disconnect failed:', err);
+    }
+  },
 };
