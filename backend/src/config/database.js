@@ -16,9 +16,9 @@ const createConnection = () => {
   const sequelize = new Sequelize(databaseUrl, {
     dialect: 'postgres',
     dialectModule: pg,
-    logging: process.env.NODE_ENV === 'development' ? false : false,
+    logging: false,
     pool: {
-      max: process.env.VERCEL ? 2 : 5,   // Serverless needs fewer connections
+      max: process.env.VERCEL ? 2 : 5,
       min: 0,
       acquire: 15000,
       idle: 5000,
@@ -27,8 +27,10 @@ const createConnection = () => {
     dialectOptions: {
       ssl: {
         require: true,
-        rejectUnauthorized: false,        // Supabase uses self-signed certs
+        rejectUnauthorized: false,
       },
+      // Force IPv4 — prevents ETIMEDOUT on systems that resolve to IPv6
+      family: 4,
     },
   });
 

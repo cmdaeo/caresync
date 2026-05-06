@@ -6,7 +6,7 @@
   "type": "commonjs",
   "scripts": {
     "start": "node src/app.js",
-    "dev": "nodemon src/app.js",
+    "dev": "nodemon --require dotenv/config src/app.js",
     "test": "echo \"No tests configured\" && exit 0",
     "setup-db": "node setup-db.js",
     "migrate": "npx sequelize-cli db:migrate",
