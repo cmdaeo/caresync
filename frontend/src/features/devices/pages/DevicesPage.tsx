@@ -1,252 +1,268 @@
-// src/features/devices/pages/DevicesPage.tsx
-// Device management — list, register (simulated QR), delete.
-import { useEffect, useState } from 'react'
-import { client } from '../../../shared/api/client'
-import {
-  Cpu,
-  Plus,
-  Trash2,
+// frontend/src/features/devices/pages/DevicesPage.tsx
+import React, { useState } from 'react';
+import { 
+  Bluetooth, 
+  BluetoothConnected, 
+  Send, 
+  Settings, 
   Activity,
-  Wifi,
-  WifiOff,
-  BatteryMedium,
   AlertCircle,
-  Loader2,
-  X,
-} from 'lucide-react'
+  CheckCircle2,
+  Package,
+  Clock,
+  Pill
+} from 'lucide-react';
+import { useCareBox } from '../../../hooks/useCareBox';
 
-/* ------------------------------------------------------------------ */
-/*  Types                                                              */
-/* ------------------------------------------------------------------ */
+const DIAS_SEMANA = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'];
 
-interface Device {
-  id: string
-  deviceId: string
-  name: string
-  deviceType: string
-  model: string | null
-  batteryLevel: number | null
-  connectionStatus: string | null
-  lastSync: string | null
-  isActive: boolean
-}
+export function DevicesPage() {
+  const { 
+    isConnected, 
+    lastEvent, 
+    connectToBox, 
+    disconnect, 
+    sendMedicationConfig, 
+    triggerMotor 
+  } = useCareBox();
 
-/* ------------------------------------------------------------------ */
-/*  Component                                                          */
-/* ------------------------------------------------------------------ */
+  // Estado para o formulário de Medicação
+  const [medName, setMedName] = useState('');
+  const [medTime, setMedTime] = useState('08:00');
+  const [medDays, setMedDays] = useState<boolean[]>([true, true, true, true, true, true, true]);
+  const [isSending, setIsSending] = useState(false);
 
-export const DevicesPage = () => {
-  const [devices, setDevices] = useState<Device[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  // Estado para o motor
+  const [motorSteps, setMotorSteps] = useState<number>(512);
 
-  // Add-device modal
-  const [showAdd, setShowAdd] = useState(false)
-  const [addName, setAddName] = useState('')
-  const [addSubmitting, setAddSubmitting] = useState(false)
-  const [deletingId, setDeletingId] = useState<string | null>(null)
+  const handleToggleDay = (index: number) => {
+    const newDays = [...medDays];
+    newDays[index] = !newDays[index];
+    setMedDays(newDays);
+  };
 
-  const fetchDevices = async () => {
-    try {
-      const res = await client.get('/devices')
-      setDevices(res.data?.data?.devices ?? res.data?.data ?? [])
-    } catch {
-      setError('Failed to load devices')
-    } finally {
-      setLoading(false)
+  const handleSendConfig = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!medName.trim()) {
+      alert('Por favor, insere o nome do medicamento.');
+      return;
     }
-  }
-
-  useEffect(() => {
-    fetchDevices()
-  }, [])
-
-  const handleAdd = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setAddSubmitting(true)
-    setError(null)
+    
+    setIsSending(true);
     try {
-      // Generate a pseudo-random deviceId to simulate a QR scan
-      const deviceId = `carebox-${crypto.randomUUID().slice(0, 8)}`
-      const res = await client.post('/devices', {
-        deviceId,
-        name: addName,
-        deviceType: 'carebox',
-      })
-      const newDev = res.data?.data?.device
-      if (newDev) setDevices((prev) => [newDev, ...prev])
-      setShowAdd(false)
-      setAddName('')
-    } catch (err: any) {
-      setError(err.response?.data?.message ?? 'Failed to register device')
+      await sendMedicationConfig(medName, medTime, medDays);
+      alert('✅ Comando enviado para a CareBox com sucesso!');
+      setMedName(''); // Limpa o formulário após envio
+    } catch (error) {
+      console.error(error);
+      alert('❌ Erro ao enviar. A caixa está ligada e dentro do alcance?');
     } finally {
-      setAddSubmitting(false)
+      setIsSending(false);
     }
-  }
+  };
 
-  const handleDelete = async (dev: Device) => {
-    if (!window.confirm(`Remove "${dev.name}"? This cannot be undone.`)) return
-    setDeletingId(dev.id)
+  const handleTestMotor = async () => {
     try {
-      await client.delete(`/devices/${dev.id}`)
-      setDevices((prev) => prev.filter((d) => d.id !== dev.id))
-    } catch (err: any) {
-      setError(err.response?.data?.message ?? 'Failed to remove device')
-    } finally {
-      setDeletingId(null)
+      await triggerMotor(motorSteps);
+    } catch (error) {
+      alert('❌ Erro ao ativar o motor.');
     }
-  }
+  };
 
-  /* ---------------------------------------------------------------- */
+  const renderLastEvent = () => {
+    if (!lastEvent) return <p className="text-gray-500 italic">A aguardar dados da CareBox...</p>;
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center py-24">
-        <Activity className="animate-spin text-text-muted" size={28} />
-      </div>
-    )
-  }
+    const parts = lastEvent.split('|');
+    const type = parts[0];
+
+    switch (type) {
+      case 'MED_TOMADA':
+        return (
+          <div className="flex items-center text-green-700 bg-green-50 p-3 rounded-lg border border-green-200 w-full">
+            <CheckCircle2 className="w-5 h-5 mr-3 flex-shrink-0" />
+            <span>
+              <strong>{parts[1]}</strong> tomada {parts[2] === 'pontual' ? 'a horas' : `com ${parts[3]} min de atraso`}.
+            </span>
+          </div>
+        );
+      case 'MED_IGNORADA':
+        return (
+          <div className="flex items-center text-red-700 bg-red-50 p-3 rounded-lg border border-red-200 w-full">
+            <AlertCircle className="w-5 h-5 mr-3 flex-shrink-0" />
+            <span>Alerta: A toma de <strong>{parts[1]}</strong> foi falhada/ignorada!</span>
+          </div>
+        );
+      case 'RESTOCK':
+        return (
+          <div className="flex items-center text-amber-700 bg-amber-50 p-3 rounded-lg border border-amber-200 w-full">
+            <Package className="w-5 h-5 mr-3 flex-shrink-0" />
+            <span>Gaveta vazia! Faltam apenas <strong>{parts[1]}</strong> tomas.</span>
+          </div>
+        );
+      case 'RFID':
+        return (
+          <div className="flex items-center text-blue-700 bg-blue-50 p-3 rounded-lg border border-blue-200 w-full">
+            <Activity className="w-5 h-5 mr-3 flex-shrink-0" />
+            <span>RFID Lido: {parts[1] === 'UNKNOWN' ? 'Desconhecido' : `Plano ${parts[1]}`}</span>
+          </div>
+        );
+      default:
+        return (
+          <div className="p-3 bg-gray-100 rounded-lg text-gray-700 font-mono text-sm w-full break-all">
+            Raw: {lastEvent}
+          </div>
+        );
+    }
+  };
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
+    <div className="max-w-4xl mx-auto space-y-6 pb-20">
+      
+      {/* HEADER: STATUS BLUETOOTH */}
+      <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 flex flex-col sm:flex-row justify-between items-center gap-4">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">My Devices</h1>
-          <p className="text-sm text-text-muted mt-1">
-            {devices.length} device{devices.length !== 1 && 's'} linked
-          </p>
+          <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+            CareBox Control <span className="text-xs font-semibold text-blue-600 bg-blue-100 px-2 py-1 rounded-full">BLE Módulo</span>
+          </h1>
+          <p className="text-gray-500 text-sm mt-1">Modo de Depuração e Configuração Manual</p>
         </div>
+
         <button
-          onClick={() => setShowAdd(true)}
-          className="inline-flex items-center gap-2 px-4 py-2.5 bg-brand-primary hover:bg-brand-light text-white text-sm font-semibold rounded-lg transition-colors"
+          onClick={isConnected ? disconnect : connectToBox}
+          className={`flex items-center gap-2 px-6 py-3 rounded-xl font-bold text-white transition-all shadow-md ${
+            isConnected 
+              ? 'bg-red-500 hover:bg-red-600' 
+              : 'bg-blue-600 hover:bg-blue-700 active:scale-95'
+          }`}
         >
-          <Plus size={16} />
-          Link New Device
+          {isConnected ? <BluetoothConnected className="w-5 h-5" /> : <Bluetooth className="w-5 h-5 animate-pulse" />}
+          {isConnected ? 'Desconectar da Caixa' : 'Procurar CareBox'}
         </button>
       </div>
 
-      {/* Error */}
-      {error && (
-        <div className="flex items-start gap-3 p-4 bg-red-500/10 border border-red-500/20 rounded-xl text-sm text-red-500">
-          <AlertCircle size={18} className="shrink-0 mt-0.5" />
-          <p className="flex-1">{error}</p>
-          <button onClick={() => setError(null)} className="text-xs underline opacity-70 hover:opacity-100">Dismiss</button>
+      {!isConnected ? (
+        <div className="bg-blue-50 border border-blue-100 rounded-xl p-10 text-center flex flex-col items-center">
+          <div className="bg-blue-100 p-4 rounded-full mb-4">
+            <Bluetooth className="w-10 h-10 text-blue-500" />
+          </div>
+          <h3 className="text-xl font-semibold text-blue-900 mb-2">À procura da CareBox...</h3>
+          <p className="text-blue-700 max-w-md">
+            Liga o Bluetooth do teu telemóvel, liga a CareBox à corrente e clica no botão acima para iniciar o emparelhamento.
+          </p>
         </div>
-      )}
-
-      {/* Empty state */}
-      {devices.length === 0 && (
-        <div className="bg-bg-card border border-border-subtle rounded-2xl p-12 text-center">
-          <Cpu size={40} className="mx-auto mb-4 text-text-muted opacity-40" />
-          <h2 className="text-lg font-semibold">No devices linked</h2>
-          <p className="text-sm text-text-muted mt-1 mb-6">Link a CareBox device to start syncing your medication data.</p>
-          <button
-            onClick={() => setShowAdd(true)}
-            className="inline-flex items-center gap-2 px-5 py-2.5 bg-brand-primary hover:bg-brand-light text-white text-sm font-semibold rounded-lg transition-colors"
-          >
-            <Plus size={16} />
-            Link New Device
-          </button>
-        </div>
-      )}
-
-      {/* Device list */}
-      {devices.length > 0 && (
-        <div className="space-y-3">
-          {devices.map((dev) => (
-            <div
-              key={dev.id}
-              className="bg-bg-card border border-border-subtle rounded-xl p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center gap-4 transition-colors hover:border-brand-primary/30"
-            >
-              {/* Icon */}
-              <div className="shrink-0 hidden sm:flex w-10 h-10 rounded-full bg-brand-primary/10 items-center justify-center">
-                <Cpu size={18} className="text-brand-primary" />
+      ) : (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          
+          {/* PAINEL ESQUERDO: ENVIO DE DADOS (WRITE) */}
+          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 flex flex-col">
+            <h2 className="text-lg font-bold mb-5 flex items-center gap-2 text-gray-800">
+              <Pill className="w-5 h-5 text-indigo-500" />
+              Testar Configuração (Write)
+            </h2>
+            
+            <form onSubmit={handleSendConfig} className="space-y-4 flex-1">
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1">Nome do Medicamento</label>
+                <input 
+                  type="text" 
+                  value={medName}
+                  onChange={(e) => setMedName(e.target.value)}
+                  placeholder="Ex: Brufen 600mg"
+                  className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
+                />
               </div>
 
-              {/* Info */}
-              <div className="flex-1 min-w-0">
-                <h3 className="font-semibold text-text-main truncate">{dev.name}</h3>
-                <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1 text-xs text-text-muted">
-                  <span className="flex items-center gap-1">
-                    {dev.connectionStatus === 'online' ? (
-                      <Wifi size={12} className="text-emerald-500" />
-                    ) : (
-                      <WifiOff size={12} />
-                    )}
-                    {dev.connectionStatus ?? 'unknown'}
-                  </span>
-                  {dev.batteryLevel != null && (
-                    <span className="flex items-center gap-1">
-                      <BatteryMedium size={12} />
-                      {dev.batteryLevel}%
-                    </span>
-                  )}
-                  {dev.lastSync && (
-                    <span>Last sync: {new Date(dev.lastSync).toLocaleDateString()}</span>
-                  )}
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1">Hora da Toma</label>
+                <div className="relative">
+                  <Clock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                  <input 
+                    type="time" 
+                    value={medTime}
+                    onChange={(e) => setMedTime(e.target.value)}
+                    className="w-full p-3 pl-10 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none"
+                  />
                 </div>
               </div>
 
-              {/* Actions */}
-              <button
-                onClick={() => handleDelete(dev)}
-                disabled={deletingId === dev.id}
-                className="p-2 rounded-lg border border-border-subtle hover:bg-red-500/10 hover:border-red-500/30 transition-colors disabled:opacity-40 shrink-0"
-                title="Remove device"
-              >
-                <Trash2
-                  size={15}
-                  className={deletingId === dev.id ? 'animate-spin text-red-400' : 'text-text-muted hover:text-red-500'}
-                />
-              </button>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* ---- Add Device Modal ---- */}
-      {showAdd && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setShowAdd(false)}>
-          <div
-            className="bg-bg-card border border-border-subtle rounded-2xl shadow-xl w-full max-w-sm mx-4 p-6 space-y-4"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center justify-between">
-              <h3 className="text-lg font-bold text-text-main">Link New Device</h3>
-              <button onClick={() => setShowAdd(false)} className="p-1 hover:bg-bg-hover rounded-md">
-                <X size={16} className="text-text-muted" />
-              </button>
-            </div>
-
-            <p className="text-sm text-text-muted">
-              A unique device ID will be generated automatically (simulating QR scan).
-            </p>
-
-            <form onSubmit={handleAdd} className="space-y-3">
               <div>
-                <label className="block text-xs font-medium text-text-main mb-1.5 ml-0.5">Device Name</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="e.g. Bedroom CareBox"
-                  value={addName}
-                  onChange={(e) => setAddName(e.target.value)}
-                  className="w-full px-3.5 py-2.5 text-sm rounded-lg bg-bg-page border border-border-subtle text-text-main focus:ring-2 focus:ring-brand-primary outline-none"
-                />
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Dias da Semana</label>
+                <div className="flex justify-between gap-1">
+                  {DIAS_SEMANA.map((dia, index) => (
+                    <button
+                      key={dia}
+                      type="button"
+                      onClick={() => handleToggleDay(index)}
+                      className={`w-10 h-10 rounded-full text-xs font-bold transition-colors ${
+                        medDays[index] 
+                          ? 'bg-indigo-600 text-white shadow-md' 
+                          : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+                      }`}
+                    >
+                      {dia}
+                    </button>
+                  ))}
+                </div>
               </div>
-              <button
-                type="submit"
-                disabled={addSubmitting || !addName.trim()}
-                className="w-full inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-brand-primary hover:bg-brand-light text-white text-sm font-bold rounded-lg transition-colors disabled:opacity-50"
-              >
-                {addSubmitting && <Loader2 size={14} className="animate-spin" />}
-                Register Device
-              </button>
+
+              <div className="pt-4 mt-auto">
+                <button
+                  type="submit"
+                  disabled={isSending}
+                  className="w-full flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white py-4 rounded-xl font-bold transition-all disabled:opacity-50 active:scale-95 shadow-lg shadow-indigo-200"
+                >
+                  <Send className={`w-5 h-5 ${isSending ? 'animate-pulse' : ''}`} />
+                  {isSending ? 'A enviar...' : 'Enviar para a Caixa'}
+                </button>
+              </div>
             </form>
+          </div>
+
+          {/* PAINEL DIREITO: RECEÇÃO DE DADOS (NOTIFY) & MOTOR */}
+          <div className="space-y-6 flex flex-col">
+            
+            {/* EVENTOS EM TEMPO REAL */}
+            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 flex-1">
+              <h2 className="text-lg font-bold mb-4 flex items-center gap-2 text-gray-800">
+                <Activity className="w-5 h-5 text-green-500 animate-pulse" />
+                Monitor de Eventos (Notify)
+              </h2>
+              <p className="text-sm text-gray-500 mb-4">
+                Abre a gaveta da CareBox, usa o cartão RFID ou espera pela hora configurada para ver a caixa a comunicar com a App.
+              </p>
+              <div className="min-h-[80px] flex items-center justify-center bg-gray-50 border border-gray-100 rounded-xl p-2">
+                {renderLastEvent()}
+              </div>
+            </div>
+
+            {/* MOTOR */}
+            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+              <h2 className="text-lg font-bold mb-4 flex items-center gap-2 text-gray-800">
+                <Settings className="w-5 h-5 text-gray-500" />
+                Teste de Motor Stepper
+              </h2>
+              <div className="flex flex-col sm:flex-row gap-3">
+                <div className="flex-1">
+                  <input 
+                    type="number" 
+                    value={motorSteps}
+                    onChange={(e) => setMotorSteps(Number(e.target.value))}
+                    placeholder="Passos (Ex: 512)"
+                    className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-gray-800 outline-none"
+                  />
+                </div>
+                <button
+                  onClick={handleTestMotor}
+                  className="bg-gray-800 hover:bg-gray-900 text-white px-6 py-3 rounded-xl font-bold transition-all active:scale-95"
+                >
+                  Rodar Gaveta
+                </button>
+              </div>
+            </div>
+
           </div>
         </div>
       )}
     </div>
-  )
+  );
 }
