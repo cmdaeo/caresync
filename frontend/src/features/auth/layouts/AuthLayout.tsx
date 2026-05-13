@@ -9,7 +9,7 @@ export const AuthLayout = () => {
   const containerWidth = isRegister ? "max-w-[460px]" : "max-w-[400px]";
 
   return (
-    <div className="h-dvh w-full overflow-y-auto bg-bg-page text-text-main transition-colors duration-200 themed-scrollbar flex flex-col items-center px-4 sm:px-6 lg:px-8">
+    <div className="min-h-dvh w-full bg-bg-page text-text-main transition-colors duration-200 themed-scrollbar flex flex-col items-center px-4 sm:px-6 lg:px-8">
       
       {/* Reduced py-10 to py-6 so the form fits on shorter laptop screens without scrolling */}
       <div className={`w-full ${containerWidth} my-auto py-6 transition-all duration-300`}>

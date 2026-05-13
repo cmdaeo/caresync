@@ -7,14 +7,14 @@
  *  • All containers have max-w + overflow-hidden guards
  *  • Horizontal scroll: useScroll({ container, target }) - container = page scroll div
  */
-import { useRef, useState, useEffect } from 'react';
+import { useRef, useState, useEffect, useCallback } from 'react';
 import {
   motion, useScroll, useTransform, useSpring,
-  useMotionValue, useInView,
+  useMotionValue, useInView, AnimatePresence
 } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import {
-  ArrowRight, Code2, Wifi, Shield, Activity, Users,
+  ArrowRight, Code2, Shield, Activity, Users,
   CircuitBoard, Briefcase, 
   FlaskConical, Cpu, Radio, Battery,
   ChevronRight,
@@ -22,6 +22,9 @@ import {
   Play,
   Pause
 } from 'lucide-react';
+import logo from '../../../assets/caresync.svg';
+
+import "@google/model-viewer/dist/model-viewer"
 
 /* ═══════════════════════════════════════════════════════════════════════════
    CSS
@@ -230,107 +233,19 @@ function Reveal({ children, delay = 0, className = '' }: { children: React.React
   );
 }
 
-function CountUp({ n }: { n: number }) {
-  const r = useRef<HTMLSpanElement>(null);
-  const v = useInView(r, { once: true });
-  const [c, setC] = useState(0);
-  useEffect(() => {
-    if (!v) return;
-    const t0 = performance.now(), dur = 1200;
-    const f = (t: number) => {
-      const p = Math.min((t - t0) / dur, 1);
-      setC(Math.round((1 - Math.pow(1 - p, 3)) * n));
-      if (p < 1) requestAnimationFrame(f);
-    };
-    requestAnimationFrame(f);
-  }, [v, n]);
-  return <span ref={r}>{c}</span>;
-}
 
 /* ═══════════════════════════════════════════════════════════════════════════
    VIDEO SHOWCASE - Interactive project demos
 ═══════════════════════════════════════════════════════════════════════════ */
-interface VideoItem {
-  id: string;
-  title: string;
-  description: string;
-  duration: string;
-  thumbnail: string;
-  src: string;
-  icon: any;
-  tech: string[];
-}
 
-function VideoShowcase({ t }: { t: typeof T[Lang] }) {
-  const [currentVideo, setCurrentVideo] = useState(0);
+/* ═══════════════════════════════════════════════════════════════════════════
+VIDEO SHOWCASE - Interactive project demos
+═══════════════════════════════════════════════════════════════════════════ */
+
+
+function SingleVideoShowcase({ t }: { t: typeof T[Lang] }) {
   const [isPlaying, setIsPlaying] = useState(false);
-  const [playbackSpeed, setPlaybackSpeed] = useState(1);
-  const [progress, setProgress] = useState(0);
-  const [volume, setVolume] = useState(1);
-  const [showControls, setShowControls] = useState(true);
-  const [isMuted, setIsMuted] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
-  const controlsTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  const videos: VideoItem[] = [
-    {
-      id: 'hardware',
-      title: 'Hardware Architecture',
-      description: 'From breadboard to production PCB. ESP32-S3 integration, power management, and sensor interfacing.',
-      duration: '3:24',
-      thumbnail: '/videos/thumbnails/hardware.jpg',
-      src: '/videos/caresync-hardware.mp4',
-      icon: CircuitBoard,
-      tech: ['ESP32-S3', 'KiCad', 'PCB Design']
-    },
-    {
-      id: 'software',
-      title: 'Software Stack',
-      description: 'React frontend, Node.js backend, embedded C firmware. Real-time synchronization across all layers.',
-      duration: '4:12',
-      thumbnail: '/videos/thumbnails/software.jpg',
-      src: '/videos/caresync-software.mp4',
-      icon: Code2,
-      tech: ['React', 'Node.js', 'TypeScript']
-    },
-    {
-      id: 'security',
-      title: 'Security & Compliance',
-      description: 'HIPAA-compliant architecture. End-to-end encryption, audit logs, zero-trust security model.',
-      duration: '2:58',
-      thumbnail: '/videos/thumbnails/security.jpg',
-      src: '/videos/caresync-security.mp4',
-      icon: Shield,
-      tech: ['AES-GCM', 'HIPAA', 'OAuth2']
-    },
-    {
-      id: 'timeline',
-      title: 'Development Timeline',
-      description: '14-week sprint breakdown. Agile methodology, CI/CD pipeline, automated testing at every stage.',
-      duration: '3:45',
-      thumbnail: '/videos/thumbnails/timeline.jpg',
-      src: '/videos/caresync-timeline.mp4',
-      icon: Activity,
-      tech: ['Agile', 'GitHub Actions', 'Jest']
-    },
-    {
-      id: 'team',
-      title: 'Team & Collaboration',
-      description: '12 engineers, one mission. Cross-functional teams, code reviews, knowledge sharing sessions.',
-      duration: '2:36',
-      thumbnail: '/videos/thumbnails/team.jpg',
-      src: '/videos/caresync-team.mp4',
-      icon: Users,
-      tech: ['Git', 'Figma', 'Notion']
-    }
-  ];
-
-  // Logic handlers
-  const handleTimeUpdate = () => {
-    if (videoRef.current) {
-      setProgress((videoRef.current.currentTime / videoRef.current.duration) * 100);
-    }
-  };
 
   const togglePlay = () => {
     if (videoRef.current) {
@@ -340,274 +255,410 @@ function VideoShowcase({ t }: { t: typeof T[Lang] }) {
     }
   };
 
-  const handleSpeedChange = (speed: number) => {
-    if (videoRef.current) {
-      videoRef.current.playbackRate = speed;
-      setPlaybackSpeed(speed);
-    }
-  };
-
-  const handleProgressClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (videoRef.current) {
-      const rect = e.currentTarget.getBoundingClientRect();
-      const pos = (e.clientX - rect.left) / rect.width;
-      videoRef.current.currentTime = pos * videoRef.current.duration;
-    }
-  };
-
-  const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const vol = parseFloat(e.target.value);
-    setVolume(vol);
-    if (videoRef.current) {
-      videoRef.current.volume = vol;
-      setIsMuted(vol === 0);
-    }
-  };
-
-  const toggleMute = () => {
-    if (videoRef.current) {
-      videoRef.current.muted = !isMuted;
-      setIsMuted(!isMuted);
-      if (!isMuted) setVolume(0);
-      else setVolume(1);
-    }
-  };
-
-  const skip = (seconds: number) => {
-    if (videoRef.current) videoRef.current.currentTime += seconds;
-  };
-
-  const handleInteraction = () => {
-    setShowControls(true);
-    if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current);
-    if (isPlaying) {
-      controlsTimeoutRef.current = setTimeout(() => setShowControls(false), 2500);
-    }
-  };
-
-  const handleVideoEnd = () => {
-    setIsPlaying(false);
-    setProgress(100);
-    if (currentVideo < videos.length - 1) {
-      setTimeout(() => {
-        setCurrentVideo(prev => prev + 1);
-        setIsPlaying(true);
-      }, 2000);
-    }
-  };
-
-  const selectVideo = (index: number) => {
-    setCurrentVideo(index);
-    setIsPlaying(false);
-    setProgress(0);
-    setTimeout(() => {
-      if (videoRef.current) {
-        videoRef.current.load();
-        videoRef.current.play();
-        setIsPlaying(true);
-      }
-    }, 100);
-  };
-
-  const currentVid = videos[currentVideo];
-  const Icon = currentVid.icon;
-
   return (
-    // STRICT VIEWPORT HEIGHT: We force the section to be exactly 100dvh minus padding, or min 600px.
-    // overflow-hidden prevents the page from expanding past this block if contents are too tall.
-    <section className="py-6 sm:py-10 px-4 sm:px-6 md:px-8 border-t border-border-subtle relative h-[100dvh] min-h-[600px] flex flex-col justify-center overflow-hidden">
-      <div className="max-w-[1400px] w-full mx-auto relative z-10 flex flex-col h-full max-h-[900px]">
-        
-        {/* HEADER - Kept extremely compact */}
-        <Reveal className="mb-4 sm:mb-6 shrink-0">
-          <div className="flex items-center gap-2.5 mb-1.5">
-            <div className="relative flex items-center justify-center w-1.5 h-1.5">
-              <div className="absolute w-1 h-1 rounded-full bg-brand-primary" />
-              <div className="w-full h-full rounded-full border-[0.5px] border-brand-primary border-t-transparent animate-spin [animation-duration:3s]" />
-            </div>
-            <p className="jm text-[9px] uppercase tracking-[.2em] text-brand-primary">
-              {t.projSub}
-            </p>
-          </div>
-          <h2 className="sy font-800 text-2xl sm:text-3xl md:text-4xl leading-tight">
-            {t.projH} <span className="text-brand-primary">→</span>
-          </h2>
-        </Reveal>
+    <section className="relative h-dvh w-full bg-black flex flex-col items-center justify-center px-4 sm:px-6 md:px-10 overflow-hidden border-t border-white/5">
+      <div className="max-w-[1200px] w-full mx-auto flex flex-col items-center">
+        <h3 className="text-brand-primary font-mono text-[10px] tracking-[0.2em] uppercase mb-3">
+          {t.projSub}
+        </h3>
+        <h2 className="sy font-800 text-3xl sm:text-4xl lg:text-5xl leading-tight text-white mb-10 text-center">
+          {t.projH}
+        </h2>
 
-        {/* MAIN CONTENT GRID - Fills remaining height completely */}
-        <Reveal delay={0.1} className="flex-1 min-h-0">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-6 h-full">
-            
-            {/* LEFT COLUMN: Video Player & Info (8/12 cols) */}
-            {/* flex flex-col h-full ensures it stretches but never overflows */}
-            <div className="lg:col-span-8 flex flex-col gap-3 h-full max-h-full">
+        <div className="relative w-full max-w-5xl rounded-2xl overflow-hidden border border-border-subtle bg-bg-card shadow-2xl">
+          {/* Clamp max height to 65vh so it doesn't break the 100vh section container */}
+          <div className="relative w-full aspect-video max-h-[65vh] mx-auto bg-black">
+            <video
+              ref={videoRef}
+              src="/videos/caresync-hardware.mp4"
+              className="absolute inset-0 w-full h-full object-contain"
+              loop
+              muted={false}
+              playsInline
+            />
+
+            {!isPlaying && (
               <div 
-                className={`relative flex flex-col rounded-xl overflow-hidden border transition-all duration-500 bg-bg-card flex-1 min-h-0 ${
-                  isPlaying ? 'border-brand-primary/40 shadow-2xl shadow-brand-primary/5' : 'border-border-subtle'
-                }`}
-                onMouseMove={handleInteraction}
-                onMouseLeave={() => isPlaying && setShowControls(false)}
+                className="absolute inset-0 flex items-center justify-center bg-black/40 backdrop-blur-sm cursor-pointer z-10"
+                onClick={togglePlay}
               >
-                {/* Video Container - min-h-0 is crucial to prevent flex flexbox overflow */}
-                <div className={`relative bg-black transition-all duration-500 flex-1 min-h-0 ${isPlaying ? 'brightness-95' : 'brightness-100'}`}>
-                  <video
-                    ref={videoRef}
-                    src={currentVid.src}
-                    className="w-full h-full object-contain bg-[#050505]"
-                    onTimeUpdate={handleTimeUpdate}
-                    onEnded={handleVideoEnd}
-                    onClick={togglePlay}
-                    playsInline
-                    preload="metadata"
-                  />
-
-                  {/* Play Button Overlay (Initial/Paused) */}
-                  {!isPlaying && progress === 0 && (
-                    <div className="absolute inset-0 flex items-center justify-center bg-black/40">
-                      <button onClick={togglePlay} className="group flex items-center gap-3 px-6 py-3 rounded-full bg-brand-primary/90 hover:bg-brand-primary text-white font-600 text-sm transition-all hover:scale-105 shadow-2xl">
-                        <Play size={18} className="ml-1 fill-current" /> Watch Demo
-                      </button>
-                    </div>
-                  )}
-
-                  {!isPlaying && progress > 0 && progress < 100 && (
-                    <div className="absolute inset-0 flex items-center justify-center bg-black/30">
-                      <button onClick={togglePlay} className="w-16 h-16 rounded-full bg-brand-primary/90 hover:bg-brand-primary flex items-center justify-center text-white transition-all hover:scale-110 shadow-2xl">
-                        <Play size={24} className="ml-1 fill-current" />
-                      </button>
-                    </div>
-                  )}
-
-                  {/* Video Controls Overlay */}
-                  <div className={`absolute bottom-0 left-0 right-0 transition-all duration-300 ${showControls || !isPlaying ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent" />
-                    
-                    <div className="relative h-1.5 mx-4 mb-2 cursor-pointer group" onClick={handleProgressClick}>
-                      <div className="absolute inset-0 bg-white/20 rounded-full" />
-                      <div className="absolute h-full bg-brand-primary rounded-full transition-all" style={{ width: `${progress}%` }} />
-                      <div className="absolute h-2.5 w-2.5 bg-white rounded-full -top-[2px] shadow-lg opacity-0 group-hover:opacity-100 transition-opacity" style={{ left: `${progress}%`, transform: 'translateX(-50%)' }} />
-                    </div>
-
-                    <div className="relative px-3 pb-3 flex items-center justify-between">
-                      <div className="flex items-center gap-1 sm:gap-2">
-                        <button onClick={togglePlay} className="p-1.5 rounded-lg hover:bg-white/10 transition-colors text-white">
-                          {isPlaying ? <Pause size={16} className="fill-current" /> : <Play size={16} className="fill-current" />}
-                        </button>
-                        <button onClick={() => skip(-10)} className="hidden sm:block p-1.5 rounded-lg hover:bg-white/10 transition-colors text-white jm text-[9px]">-10s</button>
-                        <button onClick={() => skip(10)} className="hidden sm:block p-1.5 rounded-lg hover:bg-white/10 transition-colors text-white jm text-[9px]">+10s</button>
-
-                        <div className="flex items-center gap-1 group/vol">
-                          <button onClick={toggleMute} className="p-1.5 rounded-lg hover:bg-white/10 transition-colors text-white">
-                            {isMuted || volume === 0 ? <Wifi size={14} className="rotate-45" /> : <Wifi size={14} />}
-                          </button>
-                          <input type="range" min="0" max="1" step="0.1" value={isMuted ? 0 : volume} onChange={handleVolumeChange} className="w-0 group-hover/vol:w-16 transition-all duration-200 accent-brand-primary h-1" />
-                        </div>
-
-                        <span className="jm text-[9px] text-white/80 ml-2">
-                          {videoRef.current ? `${Math.floor(videoRef.current.currentTime / 60)}:${String(Math.floor(videoRef.current.currentTime % 60)).padStart(2, '0')} / ${currentVid.duration}` : `0:00 / ${currentVid.duration}`}
-                        </span>
-                      </div>
-
-                      <div className="flex items-center gap-1">
-                        <div className="hidden sm:flex items-center gap-0.5 bg-white/10 rounded-lg p-0.5">
-                          {[1, 1.5, 2].map(speed => (
-                            <button key={speed} onClick={() => handleSpeedChange(speed)} className={`px-2 py-1 rounded-md jm text-[9px] font-600 transition-all ${playbackSpeed === speed ? 'bg-brand-primary text-white' : 'text-white/70 hover:text-white hover:bg-white/10'}`}>
-                              {speed}x
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Video Info Bar - Fixed small height to prevent stretching */}
-                <div className="border-t border-border-subtle p-3 sm:p-4 shrink-0 bg-bg-card">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                    <div className="flex-1 flex items-center gap-3 min-w-0">
-                      <div className="w-9 h-9 shrink-0 rounded-lg bg-brand-primary/10 border border-brand-primary/20 flex items-center justify-center">
-                        <Icon size={18} className="text-brand-primary" />
-                      </div>
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-2">
-                          <h3 className="sy font-700 text-sm sm:text-base text-text-main truncate">{currentVid.title}</h3>
-                          <span className="jm text-[9px] text-text-muted border border-border-subtle px-2 py-0.5 rounded-md shrink-0">
-                            {String(currentVideo + 1).padStart(2, '0')} / {String(videos.length).padStart(2, '0')}
-                          </span>
-                        </div>
-                        <div className="flex gap-1.5 mt-1.5 overflow-hidden">
-                          {currentVid.tech.map(tech => (
-                            <span key={tech} className="jm text-[8px] px-1.5 py-0.5 rounded bg-bg-hover border border-border-subtle text-text-muted whitespace-nowrap">
-                              {tech}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
+                <div className="w-16 h-16 sm:w-20 sm:h-20 bg-brand-primary text-black rounded-full flex items-center justify-center shadow-[0_0_40px_rgba(34,211,238,0.4)] transition-transform hover:scale-110">
+                  <Play className="w-6 h-6 sm:w-8 sm:h-8 ml-1 fill-current" />
                 </div>
               </div>
-            </div>
+            )}
 
-            {/* RIGHT COLUMN: Playlist (4/12 cols) */}
-            {/* Uses overflow-y-auto so the container stays strictly within the grid, but internal items scroll */}
-            <div className="lg:col-span-4 flex flex-row lg:flex-col gap-2.5 overflow-x-auto lg:overflow-y-auto lg:pr-2 snap-x snap-mandatory pb-2 lg:pb-0 custom-scrollbar h-full max-h-full">
-              {videos.map((video, index) => {
-                const VidIcon = video.icon;
-                const isActive = index === currentVideo;
-                const isCompleted = index < currentVideo;
-
-                return (
-                  <button
-                    key={video.id}
-                    onClick={() => selectVideo(index)}
-                    className={`group text-left p-3 rounded-xl border transition-all duration-300 shrink-0 w-[260px] lg:w-full snap-start ${
-                      isActive 
-                        ? 'border-brand-primary/40 bg-brand-primary/5 shadow-md shadow-brand-primary/5' 
-                        : 'border-border-subtle bg-bg-card hover:border-brand-primary/20 hover:bg-bg-hover'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between mb-1.5">
-                      <div className={`w-6 h-6 rounded-md flex items-center justify-center transition-all ${
-                        isActive ? 'bg-brand-primary/20 text-brand-primary' 
-                        : isCompleted ? 'bg-green-500/10 text-green-400' 
-                        : 'bg-bg-hover text-text-muted group-hover:text-brand-primary/70'
-                      }`}>
-                        {isCompleted ? <CheckCircle size={12} /> : <VidIcon size={12} />}
-                      </div>
-                      <span className="jm text-[8px] text-text-muted">{video.duration}</span>
-                    </div>
-                    
-                    <h4 className={`text-xs font-600 mb-0.5 transition-colors truncate ${isActive ? 'text-brand-primary' : 'text-text-main'}`}>
-                      {index + 1}. {video.title}
-                    </h4>
-                    <p className="text-[10px] text-text-muted line-clamp-1">
-                      {video.description}
-                    </p>
-
-                    {isActive && isPlaying && (
-                      <div className="mt-2 h-[2px] bg-white/10 rounded-full overflow-hidden">
-                        <div className="h-full bg-brand-primary rounded-full transition-all" style={{ width: `${progress}%` }} />
-                      </div>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-
+            {isPlaying && (
+              <div 
+                className="absolute inset-0 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity duration-300 bg-black/20 cursor-pointer z-10"
+                onClick={togglePlay}
+              >
+                <div className="w-16 h-16 sm:w-20 sm:h-20 bg-white/20 backdrop-blur-md text-white rounded-full flex items-center justify-center hover:bg-white/30 transition-colors">
+                  <Pause className="w-6 h-6 sm:w-8 sm:h-8 fill-current" />
+                </div>
+              </div>
+            )}
           </div>
-        </Reveal>
+        </div>
       </div>
     </section>
   );
 }
 
+/* ═══════════════════════════════════════════════════════════════════════════
+   PAGE LOADER - Aguarda modelos 3D carregarem antes de libertar o scroll
+═══════════════════════════════════════════════════════════════════════════ */
+function PageLoader({ onReady }: { onReady: () => void }) {
+  const [progress, setProgress] = useState(0);
+  const loadedCount = useRef(0);
+
+  useEffect(() => {
+    const total = 2;
+
+    const handleModelLoad = (sourceId: any) => {
+      loadedCount.current += 1;
+      const pct = Math.round((loadedCount.current / total) * 100);
+      setProgress(pct);
+      
+      // We removed the setTimeout here! 
+      // We now let the SVG animation completion handle the onReady trigger.
+    };
+
+    (window as any).__onModelLoad = handleModelLoad;
+
+    return () => {
+      delete (window as any).__onModelLoad;
+    };
+  }, []);
+
+  const clipY = (1 - progress / 100);
+
+  return (
+    <motion.div
+      className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-[#020617]"
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+    >
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        className="relative z-10 flex flex-col items-center gap-4"
+      >
+        <svg viewBox="0 0 64 64" width="64" height="64" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <clipPath id="reveal-clip">
+              <motion.rect 
+                x="0" 
+                initial={{ y: 64 }}
+                animate={{ y: clipY }} 
+                // A snappy tween makes it feel like a responsive progress bar
+                transition={{ type: "tween", ease: "easeOut", duration: 0.25 }}
+                // This is the magic bullet: wait for the visual to hit 100%
+                onAnimationComplete={() => {
+                  if (progress >= 100) {
+                    onReady();
+                  }
+                }}
+                width="64" 
+                height="64" 
+              />
+            </clipPath>
+          </defs>
+
+          {/* Camada apagada — Background */}
+          <image href={logo} x="0" y="0" width="64" height="64" 
+          style={{ filter: 'brightness(0) invert(1)' }} opacity="1" />
+
+          {/* Camada viva — Foreground */}
+          <image href={logo} x="0" y="0" width="64" height="64"
+            clipPath="url(#reveal-clip)"/>
+        </svg>
+
+        <p className="jm text-[9px] text-white/25 tracking-widest">
+          {progress < 100 ? 'Loading...' : 'Ready'}
+        </p>
+      </motion.div>
+    </motion.div>
+  );
+}
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   PROJECT BREAKDOWN — BENTO GRID
-   Replaces the old horizontal scroll. Shows the 5 CareSync pillars in an
-   asymmetric bento layout. The tone is "look what we built", not "apply here".
+PCB SHOWCASE - 3D Models (100vh Sections, Text over Model)
 ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ═══════════════════════════════════════════════════════════════════════════
+PCB SHOWCASE - 3D Models (100vh Sections, Text over Model, Parallax BG Text)
+═══════════════════════════════════════════════════════════════════════════ */
+function PCBShowcase() {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const carebandRef = useRef<HTMLElement | null>(null);
+  const careboxRef = useRef<HTMLElement | null>(null);
+
+  // Parallax / mouse interaction for the massive background typography
+  const mx = useMotionValue(0.5);
+  const my = useMotionValue(0.5);
+  const smx = useSpring(mx, { stiffness: 40, damping: 30 });
+  const smy = useSpring(my, { stiffness: 40, damping: 30 });
+
+  const textX1 = useTransform(smx, [0, 1], [-30, 30]);
+  const textY1 = useTransform(smy, [0, 1], [-30, 30]);
+  const textX2 = useTransform(smx, [0, 1], [30, -30]);
+  const textY2 = useTransform(smy, [0, 1], [30, -30]);
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      mx.set(e.clientX / window.innerWidth);
+      my.set(e.clientY / window.innerHeight);
+    };
+    window.addEventListener('mousemove', handleMouseMove);
+    return () => window.removeEventListener('mousemove', handleMouseMove);
+  }, [mx, my]);
+
+  /* Inside PCBShowcase component */
+  useEffect(() => {
+    console.log("🔵 [PCBShowcase] MOUNTED.");
+    let reported = new Set();
+
+    const notify = (id: unknown, reason: string) => {
+      console.log(`🔵 [PCBShowcase] notify() called for '${id}'. Reason: ${reason}`);
+      
+      if (reported.has(id)) {
+        console.warn(`🔵 [PCBShowcase] Wait, '${id}' was already reported. Skipping duplicate.`);
+        return;
+      }
+      reported.add(id);
+      
+      console.log(`🔵 [PCBShowcase] Starting ping interval for '${id}' to deliver signal...`);
+      let attempts = 0;
+      
+      const pingLoader = setInterval(() => {
+        attempts++;
+        if (typeof (window as any).__onModelLoad === 'function') {
+          console.log(`🟢 [PCBShowcase] SUCCESS! Delivered signal for '${id}' on attempt ${attempts}.`);
+          (window as any).__onModelLoad(id);
+          clearInterval(pingLoader);
+        } else {
+          if (attempts % 10 === 0) {
+            console.log(`🔵 [PCBShowcase] Still trying to deliver '${id}' (Attempt ${attempts}). window.__onModelLoad not found yet...`);
+          }
+        }
+      }, 50);
+    };
+
+    const checkModels = () => {
+      console.log("🔵 [PCBShowcase] Running checkModels()...");
+      const models = [
+        { ref: carebandRef.current, id: 'band' },
+        { ref: careboxRef.current, id: 'box' }
+      ];
+
+      models.forEach(({ ref, id }) => {
+        if (!ref) {
+          console.error(`🔴 [PCBShowcase] REF IS NULL for '${id}'. Cannot attach listeners!`);
+          return;
+        }
+
+        // Check exact properties of the model-viewer
+        const hasModel = !!(ref as any).model;
+        const isVisible = !!(ref as any).modelIsVisible;
+        console.log(`🔵 [PCBShowcase] Status for '${id}': model=${hasModel}, modelIsVisible=${isVisible}`);
+
+        if (hasModel || isVisible) {
+          console.log(`🔵 [PCBShowcase] '${id}' is already loaded in DOM/Cache.`);
+          notify(id, "preloaded_check");
+        } else {
+          console.log(`🔵 [PCBShowcase] '${id}' is NOT ready. Attaching load/error listeners...`);
+          ref.addEventListener('load', () => notify(id, "load_event_fired"), { once: true });
+          ref.addEventListener('error', (e) => {
+             console.error(`🔴 [PCBShowcase] ERROR EVENT fired for '${id}'!`, e);
+             notify(id, "error_event_fired"); 
+          }, { once: true });
+        }
+      });
+    };
+
+    console.log("🔵 [PCBShowcase] Waiting for 'model-viewer' custom element to be defined...");
+    customElements.whenDefined('model-viewer').then(() => {
+      console.log("🔵 [PCBShowcase] 'model-viewer' is defined! Checking refs in 100ms...");
+      // Tiny delay to ensure React has fully attached the refs after the element is defined
+      setTimeout(checkModels, 100);
+    });
+  }, []);
+
+  return (
+    <>
+      {/* ── CAREBAND: Full viewport ─────────────────── */}
+      <section
+        className="relative h-dvh w-full bg-[#020617] overflow-hidden border-t border-white/[0.02] flex items-center justify-center group"
+        ref={containerRef}
+      >
+        {/* GLOBAL NOISE TEXTURE OVERLAY */}
+        <div
+          className="pointer-events-none absolute inset-0 opacity-[0.03] z-50 mix-blend-overlay"
+          style={{
+  backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")`,
+  backgroundRepeat: 'repeat',
+}}
+        />
+
+        {/* Ambient Glow */}
+        <div className="absolute top-1/2 left-1/2 lg:left-2/3 -translate-x-1/2 -translate-y-1/2 w-[80vw] h-[80vw] lg:w-[600px] lg:h-[600px] bg-brand-primary/10 rounded-full blur-[100px] sm:blur-[120px] pointer-events-none opacity-50 group-hover:opacity-80 transition-all duration-1000 ease-out" />
+
+        {/* MASSIVE TYPOGRAPHY (Behind Model) */}
+        <motion.div
+          style={{ x: textX1, y: textY1 }}
+          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full text-center pointer-events-none select-none z-0 overflow-hidden"
+        >
+          <h2 className="sy font-800 text-[20vw] lg:text-[16vw] leading-none text-white/[0.02] tracking-tighter whitespace-nowrap">
+            CAREBAND
+          </h2>
+        </motion.div>
+
+        {/* Content Container */}
+        <div className="w-full h-full max-w-[1400px] mx-auto relative z-10 flex flex-col items-center justify-center px-6 sm:px-12">
+          {/* 3D MODEL */}
+          <div className="absolute inset-0 lg:left-auto lg:right-[-5%] w-full lg:w-[75%] h-full flex items-center justify-center z-10 pointer-events-auto">
+            <model-viewer
+              ref={carebandRef as any}
+              src="/careband.glb"
+              alt="Careband PCB 3D Model"
+              loading="eager"
+              camera-controls
+              auto-rotate
+              auto-rotate-delay="1000"
+              rotation-per-second="20deg"
+              tone-mapping="aces"
+              exposure="1.2"
+              environment-image="legacy"
+              interaction-prompt="none"
+              style={{
+                width: '100%',
+                height: '80%',
+                backgroundColor: 'transparent',
+                outline: 'none',
+              }}
+            />
+          </div>
+
+          {/* TEXT */}
+          <div className="w-full max-w-[450px] lg:absolute lg:left-[5%] xl:left-[8%] z-30 pointer-events-none flex flex-col items-start text-left mt-[50vh] lg:mt-0">
+            <Reveal>
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-brand-primary/10 text-brand-primary text-[10px] uppercase font-mono tracking-widest mb-4 pointer-events-auto border border-brand-primary/20 backdrop-blur-md">
+                <span className="w-1.5 h-1.5 rounded-full bg-brand-primary animate-pulse" />
+                Wearable Node
+              </div>
+              <h2 className="sy font-800 text-5xl sm:text-6xl lg:text-7xl text-white tracking-tight leading-[1] mb-5 drop-shadow-2xl">
+                Zero-Footprint PCB
+              </h2>
+              <p className="text-white/70 text-base sm:text-lg font-mono pointer-events-auto mb-8 drop-shadow-lg leading-relaxed">
+                ARM Cortex-M4 core. Integrated biosensors. Rigid-flex architecture designed to curve around the human wrist.
+              </p>
+              <div className="space-y-3 font-mono text-xs sm:text-sm text-white/90 pointer-events-auto drop-shadow-md">
+                <div className="flex items-center gap-3 border-l-2 border-brand-primary/50 pl-3">
+                  <CheckCircle size={16} className="text-brand-primary" />
+                  15µA Sleep State
+                </div>
+                <div className="flex items-center gap-3 border-l-2 border-brand-primary/50 pl-3">
+                  <CheckCircle size={16} className="text-brand-primary" />
+                  BLE 5.0 Stack
+                </div>
+                <div className="flex items-center gap-3 border-l-2 border-brand-primary/50 pl-3">
+                  <CheckCircle size={16} className="text-brand-primary" />
+                  12mm x 34mm Rigid-Flex
+                </div>
+              </div>
+            </Reveal>
+          </div>
+        </div>
+      </section>
+
+      {/* ── CAREBOX: Full viewport ─────────────────── */}
+      <section className="relative h-dvh w-full bg-[#020617] overflow-hidden border-t border-white/[0.02] flex items-center justify-center group">
+        {/* GLOBAL NOISE TEXTURE OVERLAY */}
+        <div
+          className="pointer-events-none absolute inset-0 opacity-[0.03] z-50 mix-blend-overlay"
+          style={{
+  backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")`,
+  backgroundRepeat: 'repeat',
+}}
+        />
+
+        {/* Ambient Glow */}
+        <div className="absolute top-1/2 left-1/2 lg:left-1/3 -translate-x-1/2 -translate-y-1/2 w-[80vw] h-[80vw] lg:w-[600px] lg:h-[600px] bg-[#c084fc]/10 rounded-full blur-[100px] sm:blur-[120px] pointer-events-none opacity-50 group-hover:opacity-80 transition-all duration-1000 ease-out" />
+
+        {/* MASSIVE TYPOGRAPHY (Behind Model) */}
+        <motion.div
+          style={{ x: textX2, y: textY2 }}
+          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full text-center pointer-events-none select-none z-0 overflow-hidden"
+        >
+          <h2 className="sy font-800 text-[20vw] lg:text-[16vw] leading-none text-white/[0.02] tracking-tighter whitespace-nowrap">
+            CAREBOX
+          </h2>
+        </motion.div>
+
+        {/* Content Container */}
+        <div className="w-full h-full max-w-[1400px] mx-auto relative z-10 flex flex-col items-center justify-center px-6 sm:px-12">
+          {/* 3D MODEL */}
+          <div className="absolute inset-0 lg:right-auto lg:left-[-5%] w-full lg:w-[75%] h-full flex items-center justify-center z-10 pointer-events-auto">
+            <model-viewer
+              ref={careboxRef as any}
+              src="/carebox.glb"
+              alt="Carebox PCB 3D Model"
+              loading="eager"
+              camera-controls
+              orientation="90deg 180deg 180deg"
+              auto-rotate
+              auto-rotate-delay="1000"
+              rotation-per-second="-15deg"
+              tone-mapping="aces"
+              exposure="1.2"
+              environment-image="legacy"
+              interaction-prompt="none"
+              style={{
+                width: '100%',
+                height: '80%',
+                backgroundColor: 'transparent',
+                outline: 'none',
+              }}
+            />
+          </div>
+
+          {/* TEXT */}
+          <div className="w-full max-w-[450px] lg:absolute lg:right-[5%] xl:right-[8%] z-30 pointer-events-none flex flex-col items-start lg:items-end text-left lg:text-right mt-[50vh] lg:mt-0">
+            <Reveal>
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#c084fc]/10 text-[#c084fc] text-[10px] uppercase font-mono tracking-widest mb-4 pointer-events-auto border border-[#c084fc]/20 backdrop-blur-md">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#c084fc] animate-pulse" />
+                Central Hub
+              </div>
+              <h2 className="sy font-800 text-5xl sm:text-6xl lg:text-7xl text-white tracking-tight leading-[1] mb-5 drop-shadow-2xl">
+                The Neural Core
+              </h2>
+              <p className="text-white/70 text-base sm:text-lg font-mono pointer-events-auto mb-8 drop-shadow-lg leading-relaxed">
+                Edge-processing powerhouse built around the ESP32-S3. Handles AES-GCM decryption, real-time syncing, and OTA updates.
+              </p>
+              <div className="space-y-3 font-mono text-xs sm:text-sm text-white/90 pointer-events-auto drop-shadow-md flex flex-col items-start lg:items-end">
+                <div className="flex items-center gap-3 border-l-2 lg:border-l-0 lg:border-r-2 border-[#c084fc]/50 pl-3 lg:pl-0 lg:pr-3 flex-row lg:flex-row-reverse">
+                  <CheckCircle size={16} className="text-[#c084fc]" />
+                  ESP32-S3 Xtensa Dual-Core
+                </div>
+                <div className="flex items-center gap-3 border-l-2 lg:border-l-0 lg:border-r-2 border-[#c084fc]/50 pl-3 lg:pl-0 lg:pr-3 flex-row lg:flex-row-reverse">
+                  <CheckCircle size={16} className="text-[#c084fc]" />
+                  Hardware AES / RSA Crypto
+                </div>
+                <div className="flex items-center gap-3 border-l-2 lg:border-l-0 lg:border-r-2 border-[#c084fc]/50 pl-3 lg:pl-0 lg:pr-3 flex-row lg:flex-row-reverse">
+                  <CheckCircle size={16} className="text-[#c084fc]" />
+                  Wi-Fi 4 + BLE 5.0 Mesh
+                </div>
+              </div>
+            </Reveal>
+          </div>
+        </div>
+      </section>
+    </>
+  );
+}
+
 const BENTO_ITEMS = [
   {
     id: 'hardware',
@@ -668,7 +719,7 @@ const BENTO_ITEMS = [
 
 function ProjectBreakdown({ t }: { t: typeof T[Lang] }) {
   return (
-    <section className="py-14 sm:py-20 px-4 sm:px-6 md:px-10 border-t border-border-subtle">
+    <section className="min-h-dvh py-14 sm:py-20 px-4 sm:px-6 md:px-10 border-t border-border-subtle flex flex-col justify-center">
       <div className="max-w-5xl mx-auto">
 
         {/* Header */}
@@ -802,6 +853,7 @@ export default function LandingPage() {
   const lang: Lang = 'en';
   const t = T[lang];
   const scrollRef = useRef<HTMLDivElement>(null);
+  const [appReady, setAppReady] = useState(false);
 
   // Hero parallax - uses the same container ref
   const { scrollYProgress: hp } = useScroll({ container: scrollRef as React.RefObject<HTMLElement> });
@@ -821,9 +873,20 @@ export default function LandingPage() {
     return () => { window.removeEventListener('mousemove', h); u(); };
   }, [mx, my, smx, smy, glow]);
 
+  const handleReady = useCallback(() => {
+    setAppReady(true);
+  }, []);
+
   return (
     <>
       <CSS />
+
+      {/* ── LOADER ─────────────────────────────────────────────────────── */}
+      <AnimatePresence>
+        {!appReady && (
+          <PageLoader onReady={handleReady} />
+        )}
+      </AnimatePresence>
 
       {/* ── PAGE SCROLL CONTAINER ──────────────────────────────────────── */}
       <div
@@ -942,124 +1005,13 @@ export default function LandingPage() {
           </div>
         </div>
 
-        {/* ════════════════════════════════════════════════════════════════
-            DISCIPLINES + STATS
-        ════════════════════════════════════════════════════════════════ */}
-        <section className="py-14 sm:py-22 px-4 sm:px-6 md:px-10">
-          <div className="max-w-5xl mx-auto">
-            <Reveal className="mb-10">
-              <p className="jm text-[10px] uppercase tracking-[.2em] text-brand-primary mb-2">{t.discH}</p>
-              <h2 className="sy font-800 text-3xl sm:text-4xl leading-tight">
-                One degree. <GText>Every direction.</GText>
-              </h2>
-            </Reveal>
-
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-3">
-              {t.disc.map(({ label, desc, col }, i) => {
-                const Icon = [CircuitBoard, Code2, Wifi][i];
-                return (
-                  <Reveal key={label} delay={i * .07}>
-                    <div className="lft p-5 rounded-xl bg-bg-card border border-border-subtle
-                      hover:border-(--c) transition-all h-full"
-                      style={{ '--c': col } as React.CSSProperties}>
-                      <div className="w-9 h-9 rounded-lg flex items-center justify-center mb-3 border"
-                        style={{ background: `${col}18`, borderColor: `${col}40`, color: col }}>
-                        <Icon size={18} />
-                      </div>
-                      <p className="jm text-[9px] uppercase tracking-widest text-text-muted mb-1">0{i + 1} - module</p>
-                      <h3 className="sy font-700 text-base sm:text-lg leading-tight mb-2">{label}</h3>
-                      <p className="text-xs text-text-muted leading-relaxed">{desc}</p>
-                    </div>
-                  </Reveal>
-                );
-              })}
-            </div>
-
-            {/* Stats */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 rounded-xl border border-border-subtle overflow-hidden">
-              {t.stats.map(([v, u, l], i) => {
-                const n = parseInt(v, 10);
-                return (
-                  <div key={i} className={`flex flex-col items-center gap-0.5 p-4 sm:p-5 bg-bg-card hover:bg-bg-hover transition-colors text-center
-                    ${i < 3 ? 'border-r border-border-subtle' : ''}`}>
-                    <div className="sy font-800 text-3xl sm:text-4xl flex items-end gap-0.5">
-                      <GText>{!isNaN(n) ? <CountUp n={n} /> : v}</GText>
-                      <span className="jm text-sm text-brand-primary mb-1">{u}</span>
-                    </div>
-                    <span className="jm text-[9px] uppercase tracking-widest text-text-muted leading-snug">{l}</span>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        </section>
+        <ProjectBreakdown t={t} />
 
         {/* ════════════════════════════════════════════════════════════════
             VideoShowcase
         ════════════════════════════════════════════════════════════════ */}
-        <VideoShowcase t={t} />
-
-        {/* ════════════════════════════════════════════════════════════════
-            CAREERS
-        ════════════════════════════════════════════════════════════════ */}
-        <section className="py-14 sm:py-20 px-4 sm:px-6 md:px-10 border-t border-border-subtle">
-          <div className="max-w-5xl mx-auto">
-            <Reveal className="mb-8">
-                <p className="jm text-[10px] uppercase tracking-[.2em] text-brand-primary mb-2">
-                  {t.carSub}
-                </p>
-                <h2 className="sy font-800 text-3xl sm:text-4xl leading-tight">
-                  {t.carH} <GText>→</GText>
-                </h2>
-              </Reveal>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-              {t.careers.map(({ icon: Icon, label, desc }, i) => (
-                <Reveal key={label} delay={i * .05}>
-                  <div className="lft p-5 sm:p-6 rounded-xl bg-bg-card border border-border-subtle
-  hover:border-brand-primary/35 hover:bg-bg-hover transition-all h-full flex flex-col">
-  
-  <div className="w-10 h-10 mb-4 rounded-lg bg-brand-primary/10 border border-brand-primary/20
-    flex items-center justify-center shrink-0">
-    <Icon size={18} className="text-brand-primary" />
-  </div>
-  
-  <div className="mt-auto">
-    <h3 className="sy font-700 text-[15px] text-text-main leading-snug mb-1.5">{label}</h3>
-    <p className="text-[13px] text-text-muted leading-relaxed">{desc}</p>
-  </div>
-  
-</div>
-                </Reveal>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* ════════════════════════════════════════════════════════════════
-            QUOTE BREAK
-        ════════════════════════════════════════════════════════════════ */}
-        <section className="relative py-16 sm:py-24 border-t border-border-subtle overflow-hidden bpg">
-          <div className="absolute inset-0 pointer-events-none"
-            style={{ background: 'radial-gradient(ellipse 70% 80% at 50% 50%, rgba(74,164,225,.07), transparent)' }} />
-          <div className="s0 absolute top-8 left-[22%] w-2 h-2 rounded-full pgn" />
-          <div className="s1 absolute bottom-8 right-[28%] w-1.5 h-1.5 rounded-full pgn" style={{ animationDelay: '.6s' }} />
-          <div className="s2 absolute top-12 right-[20%] w-1 h-1 rounded-full pgn" style={{ animationDelay: '1.2s' }} />
-          <Reveal className="relative z-10 px-4 text-center max-w-3xl mx-auto">
-            <div className="inline-flex items-center gap-2 mb-5 px-3 py-1.5 rounded-full border border-brand-primary/20 bg-brand-primary/8">
-              <span className="jm text-[9px] uppercase tracking-widest text-brand-primary">CareSync · LEEC Student Project 2026</span>
-            </div>
-            <blockquote className="sy font-800 text-3xl sm:text-4xl md:text-5xl leading-tight tracking-tight">
-              Built by students.{' '}
-              <GText>Ready for the world.</GText>
-            </blockquote>
-            <p className="jm text-xs text-text-muted mt-4 tracking-wider">- LEEC / DETI, Universidade de Aveiro</p>
-          </Reveal>
-        </section>
-
-        {/* ════════════════════════════════════════════════════════════════
-            PROJECT BREAKDOWN — BENTO GRID
-        ════════════════════════════════════════════════════════════════ */}
-        <ProjectBreakdown t={t} />
+        <SingleVideoShowcase t={t} />
+        <PCBShowcase />
 
         {/* ════════════════════════════════════════════════════════════════
             DEMO BANNER

@@ -41,6 +41,8 @@ import { ReportsPage } from './features/reports/pages/ReportsPage'
 // Helper: redirects /app to the user's role-appropriate dashboard
 import { useAuthStore } from './shared/store/authStore'
 
+import { Capacitor } from '@capacitor/core';
+
 function AppIndexRedirect() {
   const user = useAuthStore((s) => s.user)
   return <Navigate to={dashboardPathForRole(user?.role)} replace />
@@ -51,7 +53,12 @@ export function App() {
     <BrowserRouter>
       <Routes>
         {/* PUBLIC ROUTES */}
-        <Route path="/" element={<LandingPage />} />
+        <Route path="/" element={
+            Capacitor.isNativePlatform() 
+              ? <Navigate to="/login" replace />  // <-- REMOVED /auth
+              : <LandingPage />
+          } 
+        />
 
         {/* AUTH ROUTES (Wrapped in Theme-Aware Layout) */}
         <Route element={<AuthLayout />}>

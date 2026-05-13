@@ -82,6 +82,9 @@ app.use(cors({
   origin: [
     'http://localhost:3000',
     'http://localhost:19006',
+    'http://localhost:5173',
+    'http://localhost',
+    'capacitor://localhost',
     process.env.CLIENT_URL,
   ].filter(Boolean),
   credentials: true,
@@ -190,8 +193,8 @@ app.get('/api/csrf-token', (req, res) => {
 
     res.cookie(CSRF_COOKIE_NAME, token, {
       httpOnly: true,
-      sameSite: 'strict',
-      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'none',
+      secure: true,
       path: '/',
       maxAge: 60 * 60 * 1000, // 1 hour
     });
