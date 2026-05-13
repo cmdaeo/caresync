@@ -1,5 +1,4 @@
 import type { CapacitorConfig } from '@capacitor/cli';
-import { Capacitor } from '@capacitor/core';
 
 const config: CapacitorConfig = {
   appId: 'com.caresync.app',
@@ -8,6 +7,14 @@ const config: CapacitorConfig = {
   server: {
     androidScheme: 'https',
   },
+  plugins: {
+    CapacitorHttp: {
+      enabled: true,
+    },
+    CapacitorCookies: {
+      enabled: true,
+    }
+  }
 };
 
 export default config;

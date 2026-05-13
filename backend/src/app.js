@@ -84,6 +84,7 @@ app.use(cors({
     'http://localhost:19006',
     'http://localhost:5173',
     'http://localhost',
+    'https://localhost',
     'capacitor://localhost',
     process.env.CLIENT_URL,
   ].filter(Boolean),
