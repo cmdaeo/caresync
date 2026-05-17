@@ -16,18 +16,18 @@ interface TeamMember {
 }
 
 const teamMembers: TeamMember[] = [
-  { id: 'francisco', name: "Francisco Luis", role: "CTO", email: "franciscoluis@ua.pt", targetContributions: "PLACEHOLDER", group: 'leadership', image: "https://i.pravatar.cc/400?u=francisco" },
-  { id: 'bruno', name: "Bruno Luis", role: "CMM", email: "brunosilvaluis@ua.pt", targetContributions: "PLACEHOLDER", group: 'leadership', image: "https://i.pravatar.cc/400?u=bruno" },
-  { id: 'adriana', name: "Adriana Pires", role: "TC", email: "adrianapires@ua.pt", targetContributions: "PLACEHOLDER", group: 'carebox', subGroup: 'TC', image: "https://i.pravatar.cc/400?u=adriana" },
-  { id: 'jose', name: "José Trincão", role: "TC", email: "josetrincao06@ua.pt", targetContributions: "PLACEHOLDER", group: 'careapp', subGroup: 'TC', image: "https://i.pravatar.cc/400?u=jose" },
-  { id: 'joao', name: "João Anjos", role: "TC", email: "joaoanjoss@ua.pt", targetContributions: "PLACEHOLDER", group: 'careband', subGroup: 'TC', image: "https://i.pravatar.cc/400?u=joao" },
-  { id: 'hugo', name: "Hugo Navarro", role: "ENG", email: "hugonavarro@ua.pt", targetContributions: "PLACEHOLDER", group: 'careband', subGroup: 'ENG', image: "https://i.pravatar.cc/400?u=hugo" },
-  { id: 'miguel', name: "Miguel Valente", role: "ENG", email: "mdvalente13@ua.pt", targetContributions: "PLACEHOLDER", group: 'carebox', subGroup: 'ENG', image: "https://i.pravatar.cc/400?u=miguel" },
-  { id: 'joana', name: "Joana Costa", role: "ENG", email: "joanavcosta@ua.pt", targetContributions: "PLACEHOLDER", group: 'carebox', subGroup: 'ENG', image: "https://i.pravatar.cc/400?u=joana" },
-  { id: 'mauricio', name: "Mauricio Tomás", role: "ENG", email: "mauriciotomas@ua.pt", targetContributions: "PLACEHOLDER", group: 'carebox', subGroup: 'ENG', image: "https://i.pravatar.cc/400?u=mauricio" },
-  { id: 'ivo', name: "Ivo Silva", role: "ENG", email: "ivo.m.silva@ua.pt", targetContributions: "PLACEHOLDER", group: 'careapp', subGroup: 'ENG', image: "https://i.pravatar.cc/400?u=ivo" },
-  { id: 'denis', name: "Denis Sukhachev", role: "ENG", email: "denis.s@ua.pt", targetContributions: "PLACEHOLDER", group: 'careapp', subGroup: 'ENG', image: "https://i.pravatar.cc/400?u=denis" },
-  { id: 'macedo', name: "Miguel Macedo", role: "ENG", email: "macedo.miguel@ua.pt", targetContributions: "PLACEHOLDER", group: 'careapp', subGroup: 'ENG', image: "https://i.pravatar.cc/400?u=macedo" }
+  { id: 'francisco', name: "Francisco Luis", role: "CTO", email: "franciscoluis@ua.pt", targetContributions: "PLACEHOLDER", group: 'leadership', image: "/team/francisco.png" },
+  { id: 'bruno', name: "Bruno Luis", role: "CMM", email: "brunosilvaluis@ua.pt", targetContributions: "PLACEHOLDER", group: 'leadership', image: "/team/bruno.png" },
+  { id: 'adriana', name: "Adriana Pires", role: "TC", email: "adrianapires@ua.pt", targetContributions: "PLACEHOLDER", group: 'carebox', subGroup: 'TC', image: "/team/adriana.png" },
+  { id: 'jose', name: "José Trincão", role: "TC", email: "josetrincao06@ua.pt", targetContributions: "PLACEHOLDER", group: 'careapp', subGroup: 'TC', image: "/team/jose.png" },
+  { id: 'joao', name: "João Anjos", role: "TC", email: "joaoanjoss@ua.pt", targetContributions: "PLACEHOLDER", group: 'careband', subGroup: 'TC', image: "/team/joao.png" },
+  { id: 'hugo', name: "Hugo Navarro", role: "ENG", email: "hugonavarro@ua.pt", targetContributions: "PLACEHOLDER", group: 'careband', subGroup: 'ENG', image: "/team/hugo.png" },
+  { id: 'miguel', name: "Miguel Valente", role: "ENG", email: "mdvalente13@ua.pt", targetContributions: "PLACEHOLDER", group: 'carebox', subGroup: 'ENG', image: "/team/miguel.png" },
+  { id: 'joana', name: "Joana Costa", role: "ENG", email: "joanavcosta@ua.pt", targetContributions: "PLACEHOLDER", group: 'carebox', subGroup: 'ENG', image: "/team/joana.png" },
+  { id: 'mauricio', name: "Mauricio Tomás", role: "ENG", email: "mauriciotomas@ua.pt", targetContributions: "PLACEHOLDER", group: 'carebox', subGroup: 'ENG', image: "/team/mauricio.png" },
+  { id: 'ivo', name: "Ivo Silva", role: "ENG", email: "ivo.m.silva@ua.pt", targetContributions: "PLACEHOLDER", group: 'careapp', subGroup: 'ENG', image: "/team/ivo.png" },
+  { id: 'denis', name: "Denis Sukhachev", role: "ENG", email: "denis.s@ua.pt", targetContributions: "PLACEHOLDER", group: 'careapp', subGroup: 'ENG', image: "/team/denis.png" },
+  { id: 'macedo', name: "Miguel Macedo", role: "ENG", email: "macedo.miguel@ua.pt", targetContributions: "PLACEHOLDER", group: 'careapp', subGroup: 'ENG', image: "/team/macedo.png" }
 ]
 
 // --- Animation ---
@@ -61,14 +61,17 @@ const UnitHeader = ({ title, color }: { title: string, color: string }) => {
 
 const MinimalCard = ({ member }: { member: TeamMember }) => {
   return (
-    <motion.div variants={itemVariants} className="group">
+    // The hover:z-50 on the wrapper ensures the hovered card pops above all adjacent grid items
+    <motion.div variants={itemVariants} className="group relative hover:z-50">
       <div className="flex items-center gap-3 p-2.5 rounded-xl bg-bg-card/50 border border-border-subtle/50 hover:bg-bg-card hover:border-border-focus transition-all duration-300">
         
-        <div className="relative w-10 h-10 rounded-full overflow-hidden shrink-0 border border-border-subtle/50 group-hover:border-brand-primary/30 transition-colors">
+        {/* Placeholder wrapper prevents the flex layout from shifting when the image scales */}
+        <div className="relative w-12 h-12 shrink-0">
           <img 
             src={member.image} 
             alt={member.name} 
-            className="w-full h-full object-cover filter grayscale group-hover:grayscale-0 transition-all duration-300"
+            // Full color, rounded-full, absolute positioning for the pop-out scale effect
+            className="absolute inset-0 w-full h-full object-cover rounded-full border border-border-subtle/50 group-hover:border-brand-primary/60 group-hover:scale-[1.2] group-hover:shadow-2xl transition-all duration-300 origin-center"
           />
         </div>
 
@@ -88,13 +91,17 @@ const MinimalCard = ({ member }: { member: TeamMember }) => {
 }
 
 const LeadershipCard = ({ member }: { member: TeamMember }) => (
-  <motion.div variants={itemVariants} className="p-4 rounded-xl bg-linear-to-br from-bg-card to-bg-card/50 border border-border-subtle hover:border-yellow-500/30 transition-all duration-300">
+  // hover:z-50 ensures the scaled image doesn't get clipped by subsequent elements
+  <motion.div variants={itemVariants} className="group relative hover:z-50 p-4 rounded-xl bg-linear-to-br from-bg-card to-bg-card/50 border border-border-subtle hover:border-yellow-500/30 transition-all duration-300">
     <div className="flex items-center gap-4">
-      <div className="w-14 h-14 rounded-full overflow-hidden shrink-0 border-2 border-yellow-500/10 group-hover:border-yellow-500/30">
+      
+      {/* Placeholder wrapper for layout stability */}
+      <div className="relative w-16 h-16 shrink-0">
         <img 
           src={member.image} 
           alt={member.name} 
-          className="w-full h-full object-cover" 
+          // Full color, scales up to 1.6x on hover
+          className="absolute inset-0 w-full h-full object-cover rounded-full border-2 border-yellow-500/10 group-hover:border-yellow-500/60 group-hover:scale-[1.3] group-hover:shadow-2xl transition-all duration-300 origin-center" 
         />
       </div>
       
