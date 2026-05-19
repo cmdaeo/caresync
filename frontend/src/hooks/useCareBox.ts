@@ -16,11 +16,12 @@ export const useCareBox = () => {
   // 1. Connect and Subscribe to Notifications
   const connectToBox = async () => {
     try {
-      await BleClient.initialize();
+     await BleClient.initialize({ androidNeverForLocation: true });
 
       console.log('Scanning for CareBox...');
       const device = await BleClient.requestDevice({
-        services: [CAREBOX_UUIDS.SERVICE],
+        name: 'CareBox',
+        optionalServices: [CAREBOX_UUIDS.SERVICE],
       });
 
       await BleClient.connect(device.deviceId);
