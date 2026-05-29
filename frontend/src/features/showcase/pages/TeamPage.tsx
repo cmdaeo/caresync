@@ -16,18 +16,18 @@ interface TeamMember {
 }
 
 const teamMembers: TeamMember[] = [
-  { id: 'francisco', name: "Francisco Luis", role: "CTO", email: "franciscoluis@ua.pt", targetContributions: "PLACEHOLDER", group: 'leadership', image: "/team/francisco.png" },
-  { id: 'bruno', name: "Bruno Luis", role: "CMM", email: "brunosilvaluis@ua.pt", targetContributions: "PLACEHOLDER", group: 'leadership', image: "/team/bruno.png" },
-  { id: 'adriana', name: "Adriana Pires", role: "TC", email: "adrianapires@ua.pt", targetContributions: "PLACEHOLDER", group: 'carebox', subGroup: 'TC', image: "/team/adriana.png" },
-  { id: 'jose', name: "José Trincão", role: "TC", email: "josetrincao06@ua.pt", targetContributions: "PLACEHOLDER", group: 'careapp', subGroup: 'TC', image: "/team/jose.png" },
-  { id: 'joao', name: "João Anjos", role: "TC", email: "joaoanjoss@ua.pt", targetContributions: "PLACEHOLDER", group: 'careband', subGroup: 'TC', image: "/team/joao.png" },
-  { id: 'hugo', name: "Hugo Navarro", role: "ENG", email: "hugonavarro@ua.pt", targetContributions: "PLACEHOLDER", group: 'careband', subGroup: 'ENG', image: "/team/hugo.png" },
-  { id: 'miguel', name: "Miguel Valente", role: "ENG", email: "mdvalente13@ua.pt", targetContributions: "PLACEHOLDER", group: 'carebox', subGroup: 'ENG', image: "/team/miguel.png" },
-  { id: 'joana', name: "Joana Costa", role: "ENG", email: "joanavcosta@ua.pt", targetContributions: "PLACEHOLDER", group: 'carebox', subGroup: 'ENG', image: "/team/joana.png" },
-  { id: 'mauricio', name: "Mauricio Tomás", role: "ENG", email: "mauriciotomas@ua.pt", targetContributions: "PLACEHOLDER", group: 'carebox', subGroup: 'ENG', image: "/team/mauricio.png" },
-  { id: 'ivo', name: "Ivo Silva", role: "ENG", email: "ivo.m.silva@ua.pt", targetContributions: "PLACEHOLDER", group: 'careapp', subGroup: 'ENG', image: "/team/ivo.png" },
-  { id: 'denis', name: "Denis Sukhachev", role: "ENG", email: "denis.s@ua.pt", targetContributions: "PLACEHOLDER", group: 'careapp', subGroup: 'ENG', image: "/team/denis.png" },
-  { id: 'macedo', name: "Miguel Macedo", role: "ENG", email: "macedo.miguel@ua.pt", targetContributions: "PLACEHOLDER", group: 'careapp', subGroup: 'ENG', image: "/team/macedo.png" }
+  { id: 'francisco', name: "Francisco Luis", role: "CTO", email: "franciscoluis@ua.pt", targetContributions: "Project Manager & CTO", group: 'leadership', image: "/team/francisco.png" },
+  { id: 'bruno', name: "Bruno Luis", role: "CMM", email: "brunosilvaluis@ua.pt", targetContributions: "Market research & documentation", group: 'leadership', image: "/team/bruno.png" },
+  { id: 'adriana', name: "Adriana Pires", role: "TC", email: "adrianapires@ua.pt", targetContributions: "Hardware lead & BLE protocol", group: 'carebox', subGroup: 'TC', image: "/team/adriana.png" },
+  { id: 'jose', name: "José Trincão", role: "TC", email: "josetrincao06@ua.pt", targetContributions: "Team lead & IP research", group: 'careapp', subGroup: 'TC', image: "/team/jose.png" },
+  { id: 'joao', name: "João Anjos", role: "TC", email: "joaoanjoss@ua.pt", targetContributions: "Team lead & BLE integration", group: 'careband', subGroup: 'TC', image: "/team/joao.png" },
+  { id: 'hugo', name: "Hugo Navarro", role: "ENG", email: "hugonavarro@ua.pt", targetContributions: "Development support & testing", group: 'careband', subGroup: 'ENG', image: "/team/hugo.png" },
+  { id: 'miguel', name: "Miguel Valente", role: "ENG", email: "mdvalente13@ua.pt", targetContributions: "Circuit design & BLE bridge", group: 'carebox', subGroup: 'ENG', image: "/team/miguel.png" },
+  { id: 'joana', name: "Joana Costa", role: "ENG", email: "joanavcosta@ua.pt", targetContributions: "3D CAD & mechanical design", group: 'carebox', subGroup: 'ENG', image: "/team/joana.png" },
+  { id: 'mauricio', name: "Mauricio Tomás", role: "ENG", email: "mauriciotomas@ua.pt", targetContributions: "Custom PCB design", group: 'carebox', subGroup: 'ENG', image: "/team/mauricio.png" },
+  { id: 'ivo', name: "Ivo Silva", role: "ENG", email: "ivo.m.silva@ua.pt", targetContributions: "Diagrams & marketing", group: 'careapp', subGroup: 'ENG', image: "/team/ivo.png" },
+  { id: 'denis', name: "Denis Sukhachev", role: "ENG", email: "denis.s@ua.pt", targetContributions: "PDF parser API & cybersecurity", group: 'careapp', subGroup: 'ENG', image: "/team/denis.png" },
+  { id: 'macedo', name: "Miguel Macedo", role: "ENG", email: "macedo.miguel@ua.pt", targetContributions: "Full-stack dev & LLM integration", group: 'careapp', subGroup: 'ENG', image: "/team/macedo.png" }
 ]
 
 // --- Animation ---
@@ -139,9 +139,9 @@ export const TeamPage = () => {
                 <h1 className="text-3xl font-bold text-text-main tracking-tight mb-2">
                     CareSync Team
                 </h1>
-                <p className="text-sm text-text-muted max-w-lg leading-relaxed">
-                    Engineering excellence driven by a passion for healthcare innovation.
-                </p>
+                {/* <p className="text-sm text-text-muted max-w-lg leading-relaxed">
+                  Engineering excellence driven by a passion for healthcare innovation.
+                </p> */}
             </div>
           </div>
 

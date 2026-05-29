@@ -17,7 +17,7 @@ const logger = require('./utils/logger');
 let routesLoaded = false;
 let authRoutes, userRoutes, medicationRoutes, caregiverRoutes, patientRoutes,
     deviceRoutes, notificationRoutes, reportsRoutes, consentRoutes,
-    twoFactorRoutes, prescriptionRoutes, apiDocsRoutes;
+    twoFactorRoutes, prescriptionRoutes, apiDocsRoutes, presentationRoutes;
 let authMiddleware, sequelizePii, sequelizeMedical, generateSampleData, specs, swaggerUi;
 
 function loadRoutes() {
@@ -37,6 +37,7 @@ function loadRoutes() {
     twoFactorRoutes = require('./routes/twoFactor');
     prescriptionRoutes = require('./routes/prescriptions');
     apiDocsRoutes = require('./routes/api-docs');
+    presentationRoutes = require('./routes/presentation')
 
     // Import middleware and database
     authMiddleware = require('./middleware/auth').authMiddleware;
@@ -232,7 +233,6 @@ app.get('/health', (req, res) => {
 
 // Apply CSRF protection globally to all mutating API routes
 app.use(csrfProtection);
-
 // --- Rate Limiting ---
 const globalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -241,7 +241,12 @@ const globalLimiter = rateLimit({
   legacyHeaders: false,
   message: { success: false, message: 'Too many requests, please try again later.' }
 });
-app.use(globalLimiter);
+app.use((req, res, next) => {
+  if (req.path.startsWith('/api/presentation')) {
+    return next();
+  }
+  return globalLimiter(req, res, next);
+});
 
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -292,6 +297,10 @@ app.use('/api-docs', (req, res, next) => {
 });
 
 // --- API ROUTES (lazy loaded) ---
+app.use('/api/presentation', (req, res, next) => {
+  loadRoutes();
+  presentationRoutes(req, res, next);
+});
 app.use('/api/auth', (req, res, next) => {
   loadRoutes();
   authRoutes(req, res, next);

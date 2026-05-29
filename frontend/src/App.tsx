@@ -22,6 +22,7 @@ import { SecurityDeepDivePage } from './features/showcase/pages/SecurityDeepDive
 import { SoftwareArchitecturePage } from './features/showcase/pages/SoftwareArchitecturePage'
 import { UnifiedTimelinePage } from './features/showcase/pages/UnifiedTimelinePage'
 import { TeamPage } from './features/showcase/pages/TeamPage'
+import { PresentationPage } from './features/showcase/pages/PresentationPage'
 
 // Dashboard Pages
 import { PatientDashboard } from './features/dashboard/pages/PatientDashboard'
@@ -59,6 +60,8 @@ export function App() {
               : <LandingPage />
           } 
         />
+
+        <Route path="/presentation" element={<PresentationPage />} />
 
         {/* AUTH ROUTES (Wrapped in Theme-Aware Layout) */}
         <Route element={<AuthLayout />}>

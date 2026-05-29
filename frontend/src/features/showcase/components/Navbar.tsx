@@ -1,6 +1,6 @@
 // frontend/src/features/showcase/components/Navbar.tsx
 import { Link, useLocation } from 'react-router-dom';
-import { Layers, Code2, Shield, Activity, Users, ArrowRight, Menu, X } from 'lucide-react';
+import { Layers, Code2, Shield, Activity, Users, ArrowRight, Menu, X, UserCircle } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import clsx from 'clsx';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -9,18 +9,32 @@ import logo from '../../../assets/caresync.svg';
 export const Navbar = () => {
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
-  useEffect(() => setMobileMenuOpen(false), [location]);
+  useEffect(() => {
+    // Check if the user has an active session token
+    // (You can replace this with your actual useAuth() hook if you have one)
+    const token = localStorage.getItem('token') || localStorage.getItem('accessToken');
+    setIsAuthenticated(!!token);
+    
+    // Close mobile menu on route change
+    setMobileMenuOpen(false);
+  }, [location]);
 
   const navLinks = [
+    { path: '/showcase/team', label: 'Team', icon: Users },
+    { path: '/showcase/timeline', label: 'Timeline', icon: Activity },
     { path: '/showcase/hardware', label: 'Hardware', icon: Layers },
     { path: '/showcase/software', label: 'Software', icon: Code2 },
     { path: '/showcase/security', label: 'Security', icon: Shield },
-    { path: '/showcase/timeline', label: 'Timeline', icon: Activity },
-    { path: '/showcase/team', label: 'Team', icon: Users },
   ];
 
   const isActive = (path: string) => location.pathname === path;
+
+  // Dynamic Call-To-Action based on Auth State
+  const ctaText = isAuthenticated ? 'Dashboard' : 'Login / Register';
+  const ctaLink = isAuthenticated ? '/dashboard' : '/login';
+  const CtaIcon = isAuthenticated ? ArrowRight : UserCircle;
 
   return (
     <nav className="w-full relative">
@@ -41,7 +55,6 @@ export const Navbar = () => {
           {/* Logo - Updated with actual SVG */}
           <Link to="/showcase" className="flex items-center gap-2.5 group shrink-0">
             <div className="relative">
-
               <div className="relative w-8 h-8 lg:w-9 lg:h-9 flex items-center justify-center transition-all duration-300 group-hover:scale-110">
                 <img 
                   src={logo} 
@@ -96,7 +109,7 @@ export const Navbar = () => {
           <div className="flex items-center gap-3">
             {/* Enhanced CTA Button with shimmer effect */}
             <Link
-              to="/app"
+              to={ctaLink}
               className="hidden sm:flex relative px-4 py-1.5 lg:px-5 lg:py-2 rounded-lg text-xs lg:text-sm font-semibold items-center gap-1.5 lg:gap-2 overflow-hidden group active:scale-95 transition-transform"
             >
               {/* Gradient background */}
@@ -108,8 +121,8 @@ export const Navbar = () => {
               {/* Shadow glow */}
               <div className="absolute inset-0 bg-linear-to-r from-blue-500 to-cyan-500 blur-md opacity-50 group-hover:opacity-75 transition-opacity" />
               
-              <span className="relative z-10 text-white">Live Demo</span>
-              <ArrowRight size={12} className="relative z-10 text-white lg:w-3.5 lg:h-3.5 group-hover:translate-x-0.5 transition-transform" />
+              <span className="relative z-10 text-white">{ctaText}</span>
+              <CtaIcon size={14} className="relative z-10 text-white lg:w-4 lg:h-4 group-hover:translate-x-0.5 transition-transform" />
             </Link>
 
             {/* Mobile Menu Toggle */}
@@ -176,11 +189,11 @@ export const Navbar = () => {
                 transition={{ delay: 0.1 }}
               >
                 <Link
-                  to="/app"
+                  to={ctaLink}
                   className="flex items-center justify-center gap-2 w-full px-4 py-3 mt-4 rounded-lg bg-linear-to-r from-blue-500 to-cyan-500 text-white text-sm font-semibold shadow-lg shadow-blue-500/25 active:scale-[0.98] transition-transform"
                 >
-                  Launch Live Demo
-                  <ArrowRight size={16} />
+                  {ctaText}
+                  <CtaIcon size={16} />
                 </Link>
               </motion.div>
             </div>
