@@ -1,7 +1,7 @@
 // frontend/src/features/showcase/pages/TeamPage.tsx
 import { motion, Variants } from 'framer-motion'
 import { Crown, Mail } from 'lucide-react'
-import { LinkedinIcon } from '../icons/SocialIcons';
+
 
 // --- Types ---
 interface TeamMember {
@@ -115,8 +115,7 @@ const LeadershipCard = ({ member }: { member: TeamMember }) => (
          <p className="text-[10px] text-text-muted mt-1">{member.targetContributions}</p>
          
          <div className="flex gap-3 mt-3 opacity-60 hover:opacity-100 transition-opacity">
-            <a href={`mailto:${member.email}`} className="text-text-muted hover:text-text-main"><Mail size={12} /></a>
-            <LinkedinIcon size={12} class_name="text-text-muted hover:text-text-main cursor-pointer" />
+            <a href={`mailto:${member.email}`} className="text-text-muted hover:text-text-main" aria-label={`Email ${member.name}`}><Mail size={12} /></a>
          </div>
       </div>
     </div>

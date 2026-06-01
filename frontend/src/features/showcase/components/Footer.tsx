@@ -1,9 +1,34 @@
 // frontend/src/features/showcase/components/Footer.tsx
+import { Link } from 'react-router-dom';
 import { useTheme } from '../../../context/ThemeContext';
 import { Moon, Sun, Monitor } from 'lucide-react';
 import { GithubIcon, LinkedinIcon, InstagramIcon } from '../icons/SocialIcons';
 import clsx from 'clsx';
 import { motion } from 'framer-motion';
+
+const socialLinks = [
+  {
+    Icon: GithubIcon,
+    href: 'https://github.com/cmdaeo/caresync',
+    label: 'CareSync on GitHub',
+  },
+  {
+    Icon: InstagramIcon,
+    href: 'https://www.instagram.com/caresync_2025_2026/',
+    label: 'CareSync on Instagram',
+  },
+  {
+    Icon: LinkedinIcon,
+    href: '#',
+    label: 'CareSync on LinkedIn (coming soon)',
+  },
+];
+
+const legalLinks = [
+  { to: '/privacy', label: 'Privacy' },
+  { to: '/terms', label: 'Terms' },
+  { to: '/status', label: 'Status' },
+];
 
 export const Footer = () => {
   const { theme, setTheme } = useTheme();
@@ -19,20 +44,20 @@ export const Footer = () => {
         
         {/* LEFT: Copyright (centered within its column on mobile & desktop) */}
         <div className="flex items-center justify-center sm:justify-start text-text-muted/80">
-          <span className="font-medium tracking-wide">© 2026 CareSync</span>
+          <span className="font-medium tracking-wide">© {new Date().getFullYear()} CareSync</span>
         </div>
 
         {/* CENTER: Footer links – ALWAYS centered */}
         <div className="flex items-center justify-center gap-6 text-text-muted font-medium">
-          {['Privacy', 'Terms', 'Status'].map((item) => (
-            <a 
-              key={item} 
-              href="#" 
+          {legalLinks.map((item) => (
+            <Link 
+              key={item.to} 
+              to={item.to} 
               className="relative hover:text-text-main transition-colors group/link py-1"
             >
-              {item}
+              {item.label}
               <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-0 h-px bg-brand-primary group-hover/link:w-full transition-all duration-300" />
-            </a>
+            </Link>
           ))}
         </div>
 
@@ -41,10 +66,13 @@ export const Footer = () => {
           
           {/* Social icons */}
           <div className="flex items-center gap-1 text-text-muted/70">
-            {[GithubIcon, InstagramIcon, LinkedinIcon].map((Icon, i) => (
+            {socialLinks.map(({ Icon, href, label }) => (
               <a
-                key={i}
-                href="#"
+                key={label}
+                href={href}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label={label}
                 className="p-1.5 rounded-md hover:bg-bg-hover transition-all hover:text-brand-primary hover:scale-110"
               >
                 <Icon size={14} />

@@ -23,6 +23,9 @@ import { SoftwareArchitecturePage } from './features/showcase/pages/SoftwareArch
 import { UnifiedTimelinePage } from './features/showcase/pages/UnifiedTimelinePage'
 import { TeamPage } from './features/showcase/pages/TeamPage'
 import { PresentationPage } from './features/showcase/pages/PresentationPage'
+import { PrivacyPolicyPage } from './features/showcase/pages/PrivacyPolicyPage'
+import { TermsOfServicePage } from './features/showcase/pages/TermsOfServicePage'
+import { StatusPage } from './features/showcase/pages/StatusPage'
 
 // Dashboard Pages
 import { PatientDashboard } from './features/dashboard/pages/PatientDashboard'
@@ -62,6 +65,9 @@ export function App() {
         />
 
         <Route path="/presentation" element={<PresentationPage />} />
+        <Route path="/privacy" element={<PrivacyPolicyPage />} />
+        <Route path="/terms" element={<TermsOfServicePage />} />
+        <Route path="/status" element={<StatusPage />} />
 
         {/* AUTH ROUTES (Wrapped in Theme-Aware Layout) */}
         <Route element={<AuthLayout />}>

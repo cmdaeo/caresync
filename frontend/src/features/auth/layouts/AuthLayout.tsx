@@ -20,9 +20,6 @@ export const AuthLayout = () => {
           className="flex justify-center mb-5 sm:mb-6"
         >
           <Link to="/" className="flex items-center gap-3 group">
-            <div className="relative w-9 h-9 rounded-xl bg-linear-to-br from-blue-500 to-cyan-500 flex items-center justify-center shadow-lg shadow-blue-500/25 transition-all group-hover:scale-105">
-              <span className="text-white font-bold text-lg">C</span>
-            </div>
             <span className="text-xl sm:text-2xl font-bold bg-linear-to-r from-text-main via-text-main to-text-muted bg-clip-text text-transparent transition-colors tracking-tight">
               CareSync
             </span>

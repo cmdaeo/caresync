@@ -101,7 +101,7 @@ export const PresentationPage: React.FC = () => {
   const [timerActive, setTimerActive] = useState(false);
 
   useEffect(() => {
-    fetch((import.meta.env.VITE_API_URL || '') + '/api/csrf-token')
+    fetch((import.meta.env.VITE_API_URL || '') + '/csrf-token')
       .then(res => res.json())
       .then(data => csrfTokenRef.current = data.data?.csrfToken || '')
       .catch(()=>{});
@@ -120,7 +120,7 @@ export const PresentationPage: React.FC = () => {
 
   const fireInstantSync = (action: string, payload: any) => {
     if (!csrfTokenRef.current) return;
-    fetch((import.meta.env.VITE_API_URL || '') + '/api/presentation/sync', {
+    fetch((import.meta.env.VITE_API_URL || '') + '/presentation/sync', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-csrf-token': csrfTokenRef.current },
       body: JSON.stringify({ action, payload })
@@ -133,7 +133,7 @@ export const PresentationPage: React.FC = () => {
       if (syncQueueRef.current.size > 0 && csrfTokenRef.current) {
         const batch = Array.from(syncQueueRef.current.values());
         syncQueueRef.current.clear();
-        fetch((import.meta.env.VITE_API_URL || '') + '/api/presentation/sync', {
+        fetch((import.meta.env.VITE_API_URL || '') + '/presentation/sync', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'x-csrf-token': csrfTokenRef.current },
           body: JSON.stringify({ action: 'BATCH', payload: batch })
@@ -149,7 +149,7 @@ export const PresentationPage: React.FC = () => {
     setIsAdmin(adminCheck);
     if (adminCheck) setHasInteracted(true); // O admin não precisa de clicar para iniciar
 
-    const eventSource = new EventSource((import.meta.env.VITE_API_URL || '') + '/api/presentation/stream');
+    const eventSource = new EventSource((import.meta.env.VITE_API_URL || '') + '/presentation/stream');
 
     eventSource.onmessage = (event) => {
       try {
@@ -237,7 +237,7 @@ export const PresentationPage: React.FC = () => {
     if (updates.slide) setCurrentSlide(updates.slide);
     if (updates.blackout !== undefined) setIsBlackout(updates.blackout);
     if (!csrfTokenRef.current) return;
-    fetch((import.meta.env.VITE_API_URL || '') + '/api/presentation/slide', {
+    fetch((import.meta.env.VITE_API_URL || '') + '/presentation/slide', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-csrf-token': csrfTokenRef.current },
       body: JSON.stringify(updates)
