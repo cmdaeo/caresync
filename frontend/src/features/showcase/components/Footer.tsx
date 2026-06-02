@@ -17,11 +17,11 @@ const socialLinks = [
     href: 'https://www.instagram.com/caresync_2025_2026/',
     label: 'CareSync on Instagram',
   },
-  {
+  /*{
     Icon: LinkedinIcon,
     href: '#',
     label: 'CareSync on LinkedIn (coming soon)',
-  },
+  },*/
 ];
 
 const legalLinks = [
