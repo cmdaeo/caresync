@@ -1,6 +1,7 @@
 // src/features/auth/layouts/AuthLayout.tsx
 import { Outlet, Link, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import logo from '../../../assets/caresync.svg'
 
 export const AuthLayout = () => {
   const location = useLocation();
@@ -19,10 +20,13 @@ export const AuthLayout = () => {
           animate={{ opacity: 1, y: 0 }}
           className="flex justify-center mb-5 sm:mb-6"
         >
-          <Link to="/" className="flex items-center gap-3 group">
-            <span className="text-xl sm:text-2xl font-bold bg-linear-to-r from-text-main via-text-main to-text-muted bg-clip-text text-transparent transition-colors tracking-tight">
-              CareSync
-            </span>
+          <Link to="/" className="flex items-center gap-2 group hover:opacity-80 transition-opacity">
+            <img 
+              src={logo} 
+              alt="CareSync Logo" 
+              className="w-8 h-8 sm:w-10 sm:h-10" /* Tailwind classes to size it properly */
+            />
+            <span className="text-xl font-bold text-text-main sy">CareSync</span>
           </Link>
         </motion.div>
 

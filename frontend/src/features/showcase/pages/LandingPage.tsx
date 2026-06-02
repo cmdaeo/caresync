@@ -10,15 +10,13 @@
 import { useRef, useState, useEffect, useCallback } from 'react';
 import {
   motion, useScroll, useTransform, useSpring,
-  useMotionValue, useInView, AnimatePresence
+  useMotionValue, AnimatePresence
 } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import {
   ArrowRight,
   ChevronRight,
-  CheckCircle,
-  Play,
-  Pause
+  CheckCircle
 } from 'lucide-react';
 import logo from '../../../assets/caresync.svg';
 
@@ -64,8 +62,22 @@ const CSS = () => (
     .tkr { animation: tick 32s linear infinite }
 
     /* Blink cursor */
-    @keyframes bl { 0%,100%{opacity:1} 50%{opacity:0} }
-    .bln { animation: bl 1s step-end infinite }
+    @keyframes pulse {
+      0%, 100% { 
+        opacity: 0.9; 
+        transform: scaleX(1); 
+      }
+      50% { 
+        opacity: 1.0; 
+        transform: scaleX(0.98); 
+      }
+    }
+
+    .bln {
+      display: inline-block;
+      transform-origin: center;
+      animation: pulse 1.5s ease-in-out infinite;
+    }
 
     /* Pulse glow */
     @keyframes pg {
@@ -130,12 +142,11 @@ function OscWave() {
 }
 
 function Reveal({ children, delay = 0, className = '' }: { children: React.ReactNode; delay?: number; className?: string }) {
-  const r = useRef<HTMLDivElement>(null);
-  const v = useInView(r, { once: true, margin: '-55px' });
   return (
-    <motion.div ref={r} className={className}
+    <motion.div className={className}
       initial={{ opacity: 0, y: 18 }}
-      animate={v ? { opacity: 1, y: 0 } : {}}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: '-55px' }}
       transition={{ duration: .55, delay, ease: [.16, 1, .3, 1] }}>
       {children}
     </motion.div>
@@ -143,80 +154,15 @@ function Reveal({ children, delay = 0, className = '' }: { children: React.React
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   VIDEO SHOWCASE - Interactive project demos
-═══════════════════════════════════════════════════════════════════════════ */
-function SingleVideoShowcase() {
-  const [isPlaying, setIsPlaying] = useState(false);
-  const videoRef = useRef<HTMLVideoElement>(null);
-
-  const togglePlay = () => {
-    if (videoRef.current) {
-      if (isPlaying) videoRef.current.pause();
-      else videoRef.current.play();
-      setIsPlaying(!isPlaying);
-    }
-  };
-
-  return (
-    <section className="relative h-dvh w-full bg-black flex flex-col items-center justify-center px-4 sm:px-6 md:px-10 overflow-hidden border-t border-white/5">
-      <div className="max-w-[1200px] w-full mx-auto flex flex-col items-center">
-        <h3 className="text-brand-primary font-mono text-[10px] tracking-[0.2em] uppercase mb-3">
-          A real product - built end-to-end by LEEC students
-        </h3>
-        <h2 className="sy font-800 text-3xl sm:text-4xl lg:text-5xl leading-tight text-white mb-10 text-center">
-          Inside CareSync
-        </h2>
-
-        <div className="relative w-full max-w-5xl rounded-2xl overflow-hidden border border-border-subtle bg-bg-card shadow-2xl">
-          <div className="relative w-full aspect-video max-h-[65vh] mx-auto bg-black">
-            <video
-              ref={videoRef}
-              src="/videos/caresync-hardware.mp4"
-              className="absolute inset-0 w-full h-full object-contain"
-              loop
-              muted={false}
-              playsInline
-            />
-
-            {!isPlaying && (
-              <div 
-                className="absolute inset-0 flex items-center justify-center bg-black/40 backdrop-blur-sm cursor-pointer z-10"
-                onClick={togglePlay}
-              >
-                <div className="w-16 h-16 sm:w-20 sm:h-20 bg-brand-primary text-black rounded-full flex items-center justify-center shadow-[0_0_40px_rgba(34,211,238,0.4)] transition-transform hover:scale-110">
-                  <Play className="w-6 h-6 sm:w-8 sm:h-8 ml-1 fill-current" />
-                </div>
-              </div>
-            )}
-
-            {isPlaying && (
-              <div 
-                className="absolute inset-0 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity duration-300 bg-black/20 cursor-pointer z-10"
-                onClick={togglePlay}
-              >
-                <div className="w-16 h-16 sm:w-20 sm:h-20 bg-white/20 backdrop-blur-md text-white rounded-full flex items-center justify-center hover:bg-white/30 transition-colors">
-                  <Pause className="w-6 h-6 sm:w-8 sm:h-8 fill-current" />
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-/* ═══════════════════════════════════════════════════════════════════════════
-   PAGE LOADER - Aguarda modelos 3D carregarem antes de libertar o scroll
+   PAGE LOADER
 ═══════════════════════════════════════════════════════════════════════════ */
 function PageLoader({ onReady }: { onReady: () => void }) {
   const [progress, setProgress] = useState(0);
   const loadedCount = useRef(0);
 
   useEffect(() => {
-    const total = 2;
-
-    const handleModelLoad = (sourceId: any) => {
+    const total = 3;
+    const handleModelLoad = (_sourceId: any) => {
       loadedCount.current += 1;
       const pct = Math.round((loadedCount.current / total) * 100);
       setProgress(pct);
@@ -275,7 +221,7 @@ function PageLoader({ onReady }: { onReady: () => void }) {
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
-PCB SHOWCASE - 3D Models (100vh Sections, Text over Model)
+   PCB SHOWCASE - 3D Models (100vh Sections, Text over Model)
 ═══════════════════════════════════════════════════════════════════════════ */
 function PCBShowcase() {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -292,6 +238,9 @@ function PCBShowcase() {
   const textX2 = useTransform(smx, [0, 1], [30, -30]);
   const textY2 = useTransform(smy, [0, 1], [30, -30]);
 
+  // Tracks if the user is dragging any model across this split layout container
+  const isInteractingRef = useRef(false);
+
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
       mx.set(e.clientX / window.innerWidth);
@@ -301,45 +250,85 @@ function PCBShowcase() {
     return () => window.removeEventListener('mousemove', handleMouseMove);
   }, [mx, my]);
 
+  // UNIVERSAL WIGGLE LOGIC FOR CAREBAND AND CAREBOX MODALS
   useEffect(() => {
+    const bandViewer = carebandRef.current as any;
+    const boxViewer = careboxRef.current as any;
+    
+    let animationFrameId: number;
+    const speed = 0.0015;
+    const range = 18;
+
+    const runWiggleLoop = (time: number) => {
+      // CHECK INTERACTION: Only adjust orbit if user isn't clicking/dragging manual controls
+      if (!isInteractingRef.current) {
+        const currentYaw = Math.sin(time * speed) * range;
+        
+        if (bandViewer) {
+          bandViewer.cameraOrbit = `${currentYaw}deg 75deg 105%`;
+        }
+        if (boxViewer) {
+          boxViewer.cameraOrbit = `${currentYaw}deg 75deg 105%`;
+        }
+      }
+
+      animationFrameId = requestAnimationFrame(runWiggleLoop);
+    };
+
+    // Tracking activation listeners to pause tracking shifts on user contact
+    const setInteractingTrue = () => { isInteractingRef.current = true; };
+    const setInteractingFalse = () => { isInteractingRef.current = false; };
+
+    // FIXED LOADING TRIGGERS: Attach sync loaders instantly before timeout shifts evaluate
     let reported = new Set();
-    const notify = (id: unknown, reason: string) => {
+    const notifyLoad = (id: string) => {
       if (reported.has(id)) return;
       reported.add(id);
-      let attempts = 0;
-      
-      const pingLoader = setInterval(() => {
-        attempts++;
-        if (typeof (window as any).__onModelLoad === 'function') {
-          (window as any).__onModelLoad(id);
-          clearInterval(pingLoader);
-        }
-      }, 50);
+      if (typeof (window as any).__onModelLoad === 'function') {
+        (window as any).__onModelLoad(id);
+      }
     };
 
-    const checkModels = () => {
-      const models = [
-        { ref: carebandRef.current, id: 'band' },
-        { ref: careboxRef.current, id: 'box' }
-      ];
+    const bandEl = carebandRef.current;
+    const boxEl = careboxRef.current;
 
-      models.forEach(({ ref, id }) => {
-        if (!ref) return;
-        const hasModel = !!(ref as any).model;
-        const isVisible = !!(ref as any).modelIsVisible;
+    if (bandEl) {
+      bandEl.addEventListener('pointerdown', setInteractingTrue);
+      bandEl.addEventListener('pointerup', setInteractingFalse);
+      bandEl.addEventListener('pointerleave', setInteractingFalse);
+      if ((bandEl as any).modelIsVisible) notifyLoad('band');
+      else {
+        bandEl.addEventListener('load', () => notifyLoad('band'), { once: true });
+        bandEl.addEventListener('error', () => notifyLoad('band'), { once: true });
+      }
+    }
 
-        if (hasModel || isVisible) {
-          notify(id, "preloaded_check");
-        } else {
-          ref.addEventListener('load', () => notify(id, "load_event_fired"), { once: true });
-          ref.addEventListener('error', () => { notify(id, "error_event_fired"); }, { once: true });
-        }
-      });
+    if (boxEl) {
+      boxEl.addEventListener('pointerdown', setInteractingTrue);
+      boxEl.addEventListener('pointerup', setInteractingFalse);
+      boxEl.addEventListener('pointerleave', setInteractingFalse);
+      if ((boxEl as any).modelIsVisible) notifyLoad('box');
+      else {
+        boxEl.addEventListener('load', () => notifyLoad('box'), { once: true });
+        boxEl.addEventListener('error', () => notifyLoad('box'), { once: true });
+      }
+    }
+
+    animationFrameId = requestAnimationFrame(runWiggleLoop);
+
+    return () => {
+      cancelAnimationFrame(animationFrameId);
+      if (bandEl) {
+        bandEl.removeEventListener('pointerdown', setInteractingTrue);
+        bandEl.removeEventListener('pointerup', setInteractingFalse);
+        bandEl.removeEventListener('pointerleave', setInteractingFalse);
+      }
+      if (boxEl) {
+        boxEl.removeEventListener('pointerdown', setInteractingTrue);
+        boxEl.removeEventListener('pointerup', setInteractingFalse);
+        boxEl.removeEventListener('pointerleave', setInteractingFalse);
+      }
     };
-
-    customElements.whenDefined('model-viewer').then(() => {
-      setTimeout(checkModels, 100);
-    });
   }, []);
 
   return (
@@ -356,7 +345,7 @@ function PCBShowcase() {
           }}
         />
 
-        <div className="absolute top-1/2 left-1/2 lg:left-2/3 -translate-x-1/2 -translate-y-1/2 w-[80vw] h-[80vw] lg:w-[600px] lg:h-[600px] bg-brand-primary/10 rounded-full blur-[100px] sm:blur-[120px] pointer-events-none opacity-50 group-hover:opacity-80 transition-all duration-1000 ease-out" />
+        <div className="absolute top-1/2 left-1/2 lg:left-2/3 -translate-x-1/2 -translate-y-1/2 w-[80vw] h-[80vw] lg:w-[600px] lg:h-[600px] bg-brand-primary/10 rounded-full blur-[120px] sm:blur-[120px] pointer-events-none opacity-50 group-hover:opacity-80 transition-all duration-1000 ease-out" />
 
         <motion.div
           style={{ x: textX1, y: textY1 }}
@@ -375,9 +364,6 @@ function PCBShowcase() {
               alt="Careband PCB 3D Model"
               loading="eager"
               camera-controls
-              auto-rotate
-              auto-rotate-delay="1000"
-              rotation-per-second="20deg"
               tone-mapping="aces"
               exposure="1.2"
               environment-image="legacy"
@@ -426,7 +412,7 @@ function PCBShowcase() {
           }}
         />
 
-        <div className="absolute top-1/2 left-1/2 lg:left-1/3 -translate-x-1/2 -translate-y-1/2 w-[80vw] h-[80vw] lg:w-[600px] lg:h-[600px] bg-[#c084fc]/10 rounded-full blur-[100px] sm:blur-[120px] pointer-events-none opacity-50 group-hover:opacity-80 transition-all duration-1000 ease-out" />
+        <div className="absolute top-1/2 left-1/2 lg:left-1/3 -translate-x-1/2 -translate-y-1/2 w-[80vw] h-[80vw] lg:w-[600px] lg:h-[600px] bg-[#c084fc]/10 rounded-full blur-[120px] sm:blur-[120px] pointer-events-none opacity-50 group-hover:opacity-80 transition-all duration-1000 ease-out" />
 
         <motion.div
           style={{ x: textX2, y: textY2 }}
@@ -446,9 +432,6 @@ function PCBShowcase() {
               loading="eager"
               camera-controls
               orientation="90deg 180deg 180deg"
-              auto-rotate
-              auto-rotate-delay="1000"
-              rotation-per-second="-15deg"
               tone-mapping="aces"
               exposure="1.2"
               environment-image="legacy"
@@ -492,6 +475,144 @@ function PCBShowcase() {
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
+   3D PCB COMPONENT REGISTRY SHOWCASE (Brutalist HUD Overlay Matrix)
+═══════════════════════════════════════════════════════════════════════════ */
+function PCBAuraShowcase() {
+  const modelViewerRef = useRef<any>(null);
+  const isInteractingRef = useRef(false);
+
+  useEffect(() => {
+    const viewer = modelViewerRef.current;
+    if (!viewer) return;
+
+    let animationFrameId: number;
+    const startOrbitY = 70;
+    const wiggleRange = 18;
+    const speed = 0.0015;
+
+    const performWiggle = (time: number) => {
+      // CHECK INTERACTION: Only perform wave transformations if cursor isn't dragging model components
+      if (!isInteractingRef.current) {
+        const currentYaw = Math.sin(time * speed) * wiggleRange;
+        viewer.cameraOrbit = `${currentYaw}deg ${startOrbitY}deg 115%`;
+      }
+      animationFrameId = requestAnimationFrame(performWiggle);
+    };
+
+    // Pointers checking configurations safely overriding native controls
+    const setInteractingTrue = () => { isInteractingRef.current = true; };
+    const setInteractingFalse = () => { isInteractingRef.current = false; };
+
+    let reported = false;
+    const handleLoad = () => {
+      if (reported) return;
+      reported = true;
+      
+      if (typeof (window as any).__onModelLoad === 'function') {
+        (window as any).__onModelLoad('assembly');
+      }
+
+      viewer.addEventListener('pointerdown', setInteractingTrue);
+      viewer.addEventListener('pointerup', setInteractingFalse);
+      viewer.addEventListener('pointerleave', setInteractingFalse);
+
+      animationFrameId = requestAnimationFrame(performWiggle);
+    };
+
+    if (viewer.modelIsVisible) {
+      handleLoad();
+    } else {
+      viewer.addEventListener('load', handleLoad, { once: true });
+      viewer.addEventListener('error', handleLoad, { once: true });
+    }
+
+    return () => {
+      if (viewer) {
+        viewer.removeEventListener('load', handleLoad);
+        viewer.removeEventListener('pointerdown', setInteractingTrue);
+        viewer.removeEventListener('pointerup', setInteractingFalse);
+        viewer.removeEventListener('pointerleave', setInteractingFalse);
+      }
+      cancelAnimationFrame(animationFrameId);
+    };
+  }, []);
+
+  return (
+    <div className="relative h-dvh w-full bg-[#020617] border-t border-white/[0.02]">
+      {/* 3D Full-Bleed Background Layer */}
+      <div className="absolute inset-0 h-full w-full overflow-hidden pointer-events-auto z-10">
+        <model-viewer
+          ref={modelViewerRef}
+          src="/carebox_3d.glb"
+          alt="CareSync Core Hardware PCB Architecture"
+          loading="eager"
+          camera-controls
+          interaction-prompt="none"
+          tone-mapping="aces"
+          shadow-intensity="1"
+          exposure="1.2"
+          environment-image="legacy"
+          style={{ width: '100%', height: '100%', backgroundColor: 'transparent', outline: 'none' }}
+        />
+      </div>
+
+      {/* Decorative center matrix glow */}
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[70vw] h-[70vw] bg-brand-primary/5 rounded-full blur-[120px] pointer-events-none z-0" />
+
+      {/* FIXED BRUTALIST HUD: Absolute Coordinate Placements Layer (No Text Cutoffs) */}
+      <div className="absolute inset-0 z-20 pointer-events-none max-w-[1400px] mx-auto px-6 sm:px-12 py-[10dvh] h-full w-full">
+        
+        {/* Card 1: Top Left */}
+        <div className="absolute top-[8dvh] left-6 sm:left-12 max-w-[340px] sm:max-w-[380px] pointer-events-auto">
+          <Reveal>
+            <div className="text-brand-primary text-xs uppercase tracking-widest mb-2 font-bold font-mono">
+              [01 // PCB_CLEARANCE]
+            </div>
+            <h3 className="sy font-800 text-2xl sm:text-3xl text-white mb-3">
+              Integrated Circuit Matrix
+            </h3>
+            <p className="text-white/60 text-xs sm:text-sm font-mono leading-relaxed">
+              Engineered with dual-sided surface-mount trace clearing matrices. Minimizes internal cross-talk telemetry degradation under persistent processing spikes.
+            </p>
+          </Reveal>
+        </div>
+
+        {/* Card 2: Middle Right */}
+        <div className="absolute top-1/2 -translate-y-1/2 right-6 sm:right-12 max-w-[340px] sm:max-w-[380px] text-right pointer-events-auto">
+          <Reveal>
+            <div className="text-[#c084fc] text-xs uppercase tracking-widest mb-2 font-bold font-mono">
+              [02 // BUS_LOGIC]
+            </div>
+            <h3 className="sy font-800 text-2xl sm:text-3xl text-white mb-3">
+              Sub-Millimeter Logic
+            </h3>
+            <p className="text-white/60 text-xs sm:text-sm font-mono leading-relaxed">
+              Custom Autodesk hardware plane allocations logic paths. Widened power rail configurations handle extreme unipolar mechanical hub stepper motor loads effortlessly.
+            </p>
+          </Reveal>
+        </div>
+
+        {/* Card 3: Bottom Left */}
+        <div className="absolute bottom-[8dvh] left-6 sm:left-12 max-w-[340px] sm:max-w-[380px] pointer-events-auto">
+          <Reveal>
+            <div className="text-emerald-400 text-xs uppercase tracking-widest mb-2 font-bold font-mono">
+              [03 // UPTIME_BASELINE]
+            </div>
+            <h3 className="sy font-800 text-2xl sm:text-3xl text-white mb-3">
+              Zero-Fail Performance
+            </h3>
+            <p className="text-white/60 text-xs sm:text-sm font-mono leading-relaxed">
+              Every tracking controller bus line isolated. Hardened physical component placements layout architectures ensure error-free operational durability in high-stress settings.
+            </p>
+          </Reveal>
+        </div>
+
+      </div>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
    MAIN COMPONENT
 ═══════════════════════════════════════════════════════════════════════════ */
 export default function LandingPage() {
@@ -506,6 +627,7 @@ export default function LandingPage() {
   const smx = useSpring(mx, { stiffness: 50, damping: 22 });
   const smy = useSpring(my, { stiffness: 50, damping: 22 });
   const glow = useMotionValue('');
+  
   useEffect(() => {
     const u = smx.on('change', () =>
       glow.set(`radial-gradient(480px at ${smx.get()}px ${smy.get()}px, rgba(74,164,225,.08), transparent 75%)`));
@@ -532,8 +654,8 @@ export default function LandingPage() {
 
       <div
         ref={scrollRef}
-        className="h-dvh w-full overflow-y-auto overflow-x-hidden tsc sy bg-bg-page text-text-main">
-
+        className="relative h-dvh w-full overflow-y-auto overflow-x-hidden tsc sy bg-bg-page text-text-main"
+      >
         {/* ════════════════════════════════════════════════════════════════
             HERO
         ════════════════════════════════════════════════════════════════ */}
@@ -546,12 +668,21 @@ export default function LandingPage() {
           </div>
 
           <motion.div style={{ y: heroY, opacity: heroOp }}
-            className="relative z-10 w-full px-5 sm:px-8 max-w-2xl mx-auto text-center">
-
-            <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: .1 }}
-              className="jm text-[9px] sm:text-[11px] text-text-muted uppercase tracking-[.16em] mb-4">
+            className="relative z-10 w-full px-5 sm:px-8 max-w-2xl mx-auto text-center nb"
+          >
+            <motion.p 
+              initial={{ opacity: 0 }} 
+              animate={{ 
+                opacity: 1,
+                color: ["var(--color-text-muted)", "var(--color-brand-primary)", "var(--color-text-muted)"]
+              }} 
+              transition={{ 
+                opacity: { delay: 0.1 },
+                color: { duration: 3, repeat: Infinity, ease: "easeInOut" }
+              }}
+              className="jm text-[9px] sm:text-[11px] text-text-muted uppercase tracking-[.16em] mb-4 bln"
+            >
               Electrical & Computer Engineering
-              <span className="bln text-brand-primary">_</span>
             </motion.p>
 
             {heroLines.map((line, i) => (
@@ -566,43 +697,42 @@ export default function LandingPage() {
                   style={i === 1 ? {
                     background: 'linear-gradient(135deg,#4AA4E1 0%,#22d3ee 45%,#4AA4E1 100%)',
                     WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text',
-                  } : {}}>
+                  } : {}}
+                >
                   {line}
                 </motion.h1>
               </div>
             ))}
 
             <motion.p initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: .42, duration: .5 }}
-              className="text-sm sm:text-base text-text-muted mt-5 mb-5 leading-relaxed max-w-lg mx-auto">
+              className="text-sm sm:text-base text-text-muted mt-5 mb-5 leading-relaxed max-w-lg mx-auto"
+            >
               Created by 12 engineers @ Aveiro University
             </motion.p>
 
             <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: .56, duration: .45 }}
-              className="flex flex-col sm:flex-row items-center justify-center gap-3">
-              <Link to="/showcase/hardware"
+              className="flex flex-col sm:flex-row items-center justify-center gap-3"
+            >
+              <Link to="/showcase/team"
                 className="shm group flex items-center justify-center gap-2 px-6 py-3 rounded-lg
                   font-700 text-sm text-white bg-brand-primary
                   shadow-lg shadow-brand-primary/25 hover:shadow-brand-primary/45
-                  hover:bg-brand-light transition-all w-full sm:w-auto">
+                  hover:bg-brand-light transition-all w-full sm:w-auto"
+              >
                 Explore the Project
                 <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
               </Link>
-              <a href="https://www.ua.pt/pt/curso/480" target="_blank" rel="noreferrer"
-                className="group flex items-center justify-center gap-2 px-6 py-3 rounded-lg
-                  font-600 text-sm text-text-main border border-border-subtle
-                  hover:bg-bg-card hover:border-brand-primary/40 transition-all w-full sm:w-auto">
-                Apply Now
-                <ChevronRight size={14} className="group-hover:translate-x-0.5 transition-transform" />
-              </a>
             </motion.div>
           </motion.div>
 
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1.1 }}
-            className="absolute bottom-4 left-1/2 -translate-x-1/2 flex flex-col items-center gap-1.5 z-10">
+            className="absolute bottom-4 left-1/2 -translate-x-1/2 flex flex-col items-center gap-1.5 z-10"
+          >
             <motion.div
               animate={{ y: [0, 6, 0] }}
               transition={{ repeat: Infinity, duration: 1.6, ease: 'easeInOut' }}
-              className="w-4 h-6 rounded-full border border-text-muted/30 flex items-start justify-center pt-1">
+              className="w-4 h-6 rounded-full border border-text-muted/30 flex items-start justify-center pt-1"
+            >
               <div className="w-0.5 h-1.5 rounded-full bg-brand-primary/60" />
             </motion.div>
             <span className="jm text-[8px] uppercase tracking-[.2em] text-text-muted/50">scroll</span>
@@ -628,10 +758,10 @@ export default function LandingPage() {
         </div>
 
         {/* ════════════════════════════════════════════════════════════════
-            VideoShowcase
+            PCBA SHOWCASES
         ════════════════════════════════════════════════════════════════ */}
-        <SingleVideoShowcase />
         <PCBShowcase />
+        <PCBAuraShowcase />
 
         {/* ════════════════════════════════════════════════════════════════
             DEMO BANNER
@@ -639,16 +769,14 @@ export default function LandingPage() {
         <section className="py-8 sm:py-10 px-4 sm:px-6 md:px-10 border-t border-border-subtle">
           <Reveal>
             <div className="rounded-2xl border border-brand-primary/25 bg-brand-primary/6 p-5 sm:p-8
-              flex flex-col md:flex-row items-start md:items-center justify-between gap-5 relative overflow-hidden">
+              flex flex-col md:flex-row items-start md:items-center justify-between gap-5 relative overflow-hidden"
+            >
               <div className="absolute right-0 top-0 bottom-0 w-24 sm:w-40 opacity-[.06] pointer-events-none">
                 <OscWave />
               </div>
               <div className="relative z-10">
-                
                 <div className="chp relative overflow-hidden bg-green-500/14 text-green-400 mb-3 border-0">
-                  <span className="relative z-10">
-                    Live Demo
-                  </span>
+                  <span className="relative z-10">Live Demo</span>
                   <div 
                     className="absolute inset-0 rounded-[inherit] pointer-events-none p-px"
                     style={{
@@ -672,7 +800,8 @@ export default function LandingPage() {
               <Link to="/app"
                 className="shm relative z-10 shrink-0 flex items-center justify-center gap-2 px-6 py-3 rounded-xl
                   bg-brand-primary text-white font-700 text-sm
-                  shadow-lg shadow-brand-primary/30 hover:bg-brand-light transition-all group w-full md:w-auto">
+                  shadow-lg shadow-brand-primary/30 hover:bg-brand-light transition-all group w-full md:w-auto"
+              >
                 Launch Dashboard
                 <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
               </Link>

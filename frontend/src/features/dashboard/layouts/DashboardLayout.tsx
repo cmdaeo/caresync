@@ -1,6 +1,6 @@
 // src/features/dashboard/layouts/DashboardLayout.tsx
 import { useState } from 'react'
-import { Outlet, NavLink, useNavigate } from 'react-router-dom'
+import { Outlet, NavLink, useNavigate, Link } from 'react-router-dom'
 import { useAuthStore } from '../../../shared/store/authStore'
 import {
   LayoutDashboard,
@@ -16,8 +16,11 @@ import {
   X,
 } from 'lucide-react'
 
+// Import the CareSync logo
+import logo from '../../../assets/caresync.svg'
+
 /* ------------------------------------------------------------------ */
-/*  Navigation definitions per role                                    */
+/* Navigation definitions per role                                    */
 /* ------------------------------------------------------------------ */
 
 interface NavItem {
@@ -46,7 +49,7 @@ const bottomNav: NavItem[] = [
 ]
 
 /* ------------------------------------------------------------------ */
-/*  Layout                                                             */
+/* Layout                                                             */
 /* ------------------------------------------------------------------ */
 
 export const DashboardLayout = () => {
@@ -76,13 +79,21 @@ export const DashboardLayout = () => {
   /* Sidebar content (reused for mobile drawer & desktop fixed) */
   const SidebarContent = () => (
     <div className="flex flex-col h-full">
-      {/* Brand */}
-      <div className="flex items-center gap-2 px-4 py-5 border-b border-border-subtle">
-        <div className="w-8 h-8 rounded-lg bg-brand-primary flex items-center justify-center text-white font-bold text-sm">
-          CS
-        </div>
+      
+      {/* Brand - Now links to "/" and uses the logo SVG */}
+      <Link 
+        to="/" 
+        className="flex items-center gap-3 px-4 py-5 border-b border-border-subtle hover:opacity-80 transition-opacity"
+      >
+        <img 
+          src={logo} 
+          alt="CareSync Logo" 
+          className="w-8 h-8"
+          // If your dashboard is dark mode and the logo is dark, uncomment the line below:
+          // style={{ filter: 'brightness(0) invert(1)' }} 
+        />
         <span className="text-lg font-bold text-text-main tracking-tight">CareSync</span>
-      </div>
+      </Link>
 
       {/* Main nav */}
       <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
