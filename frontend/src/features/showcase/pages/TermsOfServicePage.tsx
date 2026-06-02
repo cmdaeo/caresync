@@ -1,6 +1,6 @@
 // frontend/src/features/showcase/pages/TermsOfServicePage.tsx
 import { useEffect } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import {
   ArrowLeft,
@@ -116,6 +116,7 @@ const SectionCard = ({ number, title, icon: Icon, children, variant = 'default' 
 export const TermsOfServicePage = () => {
   // Consume theme context as required
   useTheme()
+  const navigate = useNavigate()
 
   useEffect(() => {
     document.title = 'Terms of Service — CareSync'
@@ -123,21 +124,40 @@ export const TermsOfServicePage = () => {
 
   return (
     <div className="h-dvh overflow-y-auto bg-bg-page">
-      {/* ===== Sticky Header ===== */}
+      {/* ===== STANDARDIZED Sticky Header ===== */}
       <header className="sticky top-0 z-50 bg-bg-page/80 backdrop-blur-xl border-b border-border-subtle/50">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 py-4 flex items-center gap-4">
-          <Link
-            to="/"
-            className="flex items-center justify-center w-9 h-9 rounded-lg bg-bg-card border border-border-subtle/50 text-text-muted hover:text-text-main hover:border-border-subtle transition-all duration-200"
-            aria-label="Back to home"
+        <div className="max-w-4xl mx-auto flex items-center gap-4 px-4 sm:px-6 h-14">
+          <button
+            onClick={() => navigate(-1)}
+            className="flex items-center gap-2 text-sm text-text-muted hover:text-text-main transition-colors group shrink-0"
           >
-            <ArrowLeft size={18} />
-          </Link>
-          <div className="flex items-center gap-2.5">
-            <div className="p-1.5 rounded-lg bg-brand-primary/10">
-              <Scale size={18} className="text-brand-primary" />
-            </div>
-            <h1 className="text-lg sm:text-xl font-bold text-text-main">Terms of Service</h1>
+            <ArrowLeft
+              size={16}
+              className="group-hover:-translate-x-0.5 transition-transform"
+            />
+            <span className="hidden sm:inline">Back</span>
+          </button>
+          
+          <div className="h-5 w-px bg-border-subtle shrink-0" />
+          
+          <div className="flex items-center gap-2 min-w-0">
+            <Scale size={18} className="text-brand-primary shrink-0" />
+            <h1 className="text-sm font-bold text-text-main truncate">Terms of Service</h1>
+          </div>
+          
+          <div className="ml-auto flex items-center gap-3 shrink-0">
+            <Link
+              to="/privacy"
+              className="text-xs text-text-muted hover:text-brand-primary transition-colors hidden sm:inline"
+            >
+              Privacy Policy
+            </Link>
+            <Link
+              to="/status"
+              className="text-xs text-text-muted hover:text-brand-primary transition-colors hidden sm:inline"
+            >
+              System Status
+            </Link>
           </div>
         </div>
       </header>

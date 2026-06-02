@@ -1,7 +1,7 @@
 // frontend/src/features/showcase/pages/StatusPage.tsx
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import {
   Activity,
   Server,
@@ -175,6 +175,7 @@ const ServiceCard = ({ service }: { service: ServiceStatus }) => {
 // ─── Main Page ───
 export const StatusPage = () => {
   const { theme: _ } = useTheme()
+  const navigate = useNavigate()
   const [lastChecked, setLastChecked] = useState<Date>(new Date())
 
   useEffect(() => {
@@ -201,28 +202,40 @@ export const StatusPage = () => {
 
   return (
     <div className="h-dvh overflow-y-auto bg-bg-page text-text-main">
-      {/* ─── Sticky Header ─── */}
+      {/* ─── STANDARDIZED Sticky Header ─── */}
       <header className="sticky top-0 z-50 bg-bg-page/80 backdrop-blur-xl border-b border-border-subtle/50">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Link
-              to="/"
-              className="p-2 -ml-2 rounded-lg hover:bg-bg-hover text-text-muted hover:text-text-main transition-colors"
-              aria-label="Back to home"
-            >
-              <ArrowLeft size={18} />
-            </Link>
-            <div className="flex items-center gap-2.5">
-              <Activity size={18} className="text-brand-primary" />
-              <h1 className="text-sm font-bold text-text-main tracking-tight">System Status</h1>
-            </div>
+        <div className="max-w-5xl mx-auto flex items-center gap-4 px-4 sm:px-6 h-14">
+          <button
+            onClick={() => navigate(-1)}
+            className="flex items-center gap-2 text-sm text-text-muted hover:text-text-main transition-colors group shrink-0"
+          >
+            <ArrowLeft
+              size={16}
+              className="group-hover:-translate-x-0.5 transition-transform"
+            />
+            <span className="hidden sm:inline">Back</span>
+          </button>
+          
+          <div className="h-5 w-px bg-border-subtle shrink-0" />
+          
+          <div className="flex items-center gap-2 min-w-0">
+            <Activity size={18} className="text-brand-primary shrink-0" />
+            <h1 className="text-sm font-bold text-text-main truncate">System Status</h1>
           </div>
-          <div className="flex items-center gap-2 text-text-muted">
-            <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
-            </span>
-            <span className="text-[11px] font-medium hidden sm:inline">All Systems Operational</span>
+          
+          <div className="ml-auto flex items-center gap-3 shrink-0">
+            <Link
+              to="/privacy"
+              className="text-xs text-text-muted hover:text-brand-primary transition-colors hidden sm:inline"
+            >
+              Privacy Policy
+            </Link>
+            <Link
+              to="/terms"
+              className="text-xs text-text-muted hover:text-brand-primary transition-colors hidden sm:inline"
+            >
+              Terms of Service
+            </Link>
           </div>
         </div>
       </header>

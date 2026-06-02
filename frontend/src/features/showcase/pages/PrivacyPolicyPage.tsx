@@ -1,7 +1,7 @@
 // frontend/src/features/showcase/pages/PrivacyPolicyPage.tsx
 import { useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import {
   ArrowLeft,
   Shield,
@@ -152,6 +152,7 @@ const tocItems = [
 ════════════════════════════════════════════════════════════════ */
 export const PrivacyPolicyPage = () => {
   const { theme: _theme } = useTheme()
+  const navigate = useNavigate()
 
   useEffect(() => {
     document.title = 'Privacy Policy — CareSync'
@@ -159,25 +160,28 @@ export const PrivacyPolicyPage = () => {
 
   return (
     <div className="h-dvh overflow-y-auto bg-bg-page">
-      {/* ── Sticky Header ── */}
+      {/* ── STANDARDIZED Sticky Header ── */}
       <header className="sticky top-0 z-50 bg-bg-page/80 backdrop-blur-xl border-b border-border-subtle/50">
         <div className="max-w-4xl mx-auto flex items-center gap-4 px-4 sm:px-6 h-14">
-          <Link
-            to="/"
-            className="flex items-center gap-2 text-sm text-text-muted hover:text-text-main transition-colors group"
+          <button
+            onClick={() => navigate(-1)}
+            className="flex items-center gap-2 text-sm text-text-muted hover:text-text-main transition-colors group shrink-0"
           >
             <ArrowLeft
               size={16}
               className="group-hover:-translate-x-0.5 transition-transform"
             />
             <span className="hidden sm:inline">Back</span>
-          </Link>
-          <div className="h-5 w-px bg-border-subtle" />
-          <div className="flex items-center gap-2">
-            <Shield size={18} className="text-brand-primary" />
-            <h1 className="text-sm font-bold text-text-main">Privacy Policy</h1>
+          </button>
+          
+          <div className="h-5 w-px bg-border-subtle shrink-0" />
+          
+          <div className="flex items-center gap-2 min-w-0">
+            <Shield size={18} className="text-brand-primary shrink-0" />
+            <h1 className="text-sm font-bold text-text-main truncate">Privacy Policy</h1>
           </div>
-          <div className="ml-auto flex items-center gap-3">
+          
+          <div className="ml-auto flex items-center gap-3 shrink-0">
             <Link
               to="/terms"
               className="text-xs text-text-muted hover:text-brand-primary transition-colors hidden sm:inline"
