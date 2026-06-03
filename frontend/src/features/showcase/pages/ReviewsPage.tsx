@@ -1,6 +1,7 @@
 // frontend/src/features/showcase/pages/ReviewsPage.tsx
 import { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { QRCodeSVG } from 'qrcode.react';  // ← NEW
 import { client } from '../../../shared/api/client';
 import { 
   Star, 
@@ -8,19 +9,22 @@ import {
   Stethoscope, 
   User, 
   Heart, 
-  MessageSquare,
   Send,
   CheckCircle2,
   Activity,
   Loader2,
-  AlertCircle
+  AlertCircle,
+  QrCode,   // ← NEW
+  X         // ← NEW
 } from 'lucide-react';
 import { useTheme } from '../../../context/ThemeContext';
+
 
 /* ════════════════════════════════════════════════════════════════
    DATA & TYPES
 ════════════════════════════════════════════════════════════════ */
 type ReviewType = 'clinical' | 'patient' | 'caregiver';
+
 
 interface Review {
   id: string;
@@ -32,6 +36,7 @@ interface Review {
   content: string;
 }
 
+
 /* ════════════════════════════════════════════════════════════════
    ANIMATION VARIANTS
 ════════════════════════════════════════════════════════════════ */
@@ -40,10 +45,69 @@ const staggerContainer = {
   show: { opacity: 1, transition: { staggerChildren: 0.1 } }
 };
 
+
 const fadeUp = {
   hidden: { opacity: 0, y: 15 },
   show: { opacity: 1, y: 0, transition: { type: 'spring', stiffness: 300, damping: 24 } }
 };
+
+
+/* ════════════════════════════════════════════════════════════════
+   QR CODE MODAL  ← NEW COMPONENT
+════════════════════════════════════════════════════════════════ */
+const QRModal = ({ url, onClose }: { url: string; onClose: () => void }) => (
+  <AnimatePresence>
+    <motion.div
+      key="qr-backdrop"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 backdrop-blur-md"
+      onClick={onClose}
+    >
+      <motion.div
+        key="qr-card"
+        initial={{ opacity: 0, scale: 0.85, y: 20 }}
+        animate={{ opacity: 1, scale: 1, y: 0, transition: { type: 'spring', stiffness: 300, damping: 22 } }}
+        exit={{ opacity: 0, scale: 0.85, y: 20 }}
+        className="relative flex flex-col items-center gap-6 bg-bg-card border border-border-subtle rounded-2xl p-10 shadow-2xl max-w-sm w-full mx-4"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Close button */}
+        <button
+          onClick={onClose}
+          className="absolute top-4 right-4 p-1.5 rounded-lg text-text-muted hover:text-text-main hover:bg-bg-hover transition-colors"
+        >
+          <X size={18} />
+        </button>
+
+        {/* Header */}
+        <div className="text-center">
+          <h3 className="text-lg font-bold text-text-main">Scan to Leave a Review</h3>
+          <p className="text-xs text-text-muted mt-1">Point your camera at the QR code</p>
+        </div>
+
+        {/* QR Code */}
+        <div className="p-4 bg-white rounded-xl shadow-lg">
+          <QRCodeSVG
+            value={url}
+            size={220}
+            bgColor="#ffffff"
+            fgColor="#0d0d0d"
+            level="M"
+            includeMargin={false}
+          />
+        </div>
+
+        {/* URL hint */}
+        <p className="text-[10px] font-mono text-text-muted/60 text-center break-all max-w-[240px]">
+          {url}
+        </p>
+      </motion.div>
+    </motion.div>
+  </AnimatePresence>
+);
+
 
 /* ════════════════════════════════════════════════════════════════
    SUB-COMPONENTS
@@ -57,13 +121,16 @@ const getTypeConfig = (type: ReviewType) => {
   }
 };
 
+
 const ReviewCard = ({ review }: { review: Review }) => {
   const config = getTypeConfig(review.type);
   const Icon = config.icon;
 
+
   const displayDate = new Date(review.createdAt).toLocaleDateString('en-US', { 
     month: 'short', day: 'numeric', year: 'numeric' 
   });
+
 
   return (
     <motion.div variants={fadeUp} className="flex flex-col h-full p-6 rounded-xl border border-border-subtle bg-bg-card/40 hover:border-border-focus hover:bg-bg-card transition-all duration-300 relative group overflow-hidden">
@@ -91,6 +158,7 @@ const ReviewCard = ({ review }: { review: Review }) => {
         <p className="text-sm text-text-muted leading-relaxed italic">"{review.content}"</p>
       </div>
 
+
       <div className="mt-4 pt-4 border-t border-border-subtle/50 flex justify-between items-center relative z-10">
         <span className={`text-[10px] uppercase tracking-widest font-bold ${config.color}`}>
           {review.type} Feedback
@@ -100,6 +168,7 @@ const ReviewCard = ({ review }: { review: Review }) => {
     </motion.div>
   );
 };
+
 
 const StatCard = ({ icon: Icon, value, label, sub }: any) => (
   <motion.div variants={fadeUp} className="p-5 rounded-xl border border-border-subtle bg-bg-card/40 flex items-center gap-4">
@@ -114,6 +183,7 @@ const StatCard = ({ icon: Icon, value, label, sub }: any) => (
   </motion.div>
 );
 
+
 /* ════════════════════════════════════════════════════════════════
    MAIN PAGE
 ════════════════════════════════════════════════════════════════ */
@@ -124,6 +194,10 @@ export const ReviewsPage = () => {
   const [filter, setFilter] = useState<ReviewType | 'all'>('all');
   const [reviews, setReviews] = useState<Review[]>([]);
   const [dbLoading, setDbLoading] = useState(true);
+  const [showQR, setShowQR] = useState(false);  // ← NEW
+
+  // Derive the canonical reviews URL for the QR code  ← NEW
+  const reviewsUrl = `${window.location.origin}/reviews`;
 
   // Form State
   const [formData, setFormData] = useState({ name: '', role: '', type: 'patient' as ReviewType, content: '', rating: 5 });
@@ -131,6 +205,7 @@ export const ReviewsPage = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+
 
   // Fetch real database reviews on mount
   useEffect(() => {
@@ -149,8 +224,10 @@ export const ReviewsPage = () => {
     fetchReviews();
   }, []);
 
+
   // Filtered list
   const filteredReviews = filter === 'all' ? reviews : reviews.filter(r => r.type === filter);
+
 
   // Dynamically calculate stats based strictly on real DB records
   const stats = useMemo(() => {
@@ -158,18 +235,20 @@ export const ReviewsPage = () => {
     const avgRating = total > 0 ? (reviews.reduce((acc, r) => acc + r.rating, 0) / total).toFixed(1) : '0.0';
     const clinicalCount = reviews.filter(r => r.type === 'clinical').length;
 
+
     return { total, avgRating, clinicalCount };
   }, [reviews]);
+
 
   const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
     setSubmitError(null);
 
+
     try {
       const res = await client.post('/reviews', formData);
       if (res.data?.data?.review) {
-        // Prepend new review directly to state so it appears instantly
         setReviews([res.data.data.review, ...reviews]);
         setSubmitSuccess(true);
         setFormData({ name: '', role: '', type: 'patient', content: '', rating: 5 });
@@ -185,23 +264,36 @@ export const ReviewsPage = () => {
     }
   };
 
+
   return (
     <div className="relative h-full w-full overflow-y-auto tsc bg-bg-page px-4 py-12 sm:px-8 lg:px-16 overflow-x-hidden">
+
+      {/* QR Modal  ← NEW */}
+      {showQR && <QRModal url={reviewsUrl} onClose={() => setShowQR(false)} />}
+
       <div className="pointer-events-none absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[500px] bg-brand-primary/[0.03] rounded-full blur-[120px]" />
       
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="relative z-10 max-w-4xl mx-auto mb-16 text-center">
-        <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-brand-primary/10 border border-brand-primary/20 mb-6">
-          <MessageSquare size={32} className="text-brand-primary" />
-        </div>
         <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold text-text-main tracking-tight mb-5 leading-tight">
-          Clinical & User Validation
+          Project Reviews
         </h1>
         <p className="text-sm sm:text-base text-text-muted max-w-2xl mx-auto leading-relaxed">
-          See how CareSync is impacting lives. Real feedback directly from our database, recorded by medical professionals, patients, and caregivers utilizing our prototype.
+          What do you think about our project? Leave us a message!
         </p>
+
+        {/* QR Code button  ← NEW */}
+        <button
+          onClick={() => setShowQR(true)}
+          className="mt-6 inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-border-subtle bg-bg-card/50 text-text-muted hover:text-text-main hover:border-border-focus hover:bg-bg-card text-xs font-bold uppercase tracking-wider transition-all"
+        >
+          <QrCode size={14} />
+          Share via QR
+        </button>
       </motion.div>
 
+
       <div className="relative z-10 max-w-6xl mx-auto space-y-16">
+
 
         {/* Real Dynamic Stats Row */}
         <motion.div variants={staggerContainer} initial="hidden" animate="show" className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -209,6 +301,7 @@ export const ReviewsPage = () => {
           <StatCard icon={Star} value={`${stats.avgRating}/5`} label="Global Rating" sub="Average user satisfaction" />
           <StatCard icon={Stethoscope} value={stats.clinicalCount.toString()} label="Clinical Endorsements" sub="From healthcare professionals" />
         </motion.div>
+
 
         {/* Reviews Section */}
         <section>
@@ -235,6 +328,7 @@ export const ReviewsPage = () => {
             </div>
           </div>
 
+
           {dbLoading ? (
             <div className="flex justify-center py-20">
               <Loader2 className="animate-spin text-brand-primary w-8 h-8" />
@@ -260,15 +354,17 @@ export const ReviewsPage = () => {
           )}
         </section>
 
+
         {/* Submit Review Form */}
         <section className="pt-8 border-t border-border-subtle">
           <div className="max-w-3xl mx-auto bg-bg-card/30 border border-border-subtle p-6 sm:p-10 rounded-2xl relative overflow-hidden">
             <div className="absolute -right-20 -top-20 w-64 h-64 bg-brand-primary/5 rounded-full blur-[80px] pointer-events-none" />
             
             <div className="text-center mb-8 relative z-10">
-              <h2 className="text-2xl font-bold text-text-main mb-2">Are you a Beta Tester?</h2>
-              <p className="text-sm text-text-muted">Your telemetry data helps us improve the hardware, but your personal experience is what shapes the CareSync ecosystem. Leave us your thoughts.</p>
+              <h2 className="text-2xl font-bold text-text-main mb-2">Review</h2>
+              <p className="text-sm text-text-muted">Help us improve our project!</p>
             </div>
+
 
             <AnimatePresence mode="wait">
               {submitSuccess ? (
@@ -300,6 +396,7 @@ export const ReviewsPage = () => {
                       {submitError}
                     </div>
                   )}
+
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                     <div className="space-y-1.5">
@@ -334,7 +431,7 @@ export const ReviewsPage = () => {
                       </select>
                     </div>
 
-                    {/* INTERACTIVE STARS SELECTOR */}
+
                     <div className="space-y-1.5">
                       <label className="text-[11px] font-bold text-text-muted uppercase tracking-wider pl-1">Overall Rating</label>
                       <div className="flex items-center justify-between bg-bg-page border border-border-subtle rounded-lg px-4 py-2 h-[42px]">
@@ -366,15 +463,17 @@ export const ReviewsPage = () => {
                     </div>
                   </div>
 
+
                   <div className="space-y-1.5">
                     <label className="text-[11px] font-bold text-text-muted uppercase tracking-wider pl-1">Experience Overview</label>
                     <textarea 
                       required rows={4} 
                       value={formData.content} onChange={(e) => setFormData({...formData, content: e.target.value})}
-                      placeholder="How has CareSync affected your daily routine?" 
+                      placeholder="What do you think about our project?" 
                       className="w-full bg-bg-page border border-border-subtle rounded-lg px-4 py-3 text-sm text-text-main focus:outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary transition-all custom-scrollbar resize-none" 
                     />
                   </div>
+
 
                   <div className="pt-2 flex justify-end">
                     <button disabled={isSubmitting} type="submit" className="flex items-center gap-2 px-6 py-3 bg-brand-primary text-white rounded-lg text-sm font-bold shadow-lg shadow-brand-primary/20 hover:bg-brand-light hover:scale-[1.02] disabled:opacity-50 disabled:hover:scale-100 transition-all">
@@ -386,8 +485,10 @@ export const ReviewsPage = () => {
               )}
             </AnimatePresence>
 
+
           </div>
         </section>
+
 
       </div>
     </div>

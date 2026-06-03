@@ -53,7 +53,7 @@ const timelineData = [
     title: "First Prototypes",
     events: [
       {
-        date: "04–11/12/2025",
+        date: "11/12/2025",
         text: "CareApp NFC communication demonstrated with smartphones. Significant progress in automated prescription parsing and initial breadboard testing."
       },
       {
@@ -89,7 +89,7 @@ const timelineData = [
         text: "Bluetooth limitations identified. Migration to Raspberry Pi architecture with integrated Bluetooth support. Hybrid NFC + BLE architecture adopted."
       },
       {
-        date: "18–25/03/2026",
+        date: "25/03/2026",
         text: "Handshake protocol developed and validated. Magnetic reed-switch system integrated. CareBox PCB development initiated."
       }
     ]
@@ -103,7 +103,7 @@ const timelineData = [
         text: "CareBox finite state machine completed with core operational states. RFID-based schedule loading integrated."
       },
       {
-        date: "15 & 22/04/2026",
+        date: "22/04/2026",
         text: "CareBox operating on breadboard, PCB design nearly finalized, and drawer verification systems validated. CareBand firmware debugging completed."
       },
       {
@@ -117,7 +117,7 @@ const timelineData = [
     title: "Validation & Final Dev",
     events: [
       {
-        date: "06–13/05/2026",
+        date: "13/05/2026",
         text: "Minimum, target, and stretch goals established. CareBand operating successfully and full-system integration initiated."
       },
       {
@@ -125,7 +125,7 @@ const timelineData = [
         text: "Cybersecurity audit completed: 71 automated security tests executed with a 100% pass rate. No critical vulnerabilities identified."
       },
       {
-        date: "26–29/05/2026",
+        date: "29/05/2026",
         text: "Ecosystem validated with functional hardware integration. Final project report, technical documentation, and commercialization plans completed."
       }
     ]

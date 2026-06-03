@@ -357,7 +357,7 @@ function PCBShowcase() {
           style={{ x: textX1, y: textY1 }}
           className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full text-center pointer-events-none select-none z-0 overflow-hidden"
         >
-          <h2 className="sy font-800 text-[20vw] lg:text-[16vw] leading-none text-white/[0.02] tracking-tighter whitespace-nowrap">
+          <h2 className="sy font-800 text-[20vw] lg:text-[16vw] leading-none text-white/[0.06] tracking-tighter whitespace-nowrap">
             CAREBAND
           </h2>
         </motion.div>
@@ -428,7 +428,7 @@ function PCBShowcase() {
           style={{ x: textX2, y: textY2 }}
           className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full text-center pointer-events-none select-none z-0 overflow-hidden"
         >
-          <h2 className="sy font-800 text-[20vw] lg:text-[16vw] leading-none text-white/[0.02] tracking-tighter whitespace-nowrap">
+          <h2 className="sy font-800 text-[20vw] lg:text-[16vw] leading-none text-white/[0.06] tracking-tighter whitespace-nowrap">
             CAREBOX
           </h2>
         </motion.div>
