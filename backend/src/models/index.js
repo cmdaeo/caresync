@@ -7,6 +7,7 @@ const CaregiverPatientModel = require('./CaregiverPatient');
 const AuditLogModel = require('./AuditLog');
 const ConsentLogModel = require('./ConsentLog');
 const NotificationModel = require('./Notification');
+const ReviewModel = require('./Review'); // <--- Added Review Model
 
 const MedicationModel = require('./Medication');
 const PrescriptionModel = require('./Prescription');
@@ -24,6 +25,7 @@ const CaregiverPatient = CaregiverPatientModel(sequelizePii);
 const AuditLog = AuditLogModel(sequelizePii);
 const ConsentLog = ConsentLogModel(sequelizePii);
 const Notification = NotificationModel(sequelizePii);
+const Review = ReviewModel(sequelizePii);
 
 // ──────────────────────────────────────────────
 // Medical models (clinical data)
@@ -118,4 +120,5 @@ module.exports = {
   AuditLog,
   DocumentMetadata,
   ConsentLog,
+  Review
 };

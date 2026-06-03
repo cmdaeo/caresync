@@ -17,7 +17,7 @@ const logger = require('./utils/logger');
 let routesLoaded = false;
 let authRoutes, userRoutes, medicationRoutes, caregiverRoutes, patientRoutes,
     deviceRoutes, notificationRoutes, reportsRoutes, consentRoutes,
-    twoFactorRoutes, prescriptionRoutes, apiDocsRoutes, presentationRoutes;
+    twoFactorRoutes, prescriptionRoutes, apiDocsRoutes, presentationRoutes, reviewRoutes;
 let authMiddleware, sequelizePii, sequelizeMedical, generateSampleData, specs, swaggerUi;
 
 function loadRoutes() {
@@ -38,6 +38,7 @@ function loadRoutes() {
     prescriptionRoutes = require('./routes/prescriptions');
     apiDocsRoutes = require('./routes/api-docs');
     presentationRoutes = require('./routes/presentation')
+    reviewRoutes = require('./routes/reviews'); // <--- Load review routes
 
     // Import middleware and database
     authMiddleware = require('./middleware/auth').authMiddleware;
@@ -117,7 +118,8 @@ const dbRequiredRoutes = [
   '/api/notifications',
   '/api/reports',
   '/api/consent',
-  '/api/prescriptions'
+  '/api/prescriptions',
+  '/api/reviews' // <--- Requires DB
 ];
 
 // Database initialization middleware (lazy, serverless-compatible)
@@ -301,6 +303,7 @@ app.use('/api/presentation', (req, res, next) => {
   loadRoutes();
   presentationRoutes(req, res, next);
 });
+app.use('/api/reviews', (req, res, next) => { loadRoutes(); reviewRoutes(req, res, next); }); // <--- Mount Reviews Route
 app.use('/api/auth', (req, res, next) => {
   loadRoutes();
   authRoutes(req, res, next);

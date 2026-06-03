@@ -81,7 +81,7 @@ export function DevicesPage() {
           <div className="flex items-center text-green-700 bg-green-50 p-3 rounded-lg border border-green-200 w-full">
             <CheckCircle2 className="w-5 h-5 mr-3 flex-shrink-0" />
             <span>
-              <strong>{parts[1]}</strong> tomada {parts[2] === 'pontual' ? 'a horas' : `com ${parts[3]} min de atraso`}.
+              <strong>{parts[1]}</strong> tomada {parts[2] === 'pontual' ? 'a horas' : `com ${parts[3]} de atraso`}.
             </span>
           </div>
         );

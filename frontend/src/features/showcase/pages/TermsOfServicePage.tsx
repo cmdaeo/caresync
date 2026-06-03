@@ -641,8 +641,7 @@ export const TermsOfServicePage = () => {
 
             <h3 className="text-text-main font-semibold mt-4 mb-2">Warranty & Returns</h3>
             <p className="text-text-muted/70 italic">
-              PLACEHOLDER — Device warranty terms, coverage period, return/exchange policy, and conditions for
-              warranty claims will be specified here upon commercial availability.
+              Not yet available for public disclosure.
             </p>
           </SectionCard>
 
@@ -796,7 +795,7 @@ export const TermsOfServicePage = () => {
                 <Mail size={16} className="text-text-muted shrink-0 mt-0.5" />
                 <div>
                   <p className="text-xs text-text-muted/70 uppercase tracking-wider font-medium mb-0.5">Email</p>
-                  <p className="text-text-main font-medium">PLACEHOLDER</p>
+                  <p className="text-text-main font-medium">franciscoluis@ua.pt</p>
                 </div>
               </div>
               <div className="flex items-start gap-3">
@@ -805,17 +804,7 @@ export const TermsOfServicePage = () => {
                   <p className="text-xs text-text-muted/70 uppercase tracking-wider font-medium mb-0.5">
                     Data Protection Officer
                   </p>
-                  <p className="text-text-main font-medium">PLACEHOLDER</p>
-                </div>
-              </div>
-              <div className="flex items-start gap-3">
-                <FileText size={16} className="text-text-muted shrink-0 mt-0.5" />
-                <div>
-                  <p className="text-xs text-text-muted/70 uppercase tracking-wider font-medium mb-0.5">
-                    Mailing Address
-                  </p>
-                  <p className="text-text-main font-medium">PLACEHOLDER</p>
-                  <p className="text-text-muted text-sm">Aveiro, Portugal</p>
+                  <p className="text-text-main font-medium">franciscoluis@ua.pt</p>
                 </div>
               </div>
             </div>

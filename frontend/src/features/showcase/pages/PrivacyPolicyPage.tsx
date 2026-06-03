@@ -283,15 +283,9 @@ export const PrivacyPolicyPage = () => {
               <p className="font-semibold text-text-main">CareSync — Universidade de Aveiro</p>
               <p>Campus Universitário de Santiago, 3810-193 Aveiro, Portugal</p>
               <p>
-                Data Protection Officer:{' '}
-                <span className="font-mono text-xs bg-yellow-500/10 text-yellow-600 px-1.5 py-0.5 rounded">
-                  PLACEHOLDER
-                </span>
-              </p>
-              <p>
                 Email:{' '}
                 <span className="font-mono text-xs bg-yellow-500/10 text-yellow-600 px-1.5 py-0.5 rounded">
-                  PLACEHOLDER@ua.pt
+                  franciscoluis@ua.pt
                 </span>
               </p>
             </div>
@@ -888,15 +882,9 @@ export const PrivacyPolicyPage = () => {
                   Data Protection Officer
                 </p>
                 <p className="text-xs text-text-muted">
-                  Name:{' '}
-                  <span className="font-mono bg-yellow-500/10 text-yellow-600 px-1.5 py-0.5 rounded">
-                    PLACEHOLDER
-                  </span>
-                </p>
-                <p className="text-xs text-text-muted">
                   Email:{' '}
                   <span className="font-mono bg-yellow-500/10 text-yellow-600 px-1.5 py-0.5 rounded">
-                    PLACEHOLDER@ua.pt
+                    franciscoluis@ua.pt
                   </span>
                 </p>
               </div>
@@ -908,13 +896,7 @@ export const PrivacyPolicyPage = () => {
                 <p className="text-xs text-text-muted">
                   Email:{' '}
                   <span className="font-mono bg-yellow-500/10 text-yellow-600 px-1.5 py-0.5 rounded">
-                    PLACEHOLDER@ua.pt
-                  </span>
-                </p>
-                <p className="text-xs text-text-muted">
-                  Phone:{' '}
-                  <span className="font-mono bg-yellow-500/10 text-yellow-600 px-1.5 py-0.5 rounded">
-                    PLACEHOLDER
+                    franciscoluis@ua.pt
                   </span>
                 </p>
               </div>

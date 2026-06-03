@@ -16,7 +16,10 @@ import { Link } from 'react-router-dom';
 import {
   ArrowRight,
   ChevronRight,
-  CheckCircle
+  CheckCircle,
+  Lock,
+  Unlock,
+  BookOpen
 } from 'lucide-react';
 import logo from '../../../assets/caresync.svg';
 
@@ -228,6 +231,9 @@ function PCBShowcase() {
   const carebandRef = useRef<HTMLElement | null>(null);
   const careboxRef = useRef<HTMLElement | null>(null);
 
+  const [bandInteractive, setBandInteractive] = useState(false);
+  const [boxInteractive, setBoxInteractive] = useState(false);
+
   const mx = useMotionValue(0.5);
   const my = useMotionValue(0.5);
   const smx = useSpring(mx, { stiffness: 40, damping: 30 });
@@ -358,6 +364,13 @@ function PCBShowcase() {
 
         <div className="w-full h-full max-w-[1400px] mx-auto relative z-10 flex flex-col items-center justify-center px-6 sm:px-12">
           <div className="absolute inset-0 lg:left-auto lg:right-[-5%] w-full lg:w-[75%] h-full flex items-center justify-center z-10 pointer-events-auto">
+            <button 
+              onClick={() => setBandInteractive(!bandInteractive)}
+              className="absolute top-[20%] right-6 lg:top-1/4 lg:right-1/4 z-50 flex items-center gap-2 px-4 py-2 rounded-full bg-brand-primary/10 border border-brand-primary/30 text-brand-primary hover:bg-brand-primary/20 hover:scale-105 transition-all backdrop-blur-md cursor-pointer font-mono text-[10px] uppercase tracking-widest"
+            >
+              {bandInteractive ? <Unlock size={14} /> : <Lock size={14} />}
+              {bandInteractive ? "Interactive" : "Locked"}
+            </button>
             <model-viewer
               ref={carebandRef as any}
               src="/careband.glb"
@@ -368,6 +381,7 @@ function PCBShowcase() {
               exposure="1.2"
               environment-image="legacy"
               interaction-prompt="none"
+              className={bandInteractive ? "pointer-events-auto" : "pointer-events-none"}
               style={{ width: '100%', height: '80%', backgroundColor: 'transparent', outline: 'none' }}
             />
           </div>
@@ -421,6 +435,13 @@ function PCBShowcase() {
 
         <div className="w-full h-full max-w-[1400px] mx-auto relative z-10 flex flex-col items-center justify-center px-6 sm:px-12">
           <div className="absolute inset-0 lg:right-auto lg:left-[-5%] w-full lg:w-[75%] h-full flex items-center justify-center z-10 pointer-events-auto">
+            <button 
+              onClick={() => setBoxInteractive(!boxInteractive)}
+              className="absolute top-[20%] left-6 lg:top-1/4 lg:left-1/4 z-50 flex items-center gap-2 px-4 py-2 rounded-full bg-[#c084fc]/10 border border-[#c084fc]/30 text-[#c084fc] hover:bg-[#c084fc]/20 hover:scale-105 transition-all backdrop-blur-md cursor-pointer font-mono text-[10px] uppercase tracking-widest"
+            >
+              {boxInteractive ? <Unlock size={14} /> : <Lock size={14} />}
+              {boxInteractive ? "Interactive" : "Locked"}
+            </button>
             <model-viewer
               ref={careboxRef as any}
               src="/carebox.glb"
@@ -432,6 +453,7 @@ function PCBShowcase() {
               exposure="1.2"
               environment-image="legacy"
               interaction-prompt="none"
+              className={boxInteractive ? "pointer-events-auto" : "pointer-events-none"}
               style={{ width: '100%', height: '80%', backgroundColor: 'transparent', outline: 'none' }}
             />
           </div>
@@ -472,6 +494,8 @@ function PCBShowcase() {
 function PCBAuraShowcase() {
   const modelViewerRef = useRef<any>(null);
   const isInteractingRef = useRef(false);
+
+  const [auraInteractive, setAuraInteractive] = useState(false);
 
   useEffect(() => {
     const viewer = modelViewerRef.current;
@@ -531,6 +555,15 @@ function PCBAuraShowcase() {
 
   return (
     <div className="relative h-dvh w-full bg-[#020617] border-t border-white/[0.02]">
+
+      <button 
+        onClick={() => setAuraInteractive(!auraInteractive)}
+        className="absolute top-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 text-white/70 hover:bg-white/10 hover:text-white hover:scale-105 transition-all backdrop-blur-md cursor-pointer font-mono text-[10px] uppercase tracking-widest"
+      >
+        {auraInteractive ? <Unlock size={14} /> : <Lock size={14} />}
+        {auraInteractive ? "Unlocked" : "Locked"}
+      </button>
+
       {/* 3D Full-Bleed Background Layer */}
       <div className="absolute inset-0 h-full w-full overflow-hidden pointer-events-auto z-10">
         <model-viewer
@@ -544,6 +577,7 @@ function PCBAuraShowcase() {
           shadow-intensity="1"
           exposure="1.2"
           environment-image="legacy"
+          className={auraInteractive ? "pointer-events-auto" : "pointer-events-none"}
           style={{ width: '100%', height: '100%', backgroundColor: 'transparent', outline: 'none' }}
         />
       </div>
@@ -557,27 +591,54 @@ function PCBAuraShowcase() {
         {/* Card 1: Top Left */}
         <div className="absolute top-[8dvh] left-6 sm:left-12 max-w-[340px] sm:max-w-[380px] pointer-events-auto">
           <Reveal>
-            <h3 className="sy font-800 text-2xl sm:text-3xl text-white mb-3">
-              Carebox
+            <h3 className="sy font-800 text-2xl sm:text-3xl text-white mb-4 flex items-center gap-3">
+              <span className="text-brand-primary font-mono text-base font-normal">01</span>
+              Chassis Design
             </h3>
+            <div className="flex flex-col gap-2 border-l-2 border-brand-primary/20 pl-4">
+              <div className="text-white/70 text-xs font-mono">
+                <span className="text-white/40 inline-block w-20">Material:</span> TPA & PLA FDM
+              </div>
+              <div className="text-white/70 text-xs font-mono">
+                <span className="text-white/40 inline-block w-20">Process:</span> 3D Printed
+              </div>
+            </div>
           </Reveal>
         </div>
 
         {/* Card 2: Middle Right */}
         <div className="absolute top-1/2 -translate-y-1/2 right-6 sm:right-12 max-w-[340px] sm:max-w-[380px] text-right pointer-events-auto">
           <Reveal>
-            <h3 className="sy font-800 text-2xl sm:text-3xl text-white mb-3">
-              10 Medication Compartments
+            <h3 className="sy font-800 text-2xl sm:text-3xl text-white mb-4 flex items-center justify-end gap-3">
+              Storage Matrix
+              <span className="text-[#c084fc] font-mono text-base font-normal">02</span>
             </h3>
+            <div className="flex flex-col gap-2 border-r-2 border-[#c084fc]/20 pr-4 items-end">
+              <div className="text-white/70 text-xs font-mono flex items-center justify-end gap-2">
+                0.05mm Clearance <span className="text-white/40 text-right inline-block w-20">:Tolerances</span> 
+              </div>
+              <div className="text-white/70 text-xs font-mono flex items-center justify-end gap-2">
+                Modular Grid <span className="text-white/40 text-right inline-block w-20">:Structure</span> 
+              </div>
+            </div>
           </Reveal>
         </div>
 
         {/* Card 3: Bottom Left */}
         <div className="absolute bottom-[8dvh] left-6 sm:left-12 max-w-[340px] sm:max-w-[380px] pointer-events-auto">
           <Reveal>
-            <h3 className="text-emerald-400 sy font-800 text-2xl sm:text-3xl text-white mb-3">
-              Dispensing Drawer
+            <h3 className="sy font-800 text-2xl sm:text-3xl text-white mb-4 flex items-center gap-3">
+              <span className="text-emerald-400 font-mono text-base font-normal">03</span>
+              Hardware Mounts
             </h3>
+            <div className="flex flex-col gap-2 border-l-2 border-emerald-400/20 pl-4">
+              <div className="text-white/70 text-xs font-mono">
+                <span className="text-white/40 inline-block w-20">Fasteners:</span> Brass Inserts
+              </div>
+              <div className="text-white/70 text-xs font-mono">
+                <span className="text-white/40 inline-block w-20">Assembly:</span> Screw-Fixed
+              </div>
+            </div>
           </Reveal>
         </div>
 
@@ -696,6 +757,14 @@ export default function LandingPage() {
                 Explore the Project
                 <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
               </Link>
+              <Link to="/showcase/manual"
+            className="btn-manual group flex items-center justify-center gap-2 px-6 py-3 rounded-lg
+              font-700 text-sm text-text-main bg-bg-card border border-border-subtle
+              hover:bg-brand-primary/5 transition-all w-full sm:w-auto backdrop-blur-sm"
+          >
+            <BookOpen size={16} className="text-brand-primary group-hover:scale-110 transition-transform" />
+            User Manual
+          </Link>
             </motion.div>
           </motion.div>
 

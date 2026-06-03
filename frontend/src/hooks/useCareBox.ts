@@ -101,7 +101,7 @@ export const useCareBox = () => {
         if (parts[2] === 'pontual') {
           alert(`✅ You took ${parts[1]} on time!`);
         } else if (parts[2] === 'atraso') {
-          alert(`⚠️ You took ${parts[1]} with a ${parts[3]} minute delay.`);
+          alert(`⚠️ You took ${parts[1]} with a ${parts[3]} delay.`);
         }
         break;
       case 'MED_IGNORADA':

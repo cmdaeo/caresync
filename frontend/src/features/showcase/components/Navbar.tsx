@@ -53,7 +53,7 @@ export const Navbar = () => {
         <div className="flex items-center justify-between h-14 lg:h-16">
           
           {/* Logo - Updated with actual SVG */}
-          <Link to="/showcase/team" className="flex items-center gap-2.5 group shrink-0">
+          <Link to="/" className="flex items-center gap-2.5 group shrink-0">
             <div className="relative">
               <div className="relative w-8 h-8 lg:w-9 lg:h-9 flex items-center justify-center transition-all duration-300 group-hover:scale-110">
                 <img 
