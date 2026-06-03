@@ -675,7 +675,7 @@ export default function LandingPage() {
     setAppReady(true);
   }, []);
 
-  const heroLines = ['Build what', 'powers', 'the world.'];
+  const heroLines = ['Your', 'health', 'on time.'];
 
   return (
     <>
