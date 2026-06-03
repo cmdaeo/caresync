@@ -1,12 +1,5 @@
-/**
- * LandingPage - LEEC · Universidade de Aveiro
- *
- * Viewport safety rules applied throughout:
- * • No whitespace-nowrap on large headline text
- * • Font sizes use px breakpoints (Tailwind sm/md/lg), never raw vw
- * • All containers have max-w + overflow-hidden guards
- * • Horizontal scroll: useScroll({ container, target }) - container = page scroll div
- */
+// LandingPage - LEEC · Universidade de Aveiro
+// ... (imports remain the same)
 import { useRef, useState, useEffect, useCallback } from 'react';
 import {
   motion, useScroll, useTransform, useSpring,
@@ -24,6 +17,7 @@ import {
 import logo from '../../../assets/caresync.svg';
 
 import "@google/model-viewer/dist/model-viewer"
+
 
 /* ═══════════════════════════════════════════════════════════════════════════
    CSS
@@ -66,28 +60,14 @@ const CSS = () => (
 
     /* Blink cursor */
     @keyframes pulse {
-      0%, 100% { 
-        opacity: 0.9; 
-        transform: scaleX(1); 
-      }
-      50% { 
-        opacity: 1.0; 
-        transform: scaleX(0.98); 
-      }
+      0%, 100% { opacity: 0.9; transform: scaleX(1); }
+      50% { opacity: 1.0; transform: scaleX(0.98); }
     }
-
     .bln {
       display: inline-block;
       transform-origin: center;
       animation: pulse 1.5s ease-in-out infinite;
     }
-
-    /* Pulse glow */
-    @keyframes pg {
-      0%,100% { box-shadow: 0 0 5px 1px rgba(74,164,225,.3) }
-      50%      { box-shadow: 0 0 14px 4px rgba(74,164,225,.6) }
-    }
-    .pgn { animation: pg 2.2s ease-in-out infinite }
 
     /* Shimmer button */
     .shm { position: relative; overflow: hidden }
@@ -97,10 +77,6 @@ const CSS = () => (
       transform: translateX(-100%); transition: transform .5s;
     }
     .shm:hover::after { transform: translateX(100%) }
-
-    /* Card hover lift */
-    .lft { transition: transform .25s cubic-bezier(.34,1.56,.64,1) }
-    .lft:hover { transform: translateY(-3px) scale(1.01) }
 
     /* Tiny chip */
     .chp {
@@ -114,12 +90,6 @@ const CSS = () => (
     .tsc::-webkit-scrollbar { width: 4px }
     .tsc::-webkit-scrollbar-thumb { background: rgba(74,164,225,.2); border-radius: 2px }
     .tsc::-webkit-scrollbar-track { background: transparent }
-
-    /* Spark blink */
-    @keyframes spk { 0%,100%{opacity:0;transform:scale(.4)} 50%{opacity:1;transform:scale(1)} }
-    .s0 { animation: spk 2s ease-in-out        infinite }
-    .s1 { animation: spk 2s ease-in-out  .65s  infinite }
-    .s2 { animation: spk 2s ease-in-out 1.3s   infinite }
 
     /* Scan lines */
     .scn::after {
@@ -244,7 +214,6 @@ function PCBShowcase() {
   const textX2 = useTransform(smx, [0, 1], [30, -30]);
   const textY2 = useTransform(smy, [0, 1], [30, -30]);
 
-  // Tracks if the user is dragging any model across this split layout container
   const isInteractingRef = useRef(false);
 
   useEffect(() => {
@@ -256,36 +225,25 @@ function PCBShowcase() {
     return () => window.removeEventListener('mousemove', handleMouseMove);
   }, [mx, my]);
 
-  // UNIVERSAL WIGGLE LOGIC FOR CAREBAND AND CAREBOX MODALS
   useEffect(() => {
     const bandViewer = carebandRef.current as any;
     const boxViewer = careboxRef.current as any;
-    
     let animationFrameId: number;
     const speed = 0.0015;
     const range = 18;
 
     const runWiggleLoop = (time: number) => {
-      // CHECK INTERACTION: Only adjust orbit if user isn't clicking/dragging manual controls
       if (!isInteractingRef.current) {
         const currentYaw = Math.sin(time * speed) * range;
-        
-        if (bandViewer) {
-          bandViewer.cameraOrbit = `${currentYaw}deg 75deg 105%`;
-        }
-        if (boxViewer) {
-          boxViewer.cameraOrbit = `${currentYaw}deg 75deg 105%`;
-        }
+        if (bandViewer) bandViewer.cameraOrbit = `${currentYaw}deg 75deg 105%`;
+        if (boxViewer) boxViewer.cameraOrbit = `${currentYaw}deg 75deg 105%`;
       }
-
       animationFrameId = requestAnimationFrame(runWiggleLoop);
     };
 
-    // Tracking activation listeners to pause tracking shifts on user contact
     const setInteractingTrue = () => { isInteractingRef.current = true; };
     const setInteractingFalse = () => { isInteractingRef.current = false; };
 
-    // FIXED LOADING TRIGGERS: Attach sync loaders instantly before timeout shifts evaluate
     let reported = new Set();
     const notifyLoad = (id: string) => {
       if (reported.has(id)) return;
@@ -340,6 +298,7 @@ function PCBShowcase() {
   return (
     <>
       <section
+        id="sec-careband" // ← ADDED ID FOR AUTO-TOUR
         className="relative h-dvh w-full bg-[#020617] overflow-hidden border-t border-white/[0.02] flex items-center justify-center group"
         ref={containerRef}
       >
@@ -413,7 +372,7 @@ function PCBShowcase() {
         </div>
       </section>
 
-      <section className="relative h-dvh w-full bg-[#020617] overflow-hidden border-t border-white/[0.02] flex items-center justify-center group">
+      <section id="sec-carebox" className="relative h-dvh w-full bg-[#020617] overflow-hidden border-t border-white/[0.02] flex items-center justify-center group">
         <div
           className="pointer-events-none absolute inset-0 opacity-[0.03] z-50 mix-blend-overlay"
           style={{
@@ -507,7 +466,6 @@ function PCBAuraShowcase() {
     const speed = 0.0015;
 
     const performWiggle = (time: number) => {
-      // CHECK INTERACTION: Only perform wave transformations if cursor isn't dragging model components
       if (!isInteractingRef.current) {
         const currentYaw = Math.sin(time * speed) * wiggleRange;
         viewer.cameraOrbit = `${currentYaw}deg ${startOrbitY}deg 115%`;
@@ -515,7 +473,6 @@ function PCBAuraShowcase() {
       animationFrameId = requestAnimationFrame(performWiggle);
     };
 
-    // Pointers checking configurations safely overriding native controls
     const setInteractingTrue = () => { isInteractingRef.current = true; };
     const setInteractingFalse = () => { isInteractingRef.current = false; };
 
@@ -554,8 +511,7 @@ function PCBAuraShowcase() {
   }, []);
 
   return (
-    <div className="relative h-dvh w-full bg-[#020617] border-t border-white/[0.02]">
-
+    <div id="sec-aura" className="relative h-dvh w-full bg-[#020617] border-t border-white/[0.02]">
       <button 
         onClick={() => setAuraInteractive(!auraInteractive)}
         className="absolute top-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 text-white/70 hover:bg-white/10 hover:text-white hover:scale-105 transition-all backdrop-blur-md cursor-pointer font-mono text-[10px] uppercase tracking-widest"
@@ -564,7 +520,6 @@ function PCBAuraShowcase() {
         {auraInteractive ? "Unlocked" : "Locked"}
       </button>
 
-      {/* 3D Full-Bleed Background Layer */}
       <div className="absolute inset-0 h-full w-full overflow-hidden pointer-events-auto z-10">
         <model-viewer
           ref={modelViewerRef}
@@ -582,13 +537,10 @@ function PCBAuraShowcase() {
         />
       </div>
 
-      {/* Decorative center matrix glow */}
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[70vw] h-[70vw] bg-brand-primary/5 rounded-full blur-[120px] pointer-events-none z-0" />
 
-      {/* FIXED BRUTALIST HUD: Absolute Coordinate Placements Layer (No Text Cutoffs) */}
       <div className="absolute inset-0 z-20 pointer-events-none max-w-[1400px] mx-auto px-6 sm:px-12 py-[10dvh] h-full w-full">
         
-        {/* Card 1: Top Left */}
         <div className="absolute top-[8dvh] left-6 sm:left-12 max-w-[340px] sm:max-w-[380px] pointer-events-auto">
           <Reveal>
             <h3 className="sy font-800 text-2xl sm:text-3xl text-white mb-4 flex items-center gap-3">
@@ -606,7 +558,6 @@ function PCBAuraShowcase() {
           </Reveal>
         </div>
 
-        {/* Card 2: Middle Right */}
         <div className="absolute top-1/2 -translate-y-1/2 right-6 sm:right-12 max-w-[340px] sm:max-w-[380px] text-right pointer-events-auto">
           <Reveal>
             <h3 className="sy font-800 text-2xl sm:text-3xl text-white mb-4 flex items-center justify-end gap-3">
@@ -624,7 +575,6 @@ function PCBAuraShowcase() {
           </Reveal>
         </div>
 
-        {/* Card 3: Bottom Left */}
         <div className="absolute bottom-[8dvh] left-6 sm:left-12 max-w-[340px] sm:max-w-[380px] pointer-events-auto">
           <Reveal>
             <h3 className="sy font-800 text-2xl sm:text-3xl text-white mb-4 flex items-center gap-3">
@@ -677,6 +627,74 @@ export default function LandingPage() {
 
   const heroLines = ['Your', 'health', 'on time.'];
 
+  /* ═══════════════════════════════════════════════════════════════════════════
+     AUTO-TOUR (IDLE RANDOM TRANSITIONS)
+  ═══════════════════════════════════════════════════════════════════════════ */
+  const IDLE_TIMEOUT = 15000;
+  const TOUR_INTERVAL = 5000;
+  const TOUR_SECTIONS = ['sec-hero', 'sec-careband', 'sec-carebox', 'sec-aura'];
+  
+  const [isIdle, setIsIdle] = useState(false);
+  const lastInteraction = useRef(Date.now());
+  const currentTourIdx = useRef(0);
+  const [transitionStage, setTransitionStage] = useState<'idle'|'in'|'out'>('idle');
+
+  // 1. Monitor user activity to reset idle timer
+  useEffect(() => {
+    const ping = () => {
+      lastInteraction.current = Date.now();
+      if (isIdle) setIsIdle(false);
+    };
+
+    const events = ['mousemove', 'mousedown', 'keydown', 'touchstart', 'wheel'];
+    events.forEach(e => window.addEventListener(e, ping, { passive: true }));
+
+    const checkTimer = setInterval(() => {
+      if (Date.now() - lastInteraction.current > IDLE_TIMEOUT) {
+        setIsIdle(true);
+      }
+    }, 1000);
+
+    return () => {
+      events.forEach(e => window.removeEventListener(e, ping));
+      clearInterval(checkTimer);
+    };
+  }, [isIdle]);
+
+  // 2. Execute the Shutter Transition
+  const doTransition = useCallback((targetId: string) => {
+    setTransitionStage('in');
+    setTimeout(() => {
+      const el = document.getElementById(targetId);
+      if (el && scrollRef.current) {
+        // Jump directly to the element behind the closed shutter
+        el.scrollIntoView({ behavior: 'auto', block: 'start' });
+      }
+      setTransitionStage('out');
+      
+      // Cleanup transition state
+      setTimeout(() => setTransitionStage('idle'), 600);
+    }, 600); // Shutter closing duration
+  }, []);
+
+  // 3. Auto-tour Loop
+  useEffect(() => {
+    if (!isIdle || !appReady) return;
+
+    const interval = setInterval(() => {
+      let nextIdx;
+      do {
+        nextIdx = Math.floor(Math.random() * TOUR_SECTIONS.length);
+      } while (nextIdx === currentTourIdx.current);
+      
+      currentTourIdx.current = nextIdx;
+      doTransition(TOUR_SECTIONS[nextIdx]);
+    }, TOUR_INTERVAL);
+
+    return () => clearInterval(interval);
+  }, [isIdle, appReady, doTransition]);
+
+
   return (
     <>
       <CSS />
@@ -687,6 +705,32 @@ export default function LandingPage() {
         )}
       </AnimatePresence>
 
+      {/* CYBER SHUTTER OVERLAY TRANSITION */}
+      {(transitionStage === 'in' || transitionStage === 'out') && (
+        <div className="fixed inset-0 z-[99999] pointer-events-none flex flex-col scn">
+          <motion.div
+            initial={{ y: '-100%' }}
+            animate={{ y: transitionStage === 'in' ? '0%' : '-100%' }}
+            transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+            className="flex-1 bg-[#020617] border-b border-brand-primary/40 flex items-end justify-center pb-4"
+          >
+            <span className="jm text-brand-primary/70 text-[10px] tracking-[0.3em] uppercase bln">
+              Auto-Tour Routine
+            </span>
+          </motion.div>
+          <motion.div
+            initial={{ y: '100%' }}
+            animate={{ y: transitionStage === 'in' ? '0%' : '100%' }}
+            transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+            className="flex-1 bg-[#020617] border-t border-brand-primary/40 flex items-start justify-center pt-4"
+          >
+             <span className="jm text-white/30 text-[9px] tracking-[0.2em] uppercase">
+              Rerouting Viewport
+            </span>
+          </motion.div>
+        </div>
+      )}
+
       <div
         ref={scrollRef}
         className="relative h-dvh w-full overflow-y-auto overflow-x-hidden tsc sy bg-bg-page text-text-main"
@@ -694,7 +738,7 @@ export default function LandingPage() {
         {/* ════════════════════════════════════════════════════════════════
             HERO
         ════════════════════════════════════════════════════════════════ */}
-        <section className="relative h-dvh flex flex-col items-center justify-center overflow-hidden bpg scn">
+        <section id="sec-hero" className="relative h-dvh flex flex-col items-center justify-center overflow-hidden bpg scn">
           <motion.div className="pointer-events-none absolute inset-0" style={{ background: glow }} />
           <div className="absolute inset-0 pointer-events-none"
             style={{ background: 'radial-gradient(ellipse 90% 65% at 50% 50%, transparent 25%, var(--bg-page,#020617) 100%)' }} />
