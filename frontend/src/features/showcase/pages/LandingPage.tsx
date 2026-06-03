@@ -1,5 +1,4 @@
 // LandingPage - LEEC · Universidade de Aveiro
-// ... (imports remain the same)
 import { useRef, useState, useEffect, useCallback } from 'react';
 import {
   motion, useScroll, useTransform, useSpring,
@@ -106,9 +105,9 @@ const CSS = () => (
 function OscWave() {
   return (
     <svg viewBox="0 0 500 50" preserveAspectRatio="none" className="w-full h-full">
-      <path className="oa" stroke="rgba(74,164,225,.45)" strokeWidth="1.5" fill="none" strokeDasharray="300 400"
+      <path className="oa" stroke="rgba(74,164,225,1)" strokeWidth="1.5" fill="none" strokeDasharray="300 400"
         d="M0,25L15,25L22,8L30,42L38,8L46,42L53,25L80,25L87,13L95,37L103,13L111,37L118,25L145,25L152,4L160,46L168,4L176,46L183,25L210,25L217,16L225,34L233,16L241,34L248,25L275,25L282,9L290,41L298,9L306,41L313,25L340,25L347,12L355,38L363,12L371,38L378,25L405,25L412,5L420,45L428,5L436,45L443,25L470,25L477,14L485,36L493,14L500,25"/>
-      <path className="ob" stroke="rgba(74,164,225,.14)" strokeWidth="1" fill="none" strokeDasharray="700"
+      <path className="ob" stroke="rgba(74,164,225,1)" strokeWidth="1" fill="none" strokeDasharray="300 400"
         d="M0,25C62,25 62,8 125,8C188,8 188,42 250,42C312,42 312,8 375,8C438,8 438,42 500,42"/>
     </svg>
   );
@@ -134,7 +133,7 @@ function PageLoader({ onReady }: { onReady: () => void }) {
   const loadedCount = useRef(0);
 
   useEffect(() => {
-    const total = 3;
+    const total = 4; // Now loading 4 models
     const handleModelLoad = (_sourceId: any) => {
       loadedCount.current += 1;
       const pct = Math.round((loadedCount.current / total) * 100);
@@ -181,11 +180,12 @@ function PageLoader({ onReady }: { onReady: () => void }) {
             </clipPath>
           </defs>
           <image href={logo} x="0" y="0" width="64" height="64" 
-          style={{ filter: 'brightness(0) invert(1)' }} opacity="1" />
+          style={{ filter: 'brightness(0) invert(1)' }} opacity="0.2" />
           <image href={logo} x="0" y="0" width="64" height="64"
+            style={{ filter: 'brightness(0) invert(1)' }}
             clipPath="url(#reveal-clip)"/>
         </svg>
-        <p className="jm text-[9px] text-white/25 tracking-widest">
+        <p className="jm text-[9px] text-white/50 tracking-widest">
           {progress < 100 ? 'Loading...' : 'Ready'}
         </p>
       </motion.div>
@@ -298,12 +298,13 @@ function PCBShowcase() {
   return (
     <>
       <section
-        id="sec-careband" // ← ADDED ID FOR AUTO-TOUR
-        className="relative h-dvh w-full bg-[#020617] overflow-hidden border-t border-white/[0.02] flex items-center justify-center group"
+        id="sec-careband"
+        // bg-[#020617] FORCES dark background on these specific 3D sections regardless of theme mode.
+        className="relative h-dvh w-full bg-[#020617] overflow-hidden border-t border-white/5 flex items-center justify-center group"
         ref={containerRef}
       >
         <div
-          className="pointer-events-none absolute inset-0 opacity-[0.03] z-50 mix-blend-overlay"
+          className="pointer-events-none absolute inset-0 opacity-[0.05] z-50 mix-blend-overlay"
           style={{
             backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")`,
             backgroundRepeat: 'repeat',
@@ -316,7 +317,8 @@ function PCBShowcase() {
           style={{ x: textX1, y: textY1 }}
           className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full text-center pointer-events-none select-none z-0 overflow-hidden"
         >
-          <h2 className="sy font-800 text-[20vw] lg:text-[16vw] leading-none text-white/[0.06] tracking-tighter whitespace-nowrap">
+          {/* Solid fill with very low opacity to act as backdrop without wireframe stroke */}
+          <h2 className="sy font-800 text-[20vw] lg:text-[16vw] leading-none tracking-tighter whitespace-nowrap text-white opacity-[0.03]">
             CAREBAND
           </h2>
         </motion.div>
@@ -347,13 +349,13 @@ function PCBShowcase() {
 
           <div className="w-full max-w-[450px] lg:absolute lg:left-[5%] xl:left-[8%] z-30 pointer-events-none flex flex-col items-start text-left mt-[35vh] sm:mt-[40vh] lg:mt-0">
             <Reveal>
-              <h2 className="sy font-800 text-5xl sm:text-6xl lg:text-7xl text-white tracking-tight leading-[1] mb-5 drop-shadow-2xl">
+              <h2 className="sy font-800 text-5xl sm:text-6xl lg:text-7xl text-white tracking-tight leading-[1] mb-5 drop-shadow-sm">
                 CAREBAND
               </h2>
-              <p className="text-white/70 text-base sm:text-lg font-mono pointer-events-auto mb-4 sm:mb-8 drop-shadow-lg leading-relaxed">
+              <p className="text-white/70 text-base sm:text-lg font-mono pointer-events-auto mb-4 sm:mb-8 leading-relaxed">
                 Miniaturized wearable BLE node. Features an ergonomic TPU chassis, ERM haptic actuators, and flexible NFC integration for continuous accessibility.
               </p>
-              <div className="space-y-3 font-mono text-xs sm:text-sm text-white/90 pointer-events-auto drop-shadow-md">
+              <div className="space-y-3 font-mono text-xs sm:text-sm text-white/90 pointer-events-auto">
                 <div className="flex items-center gap-3 border-l-2 border-brand-primary/50 pl-3">
                   <CheckCircle size={16} className="text-brand-primary" />
                   BLE Central Client Architecture
@@ -372,9 +374,9 @@ function PCBShowcase() {
         </div>
       </section>
 
-      <section id="sec-carebox" className="relative h-dvh w-full bg-[#020617] overflow-hidden border-t border-white/[0.02] flex items-center justify-center group">
+      <section id="sec-carebox" className="relative h-dvh w-full bg-[#020617] overflow-hidden border-t border-white/5 flex items-center justify-center group">
         <div
-          className="pointer-events-none absolute inset-0 opacity-[0.03] z-50 mix-blend-overlay"
+          className="pointer-events-none absolute inset-0 opacity-[0.05] z-50 mix-blend-overlay"
           style={{
             backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")`,
             backgroundRepeat: 'repeat',
@@ -387,7 +389,7 @@ function PCBShowcase() {
           style={{ x: textX2, y: textY2 }}
           className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full text-center pointer-events-none select-none z-0 overflow-hidden"
         >
-          <h2 className="sy font-800 text-[20vw] lg:text-[16vw] leading-none text-white/[0.06] tracking-tighter whitespace-nowrap">
+          <h2 className="sy font-800 text-[20vw] lg:text-[16vw] leading-none tracking-tighter whitespace-nowrap text-white opacity-[0.03]">
             CAREBOX
           </h2>
         </motion.div>
@@ -419,13 +421,13 @@ function PCBShowcase() {
 
           <div className="w-full max-w-[450px] lg:absolute lg:right-[5%] xl:right-[8%] z-30 pointer-events-none flex flex-col items-start text-left mt-[35vh] sm:mt-[40vh] lg:mt-0">
             <Reveal>
-              <h2 className="sy font-800 text-5xl sm:text-6xl lg:text-7xl text-white tracking-tight leading-[1] mb-5 drop-shadow-2xl">
+              <h2 className="sy font-800 text-5xl sm:text-6xl lg:text-7xl text-white tracking-tight leading-[1] mb-5 drop-shadow-sm">
                 CAREBOX
               </h2>
-              <p className="text-white/70 text-base sm:text-lg font-mono pointer-events-auto mb-4 sm:mb-8 drop-shadow-lg leading-relaxed">
+              <p className="text-white/70 text-base sm:text-lg font-mono pointer-events-auto mb-4 sm:mb-8 leading-relaxed">
                 Central dispensing hub powered by the Raspberry Pi Pico WH. Handles physical motor actuation, RFID scheduling, and closed-loop telemetry.
               </p>
-              <div className="space-y-3 font-mono text-xs sm:text-sm text-white/90 pointer-events-auto drop-shadow-md flex flex-col items-start lg:items-end">
+              <div className="space-y-3 font-mono text-xs sm:text-sm text-white/90 pointer-events-auto flex flex-col items-start lg:items-end">
                 <div className="flex items-center gap-3 border-l-2 lg:border-l-0 lg:border-r-2 border-[#c084fc]/50 pl-3 lg:pl-0 lg:pr-3 flex-row lg:flex-row-reverse">
                   <CheckCircle size={16} className="text-[#c084fc]" />
                   RP2040 Dual-Core Cortex-M0+
@@ -448,7 +450,7 @@ function PCBShowcase() {
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   3D PCB COMPONENT REGISTRY SHOWCASE (Brutalist HUD Overlay Matrix)
+   3D PCB COMPONENT REGISTRY SHOWCASE (CareBox Matrix)
 ═══════════════════════════════════════════════════════════════════════════ */
 function PCBAuraShowcase() {
   const modelViewerRef = useRef<any>(null);
@@ -482,7 +484,7 @@ function PCBAuraShowcase() {
       reported = true;
       
       if (typeof (window as any).__onModelLoad === 'function') {
-        (window as any).__onModelLoad('assembly');
+        (window as any).__onModelLoad('assembly_box');
       }
 
       viewer.addEventListener('pointerdown', setInteractingTrue);
@@ -511,7 +513,7 @@ function PCBAuraShowcase() {
   }, []);
 
   return (
-    <div id="sec-aura" className="relative h-dvh w-full bg-[#020617] border-t border-white/[0.02]">
+    <div id="sec-aura-box" className="relative h-dvh w-full bg-[#020617] border-t border-white/5">
       <button 
         onClick={() => setAuraInteractive(!auraInteractive)}
         className="absolute top-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 text-white/70 hover:bg-white/10 hover:text-white hover:scale-105 transition-all backdrop-blur-md cursor-pointer font-mono text-[10px] uppercase tracking-widest"
@@ -537,17 +539,17 @@ function PCBAuraShowcase() {
         />
       </div>
 
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[70vw] h-[70vw] bg-brand-primary/5 rounded-full blur-[120px] pointer-events-none z-0" />
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[70vw] h-[70vw] bg-[#c084fc]/5 rounded-full blur-[120px] pointer-events-none z-0" />
 
       <div className="absolute inset-0 z-20 pointer-events-none max-w-[1400px] mx-auto px-6 sm:px-12 py-[10dvh] h-full w-full">
         
         <div className="absolute top-[8dvh] left-6 sm:left-12 max-w-[340px] sm:max-w-[380px] pointer-events-auto">
           <Reveal>
             <h3 className="sy font-800 text-2xl sm:text-3xl text-white mb-4 flex items-center gap-3">
-              <span className="text-brand-primary font-mono text-base font-normal">01</span>
+              <span className="text-[#c084fc] font-mono text-base font-normal">01</span>
               Chassis Design
             </h3>
-            <div className="flex flex-col gap-2 border-l-2 border-brand-primary/20 pl-4">
+            <div className="flex flex-col gap-2 border-l-2 border-[#c084fc]/20 pl-4">
               <div className="text-white/70 text-xs font-mono">
                 <span className="text-white/40 inline-block w-20">Material:</span> TPA & PLA FDM
               </div>
@@ -578,10 +580,10 @@ function PCBAuraShowcase() {
         <div className="absolute bottom-[8dvh] left-6 sm:left-12 max-w-[340px] sm:max-w-[380px] pointer-events-auto">
           <Reveal>
             <h3 className="sy font-800 text-2xl sm:text-3xl text-white mb-4 flex items-center gap-3">
-              <span className="text-emerald-400 font-mono text-base font-normal">03</span>
+              <span className="text-[#c084fc] font-mono text-base font-normal">03</span>
               Hardware Mounts
             </h3>
-            <div className="flex flex-col gap-2 border-l-2 border-emerald-400/20 pl-4">
+            <div className="flex flex-col gap-2 border-l-2 border-[#c084fc]/20 pl-4">
               <div className="text-white/70 text-xs font-mono">
                 <span className="text-white/40 inline-block w-20">Fasteners:</span> Brass Inserts
               </div>
@@ -596,6 +598,157 @@ function PCBAuraShowcase() {
     </div>
   );
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   3D PCB COMPONENT REGISTRY SHOWCASE (CareBand Wearable)
+═══════════════════════════════════════════════════════════════════════════ */
+function CarebandAuraShowcase() {
+  const modelViewerRef = useRef<any>(null);
+  const isInteractingRef = useRef(false);
+
+  const [auraInteractive, setAuraInteractive] = useState(false);
+
+  useEffect(() => {
+    const viewer = modelViewerRef.current;
+    if (!viewer) return;
+
+    let animationFrameId: number;
+    const startOrbitY = 70;
+    const wiggleRange = 18;
+    const speed = 0.0015;
+
+    const performWiggle = (time: number) => {
+      if (!isInteractingRef.current) {
+        const currentYaw = Math.sin(time * speed) * wiggleRange;
+        viewer.cameraOrbit = `${currentYaw}deg ${startOrbitY}deg 115%`;
+      }
+      animationFrameId = requestAnimationFrame(performWiggle);
+    };
+
+    const setInteractingTrue = () => { isInteractingRef.current = true; };
+    const setInteractingFalse = () => { isInteractingRef.current = false; };
+
+    let reported = false;
+    const handleLoad = () => {
+      if (reported) return;
+      reported = true;
+      
+      if (typeof (window as any).__onModelLoad === 'function') {
+        (window as any).__onModelLoad('assembly_band');
+      }
+
+      viewer.addEventListener('pointerdown', setInteractingTrue);
+      viewer.addEventListener('pointerup', setInteractingFalse);
+      viewer.addEventListener('pointerleave', setInteractingFalse);
+
+      animationFrameId = requestAnimationFrame(performWiggle);
+    };
+
+    if (viewer.modelIsVisible) {
+      handleLoad();
+    } else {
+      viewer.addEventListener('load', handleLoad, { once: true });
+      viewer.addEventListener('error', handleLoad, { once: true });
+    }
+
+    return () => {
+      if (viewer) {
+        viewer.removeEventListener('load', handleLoad);
+        viewer.removeEventListener('pointerdown', setInteractingTrue);
+        viewer.removeEventListener('pointerup', setInteractingFalse);
+        viewer.removeEventListener('pointerleave', setInteractingFalse);
+      }
+      cancelAnimationFrame(animationFrameId);
+    };
+  }, []);
+
+  return (
+    <div id="sec-aura-band" className="relative h-dvh w-full bg-[#020617] border-t border-white/5">
+      <button 
+        onClick={() => setAuraInteractive(!auraInteractive)}
+        className="absolute top-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 text-white/70 hover:bg-white/10 hover:text-white hover:scale-105 transition-all backdrop-blur-md cursor-pointer font-mono text-[10px] uppercase tracking-widest"
+      >
+        {auraInteractive ? <Unlock size={14} /> : <Lock size={14} />}
+        {auraInteractive ? "Unlocked" : "Locked"}
+      </button>
+
+      <div className="absolute inset-0 h-full w-full overflow-hidden pointer-events-auto z-10">
+        <model-viewer
+          ref={modelViewerRef}
+          src="/careband_3d.glb"
+          alt="CareBand Wearable TPU Chassis"
+          loading="eager"
+          camera-controls
+          interaction-prompt="none"
+          tone-mapping="aces"
+          shadow-intensity="1"
+          exposure="1.2"
+          environment-image="legacy"
+          className={auraInteractive ? "pointer-events-auto" : "pointer-events-none"}
+          style={{ width: '100%', height: '100%', backgroundColor: 'transparent', outline: 'none' }}
+        />
+      </div>
+
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[70vw] h-[70vw] bg-brand-primary/5 rounded-full blur-[120px] pointer-events-none z-0" />
+
+      <div className="absolute inset-0 z-20 pointer-events-none max-w-[1400px] mx-auto px-6 sm:px-12 py-[10dvh] h-full w-full">
+        
+        <div className="absolute top-[8dvh] left-6 sm:left-12 max-w-[340px] sm:max-w-[380px] pointer-events-auto">
+          <Reveal>
+            <h3 className="sy font-800 text-2xl sm:text-3xl text-white mb-4 flex items-center gap-3">
+              <span className="text-brand-primary font-mono text-base font-normal">01</span>
+              Wearable Chassis
+            </h3>
+            <div className="flex flex-col gap-2 border-l-2 border-brand-primary/20 pl-4">
+              <div className="text-white/70 text-xs font-mono">
+                <span className="text-white/40 inline-block w-20">Material:</span> Flexible TPU Silicone
+              </div>
+              <div className="text-white/70 text-xs font-mono">
+                <span className="text-white/40 inline-block w-20">Ergonomics:</span> Continuous Use
+              </div>
+            </div>
+          </Reveal>
+        </div>
+
+        <div className="absolute top-1/2 -translate-y-1/2 right-6 sm:right-12 max-w-[340px] sm:max-w-[380px] text-right pointer-events-auto">
+          <Reveal>
+            <h3 className="sy font-800 text-2xl sm:text-3xl text-white mb-4 flex items-center justify-end gap-3">
+              Haptic Module
+              <span className="text-brand-primary font-mono text-base font-normal">02</span>
+            </h3>
+            <div className="flex flex-col gap-2 border-r-2 border-brand-primary/20 pr-4 items-end">
+              <div className="text-white/70 text-xs font-mono flex items-center justify-end gap-2">
+                Eccentric Mass <span className="text-white/40 text-right inline-block w-20">:Actuator</span> 
+              </div>
+              <div className="text-white/70 text-xs font-mono flex items-center justify-end gap-2">
+                Vibration Alert <span className="text-white/40 text-right inline-block w-20">:Feedback</span> 
+              </div>
+            </div>
+          </Reveal>
+        </div>
+
+        <div className="absolute bottom-[8dvh] left-6 sm:left-12 max-w-[340px] sm:max-w-[380px] pointer-events-auto">
+          <Reveal>
+            <h3 className="sy font-800 text-2xl sm:text-3xl text-white mb-4 flex items-center gap-3">
+              <span className="text-brand-primary font-mono text-base font-normal">03</span>
+              NFC Integration
+            </h3>
+            <div className="flex flex-col gap-2 border-l-2 border-brand-primary/20 pl-4">
+              <div className="text-white/70 text-xs font-mono">
+                <span className="text-white/40 inline-block w-20">Antenna:</span> Internal Patch
+              </div>
+              <div className="text-white/70 text-xs font-mono">
+                <span className="text-white/40 inline-block w-20">Protocol:</span> Near Field Comm
+              </div>
+            </div>
+          </Reveal>
+        </div>
+
+      </div>
+    </div>
+  );
+}
+
 
 /* ═══════════════════════════════════════════════════════════════════════════
    MAIN COMPONENT
@@ -628,16 +781,24 @@ export default function LandingPage() {
   const heroLines = ['Your', 'health', 'on time.'];
 
   /* ═══════════════════════════════════════════════════════════════════════════
-     AUTO-TOUR (IDLE RANDOM TRANSITIONS)
+     AUTO-TOUR (SEQUENTIAL CREATIVE TRANSITIONS WITH THEME AWARENESS)
   ═══════════════════════════════════════════════════════════════════════════ */
-  const IDLE_TIMEOUT = 15000;
-  const TOUR_INTERVAL = 5000;
-  const TOUR_SECTIONS = ['sec-hero', 'sec-careband', 'sec-carebox', 'sec-aura'];
+  const IDLE_TIMEOUT = 12000;
+  const TOUR_INTERVAL = 8000;
+  
+  // SEQUENTIAL ORDER: Hero -> Careband PCB -> Carebox PCB -> Carebox 3D -> Careband 3D
+  const TOUR_SECTIONS = ['sec-hero', 'sec-careband', 'sec-carebox', 'sec-aura-box', 'sec-aura-band'];
+  const TRANSITION_TYPES = ['shutter', 'sweep', 'slices'];
   
   const [isIdle, setIsIdle] = useState(false);
   const lastInteraction = useRef(Date.now());
   const currentTourIdx = useRef(0);
+  
   const [transitionStage, setTransitionStage] = useState<'idle'|'in'|'out'>('idle');
+  const [activeTransition, setActiveTransition] = useState('shutter');
+  
+  // To adapt the background colors dynamically to match the section we are traveling TO
+  const [targetSection, setTargetSection] = useState('sec-hero');
 
   // 1. Monitor user activity to reset idle timer
   useEffect(() => {
@@ -661,39 +822,52 @@ export default function LandingPage() {
     };
   }, [isIdle]);
 
-  // 2. Execute the Shutter Transition
+  // 2. Execute Transition
   const doTransition = useCallback((targetId: string) => {
+    // Record the destination to adapt the transition colors
+    setTargetSection(targetId);
+
+    // Pick a random creative transition style
+    const randomTrans = TRANSITION_TYPES[Math.floor(Math.random() * TRANSITION_TYPES.length)];
+    setActiveTransition(randomTrans);
+    
     setTransitionStage('in');
     setTimeout(() => {
       const el = document.getElementById(targetId);
       if (el && scrollRef.current) {
-        // Jump directly to the element behind the closed shutter
         el.scrollIntoView({ behavior: 'auto', block: 'start' });
       }
       setTransitionStage('out');
       
       // Cleanup transition state
       setTimeout(() => setTransitionStage('idle'), 600);
-    }, 600); // Shutter closing duration
+    }, 600);
   }, []);
 
-  // 3. Auto-tour Loop
+  // 3. Auto-tour Loop (Sequential)
   useEffect(() => {
     if (!isIdle || !appReady) return;
 
     const interval = setInterval(() => {
-      let nextIdx;
-      do {
-        nextIdx = Math.floor(Math.random() * TOUR_SECTIONS.length);
-      } while (nextIdx === currentTourIdx.current);
-      
+      // Calculate next index strictly sequentially
+      const nextIdx = (currentTourIdx.current + 1) % TOUR_SECTIONS.length;
       currentTourIdx.current = nextIdx;
+      
       doTransition(TOUR_SECTIONS[nextIdx]);
     }, TOUR_INTERVAL);
 
     return () => clearInterval(interval);
   }, [isIdle, appReady, doTransition]);
 
+
+  /* ════════════════════════════════════════════════════════════════
+      DYNAMIC THEME VARIABLES FOR THE OVERLAY
+  ════════════════════════════════════════════════════════════════ */
+  const isTargetDark = targetSection !== 'sec-hero'; // Anything other than hero is currently forced #020617
+  const tBg = isTargetDark ? 'bg-[#020617]' : 'bg-bg-page';
+  const tText = isTargetDark ? 'text-white' : 'text-text-main';
+  const tMuted = isTargetDark ? 'text-white/50' : 'text-text-muted';
+  const tBorder = isTargetDark ? 'border-white/5' : 'border-border-focus';
 
   return (
     <>
@@ -705,30 +879,81 @@ export default function LandingPage() {
         )}
       </AnimatePresence>
 
-      {/* CYBER SHUTTER OVERLAY TRANSITION */}
+      {/* ════════════════════════════════════════════════════════════════
+          CREATIVE IDLE TRANSITIONS OVERLAYS
+      ════════════════════════════════════════════════════════════════ */}
       {(transitionStage === 'in' || transitionStage === 'out') && (
-        <div className="fixed inset-0 z-[99999] pointer-events-none flex flex-col scn">
-          <motion.div
-            initial={{ y: '-100%' }}
-            animate={{ y: transitionStage === 'in' ? '0%' : '-100%' }}
-            transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-            className="flex-1 bg-[#020617] border-b border-brand-primary/40 flex items-end justify-center pb-4"
-          >
-            <span className="jm text-brand-primary/70 text-[10px] tracking-[0.3em] uppercase bln">
-              Auto-Tour Routine
-            </span>
-          </motion.div>
-          <motion.div
-            initial={{ y: '100%' }}
-            animate={{ y: transitionStage === 'in' ? '0%' : '100%' }}
-            transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-            className="flex-1 bg-[#020617] border-t border-brand-primary/40 flex items-start justify-center pt-4"
-          >
-             <span className="jm text-white/30 text-[9px] tracking-[0.2em] uppercase">
-              Rerouting Viewport
-            </span>
-          </motion.div>
-        </div>
+        <>
+          {/* 1. ORIGINAL CYBER SHUTTER */}
+          {activeTransition === 'shutter' && (
+            <div className="fixed inset-0 z-[99999] pointer-events-none flex flex-col scn">
+              <motion.div
+                initial={{ y: '-100%' }}
+                animate={{ y: transitionStage === 'in' ? '0%' : '-100%' }}
+                transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+                className={`flex-1 ${tBg} border-b ${tBorder} flex items-end justify-center pb-4`}
+              >
+                <span className="jm text-brand-primary text-[10px] tracking-[0.3em] uppercase bln">
+                  Auto-Tour
+                </span>
+              </motion.div>
+              <motion.div
+                initial={{ y: '100%' }}
+                animate={{ y: transitionStage === 'in' ? '0%' : '100%' }}
+                transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+                className={`flex-1 ${tBg} border-t ${tBorder} flex items-start justify-center pt-4`}
+              >
+                <span className={`jm ${tMuted} text-[9px] tracking-[0.2em] uppercase`}>
+                  Auto-Tour
+                </span>
+              </motion.div>
+            </div>
+          )}
+
+          {/* 2. SYSTEM SWEEP */}
+          {activeTransition === 'sweep' && (
+            <div className="fixed inset-0 z-[99999] pointer-events-none overflow-hidden">
+              <motion.div
+                initial={{ x: '-100%' }}
+                animate={{ x: transitionStage === 'in' ? '0%' : '100%' }}
+                transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+                className="absolute inset-0 w-full h-full bg-brand-primary"
+              />
+              <motion.div
+                initial={{ x: '-100%' }}
+                animate={{ x: transitionStage === 'in' ? '0%' : '100%' }}
+                transition={{ duration: 0.5, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}
+                className={`absolute inset-0 w-full h-full ${tBg} flex items-center justify-center scn`}
+              >
+                <span className={`sy text-3xl font-800 tracking-widest ${tText} uppercase animate-pulse drop-shadow-[0_0_8px_rgba(74,164,225,0.8)]`}>
+                  Auto-Tour
+                </span>
+              </motion.div>
+            </div>
+          )}
+
+          {/* 3. MATRIX SLICES */}
+          {activeTransition === 'slices' && (
+            <div className="fixed inset-0 z-[99999] pointer-events-none flex flex-col scn">
+              {[...Array(5)].map((_, i) => (
+                <motion.div
+                  key={i}
+                  initial={{ scaleY: 0 }}
+                  animate={{ scaleY: transitionStage === 'in' ? 1 : 0 }}
+                  transition={{ duration: 0.4, delay: i * 0.05, ease: [0.22, 1, 0.36, 1] }}
+                  style={{ transformOrigin: i % 2 === 0 ? 'top' : 'bottom' }}
+                  className={`flex-1 ${tBg} border-y border-brand-primary/20 flex items-center justify-center overflow-hidden`}
+                >
+                    {transitionStage === 'in' && i === 2 && (
+                       <span className="jm text-brand-primary text-xs uppercase tracking-[0.4em] bln">
+                         Auto-Tour
+                       </span>
+                    )}
+                </motion.div>
+              ))}
+            </div>
+          )}
+        </>
       )}
 
       <div
@@ -849,6 +1074,7 @@ export default function LandingPage() {
         ════════════════════════════════════════════════════════════════ */}
         <PCBShowcase />
         <PCBAuraShowcase />
+        <CarebandAuraShowcase />
 
         {/* ════════════════════════════════════════════════════════════════
             DEMO BANNER
