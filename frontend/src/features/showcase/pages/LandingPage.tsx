@@ -372,16 +372,12 @@ function PCBShowcase() {
             />
           </div>
 
-          <div className="w-full max-w-[450px] lg:absolute lg:left-[5%] xl:left-[8%] z-30 pointer-events-none flex flex-col items-start text-left mt-[50vh] lg:mt-0">
+          <div className="w-full max-w-[450px] lg:absolute lg:left-[5%] xl:left-[8%] z-30 pointer-events-none flex flex-col items-start text-left mt-[35vh] sm:mt-[40vh] lg:mt-0">
             <Reveal>
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-brand-primary/10 text-brand-primary text-[10px] uppercase font-mono tracking-widest mb-4 pointer-events-auto border border-brand-primary/20 backdrop-blur-md">
-                <span className="w-1.5 h-1.5 rounded-full bg-brand-primary animate-pulse" />
-                Wearable Node
-              </div>
               <h2 className="sy font-800 text-5xl sm:text-6xl lg:text-7xl text-white tracking-tight leading-[1] mb-5 drop-shadow-2xl">
                 CAREBAND
               </h2>
-              <p className="text-white/70 text-base sm:text-lg font-mono pointer-events-auto mb-8 drop-shadow-lg leading-relaxed">
+              <p className="text-white/70 text-base sm:text-lg font-mono pointer-events-auto mb-4 sm:mb-8 drop-shadow-lg leading-relaxed">
                 Miniaturized wearable BLE node. Features an ergonomic TPU chassis, ERM haptic actuators, and flexible NFC integration for continuous accessibility.
               </p>
               <div className="space-y-3 font-mono text-xs sm:text-sm text-white/90 pointer-events-auto drop-shadow-md">
@@ -395,7 +391,7 @@ function PCBShowcase() {
                 </div>
                 <div className="flex items-center gap-3 border-l-2 border-brand-primary/50 pl-3">
                   <CheckCircle size={16} className="text-brand-primary" />
-                  Flexible PCB & NFC Patch
+                  Flexible Case & NFC Patch
                 </div>
               </div>
             </Reveal>
@@ -440,16 +436,12 @@ function PCBShowcase() {
             />
           </div>
 
-          <div className="w-full max-w-[450px] lg:absolute lg:right-[5%] xl:right-[8%] z-30 pointer-events-none flex flex-col items-start lg:items-end text-left lg:text-right mt-[50vh] lg:mt-0">
+          <div className="w-full max-w-[450px] lg:absolute lg:right-[5%] xl:right-[8%] z-30 pointer-events-none flex flex-col items-start text-left mt-[35vh] sm:mt-[40vh] lg:mt-0">
             <Reveal>
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#c084fc]/10 text-[#c084fc] text-[10px] uppercase font-mono tracking-widest mb-4 pointer-events-auto border border-[#c084fc]/20 backdrop-blur-md">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#c084fc] animate-pulse" />
-                Central Hub
-              </div>
               <h2 className="sy font-800 text-5xl sm:text-6xl lg:text-7xl text-white tracking-tight leading-[1] mb-5 drop-shadow-2xl">
                 CAREBOX
               </h2>
-              <p className="text-white/70 text-base sm:text-lg font-mono pointer-events-auto mb-8 drop-shadow-lg leading-relaxed">
+              <p className="text-white/70 text-base sm:text-lg font-mono pointer-events-auto mb-4 sm:mb-8 drop-shadow-lg leading-relaxed">
                 Central dispensing hub powered by the Raspberry Pi Pico WH. Handles physical motor actuation, RFID scheduling, and closed-loop telemetry.
               </p>
               <div className="space-y-3 font-mono text-xs sm:text-sm text-white/90 pointer-events-auto drop-shadow-md flex flex-col items-start lg:items-end">
@@ -565,45 +557,27 @@ function PCBAuraShowcase() {
         {/* Card 1: Top Left */}
         <div className="absolute top-[8dvh] left-6 sm:left-12 max-w-[340px] sm:max-w-[380px] pointer-events-auto">
           <Reveal>
-            <div className="text-brand-primary text-xs uppercase tracking-widest mb-2 font-bold font-mono">
-              [01 // PCB_CLEARANCE]
-            </div>
             <h3 className="sy font-800 text-2xl sm:text-3xl text-white mb-3">
-              Integrated Circuit Matrix
+              Carebox
             </h3>
-            <p className="text-white/60 text-xs sm:text-sm font-mono leading-relaxed">
-              Engineered with dual-sided surface-mount trace clearing matrices. Minimizes internal cross-talk telemetry degradation under persistent processing spikes.
-            </p>
           </Reveal>
         </div>
 
         {/* Card 2: Middle Right */}
         <div className="absolute top-1/2 -translate-y-1/2 right-6 sm:right-12 max-w-[340px] sm:max-w-[380px] text-right pointer-events-auto">
           <Reveal>
-            <div className="text-[#c084fc] text-xs uppercase tracking-widest mb-2 font-bold font-mono">
-              [02 // BUS_LOGIC]
-            </div>
             <h3 className="sy font-800 text-2xl sm:text-3xl text-white mb-3">
-              Sub-Millimeter Logic
+              10 Medication Compartments
             </h3>
-            <p className="text-white/60 text-xs sm:text-sm font-mono leading-relaxed">
-              Custom Autodesk hardware plane allocations logic paths. Widened power rail configurations handle extreme unipolar mechanical hub stepper motor loads effortlessly.
-            </p>
           </Reveal>
         </div>
 
         {/* Card 3: Bottom Left */}
         <div className="absolute bottom-[8dvh] left-6 sm:left-12 max-w-[340px] sm:max-w-[380px] pointer-events-auto">
           <Reveal>
-            <div className="text-emerald-400 text-xs uppercase tracking-widest mb-2 font-bold font-mono">
-              [03 // UPTIME_BASELINE]
-            </div>
-            <h3 className="sy font-800 text-2xl sm:text-3xl text-white mb-3">
-              Zero-Fail Performance
+            <h3 className="text-emerald-400 sy font-800 text-2xl sm:text-3xl text-white mb-3">
+              Dispensing Drawer
             </h3>
-            <p className="text-white/60 text-xs sm:text-sm font-mono leading-relaxed">
-              Every tracking controller bus line isolated. Hardened physical component placements layout architectures ensure error-free operational durability in high-stress settings.
-            </p>
           </Reveal>
         </div>
 
