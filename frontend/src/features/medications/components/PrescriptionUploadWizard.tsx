@@ -225,6 +225,7 @@ export function PrescriptionUploadWizard({ onCancel }: { onCancel: () => void })
   // Upload
   const [file, setFile] = useState<File | null>(null)
   const [engine, setEngine] = useState<'regex' | 'ai'>('regex')
+  const [apiKey, setApiKey] = useState('')
 
   // Parse result
   const [parseResult, setParseResult] = useState<ParseResult | null>(null)
@@ -581,6 +582,9 @@ export function PrescriptionUploadWizard({ onCancel }: { onCancel: () => void })
       const formData = new FormData()
       formData.append('prescription', file)
       formData.append('engine', engine)
+      if (engine === 'ai' && apiKey.trim()) {
+        formData.append('apiKey', apiKey.trim())
+      }
 
       const res = await client.post('/medications/parse-prescription', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
@@ -825,15 +829,24 @@ export function PrescriptionUploadWizard({ onCancel }: { onCancel: () => void })
             </button>
           </div>
 
-          {/* AI warning */}
+          {/* AI warning & API Key Input */}
           {engine === 'ai' && (
-            <div className="flex items-start gap-2 p-2.5 bg-amber-500/10 border border-amber-500/20 rounded-lg text-[11px] text-amber-700 dark:text-amber-400">
-              <AlertTriangle size={14} className="shrink-0 mt-0.5 text-amber-500" />
-              <span>
-                Deep AI requires <strong>Ollama</strong> running locally with the{' '}
-                <code className="font-mono bg-amber-500/10 px-1 rounded">qwen2.5:3b</code> model.
-                If Ollama is unavailable, parsing will return 0 results.
-              </span>
+            <div className="flex flex-col gap-3 p-3 bg-amber-500/10 border border-amber-500/20 rounded-lg">
+              <div className="flex items-start gap-2 text-[11px] text-amber-700 dark:text-amber-400">
+                <AlertTriangle size={14} className="shrink-0 mt-0.5 text-amber-500" />
+                <span>
+                  Deep AI uses <strong>Groq</strong> with the{' '}
+                  <code className="font-mono bg-amber-500/10 px-1 rounded">llama-3.3-70b-versatile</code> model.
+                  Enter your Groq API Key below. If left blank, the server will fall back to its default key.
+                </span>
+              </div>
+              <input
+                type="password"
+                value={apiKey}
+                onChange={(e) => setApiKey(e.target.value)}
+                placeholder="Groq API Key (gsk_...)"
+                className="w-full px-3 py-1.5 text-xs rounded border border-amber-500/30 bg-bg-card text-text-main focus:ring-2 focus:ring-amber-500/50 outline-none transition-colors"
+              />
             </div>
           )}
         </div>
@@ -872,7 +885,7 @@ export function PrescriptionUploadWizard({ onCancel }: { onCancel: () => void })
         </p>
         <p className="text-xs text-text-muted mt-1">
           {engine === 'ai'
-            ? 'Qwen 2.5 is extracting medication data via Ollama. This may take 15-30 seconds.'
+            ? 'Llama 3.3 is extracting medication data via Groq. This usually takes 2-5 seconds.'
             : 'Running regex extraction. This should take under a second.'}
         </p>
       </div>
@@ -931,7 +944,7 @@ export function PrescriptionUploadWizard({ onCancel }: { onCancel: () => void })
           </p>
           <p>
             If the confidence is <strong>below 2</strong>, or the regex engine finds nothing, an
-            <strong> AI model (Ollama / Qwen 2.5)</strong> is used as a fallback to attempt
+            <strong> AI model (Llama 3.3 via Groq)</strong> is used as a fallback to attempt
             extraction from unstructured text.
           </p>
           <p>

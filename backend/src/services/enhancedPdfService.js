@@ -203,7 +203,6 @@ class EnhancedPdfService {
     doc.text('CONFIDENTIAL MEDICAL DOCUMENT');
     doc.text(`Document ID: ${documentId}`);
     doc.text('This document contains protected health information. Unauthorized access or distribution is prohibited.');
-    doc.text('support@caresync.com  |  +1 (555) 123-4567');
   }
 
   // ─────────────────────────────────────────────────────

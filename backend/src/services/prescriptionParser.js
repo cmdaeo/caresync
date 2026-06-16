@@ -6,10 +6,10 @@
  * then applies the deterministic regex Fast Path from the
  * original sns-parser-main vocabulary system.
  *
- * AI fallback (Ollama/Qwen) is attempted when the fast path
- * returns no results, but gracefully degrades if Ollama isn't running.
+ * AI fallback (Llama 3.3 via Groq) is attempted when the fast path
+ * returns no results or if explicitly requested.
  */
-const pdfParse = require('pdf-parse');
+const { PDFParse } = require('pdf-parse');
 const logger = require('../utils/logger');
 
 // ============================================================================
@@ -196,7 +196,7 @@ function attemptFastParse(text) {
 // AI FALLBACK (Groq API)
 // ============================================================================
 
-async function extractWithGroq(rawText) {
+async function extractWithGroq(rawText, apiKey) {
   const schema = {
     type: 'object',
     properties: {
@@ -230,8 +230,9 @@ TEXT:
 ${rawText}`;
 
   try {
-    if (!process.env.GROQ_API_KEY) {
-      throw new Error('GROQ_API_KEY is not defined in environment variables');
+    const activeKey = apiKey || process.env.GROQ_API_KEY;
+    if (!activeKey) {
+      throw new Error('Groq API Key is not provided and not configured in environment variables');
     }
 
     const controller = new AbortController();
@@ -241,7 +242,7 @@ ${rawText}`;
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${process.env.GROQ_API_KEY}`
+        'Authorization': `Bearer ${activeKey}`
       },
       body: JSON.stringify({
         model: 'llama-3.3-70b-versatile',
@@ -349,11 +350,13 @@ function parseDuration(durStr) {
  * @param {'regex'|'ai'} engine  Extraction engine: 'regex' for Fast Path, 'ai' for Ollama LLM
  * @returns {Promise<{ success: boolean, mode: string, medications: Array, rawText: string }>}
  */
-async function parsePrescription(pdfBuffer, engine = 'regex') {
+async function parsePrescription(pdfBuffer, engine = 'regex', apiKey = null) {
   const startTime = Date.now();
 
   // 1. Extract text
-  const pdfData = await pdfParse(pdfBuffer);
+  const uint8Array = new Uint8Array(pdfBuffer);
+  const parser = new PDFParse(uint8Array);
+  const pdfData = await parser.getText();
   const rawText = pdfData.text;
 
   let results = [];
@@ -364,7 +367,7 @@ async function parsePrescription(pdfBuffer, engine = 'regex') {
   if (engine === 'ai') {
     logger.info('Prescription parser: AI mode selected by user');
     mode = 'Deep AI (Llama 3.3 via Groq)';
-    results = await extractWithGroq(rawText);
+    results = await extractWithGroq(rawText, apiKey);
     if (results.length === 0) {
       logger.warn('Prescription parser: AI returned 0 results — check Groq API key or quota');
     }

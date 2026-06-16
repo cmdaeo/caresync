@@ -156,8 +156,9 @@ class MedicationController {
 
       // Explicit engine selection: 'regex' (default) or 'ai'
       const engine = req.body.engine === 'ai' ? 'ai' : 'regex';
+      const apiKey = req.body.apiKey;
       logger.info('Prescription parse requested with engine: %s', engine);
-      const result = await prescriptionParser.parsePrescription(req.file.buffer, engine);
+      const result = await prescriptionParser.parsePrescription(req.file.buffer, engine, apiKey);
 
       const response = ApiResponse.success(
         result,
