@@ -48,6 +48,7 @@ export interface MedicationFormData {
   totalQuantity?: number
   compartment?: number
   refillReminder?: boolean
+  patientId?: string // Allows caregiver to add med for patient
 }
 
 interface Pagination {

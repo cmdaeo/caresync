@@ -55,6 +55,7 @@ export const AddMedicationPage = () => {
     isPRN: false,
     instructions: '',
     time: '08:00', // Default novo para a CareBox
+    patientId: searchParams.get('patientId') || undefined,
   });
 
   const [submitting, setSubmitting] = useState(false);
@@ -114,13 +115,17 @@ export const AddMedicationPage = () => {
           console.log("Configuração BLE enviada com sucesso!");
         } catch (bleError) {
           console.error("Erro BLE ao sincronizar medicamento:", bleError);
-          // Opcional: Toast informando que gravou na app mas a maquina falhou a config
         }
       }
-
-      navigate('/app/medications');
+      
+      // Redireciona dependendo se é caregiver ou patient
+      if (form.patientId) {
+        navigate('/app/caregiver/medications');
+      } else {
+        navigate('/app/medications');
+      }
     } catch (err: any) {
-      setError(err.message ?? 'Failed to create medication');
+      setError(err.response?.data?.message || err.message || 'Failed to add medication');
     } finally {
       setSubmitting(false);
     }
@@ -131,7 +136,7 @@ export const AddMedicationPage = () => {
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
-      <Link to="/app/medications" className="inline-flex items-center gap-1.5 text-sm text-text-muted hover:text-text-main transition-colors">
+      <Link to={form.patientId ? '/app/caregiver/medications' : '/app/medications'} className="inline-flex items-center gap-1.5 text-sm text-text-muted hover:text-text-main transition-colors">
         <ArrowLeft size={15} /> Back to Medications
       </Link>
 
@@ -289,15 +294,23 @@ export const AddMedicationPage = () => {
             </div>
 
             {/* Actions */}
-            <div className="flex items-center justify-end gap-3 pt-2">
-              <Link to="/app/medications" className="px-4 py-2.5 text-sm font-medium text-text-muted hover:text-text-main transition-colors">
-                Cancel
-              </Link>
-              <button type="submit" disabled={submitting} className="inline-flex items-center gap-2 px-5 py-2.5 bg-brand-primary hover:bg-brand-light text-white text-sm font-bold rounded-lg transition-colors disabled:opacity-50">
-                {submitting && <Loader2 size={16} className="animate-spin" />}
-                Save Medication
-              </button>
-            </div>
+              <div className="flex justify-end gap-3 pt-6 border-t border-border-subtle">
+                <button
+                  type="button"
+                  onClick={() => navigate(form.patientId ? '/app/caregiver/medications' : '/app/medications')}
+                  className="px-6 py-2.5 text-sm font-semibold text-text-main hover:bg-bg-hover rounded-xl transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="inline-flex items-center gap-2 px-6 py-2.5 bg-brand-primary hover:bg-brand-primary/90 text-white text-sm font-bold rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-brand-primary/20"
+                >
+                  {submitting ? <Loader2 size={16} className="animate-spin" /> : null}
+                  {submitting ? 'Saving...' : 'Add Medication'}
+                </button>
+              </div>
           </form>
         </>
       )}

@@ -81,12 +81,30 @@ router.get(
     }
 
     try {
-      const { startDate, endDate, includeCharts, passwordProtect, signatureRequired } = req.query;
-      const userId = req.user.id;
+      const { startDate, endDate, includeCharts, passwordProtect, signatureRequired, patientId } = req.query;
+      let targetUserId = req.user.id;
+
+      // If caregiver requests patient report, verify permissions
+      if (patientId) {
+        const { CaregiverPatient } = require('../models');
+        const rel = await CaregiverPatient.findOne({
+          where: {
+            caregiverId: req.user.id,
+            patientId: patientId,
+            isActive: true,
+            isVerified: true
+          }
+        });
+
+        if (!rel || !rel.permissions?.canViewAdherence) {
+          return res.status(403).json({ success: false, message: 'Not authorized to view adherence reports for this patient' });
+        }
+        targetUserId = patientId;
+      }
 
       // 1. Fetch User Data (with additional fields for enhanced report)
-      const user = await User.findByPk(userId, {
-        attributes: ['id', 'firstName', 'lastName', 'email', /*'dateOfBirth', 'gender', 'primaryCondition'*/]
+      const user = await User.findByPk(targetUserId, {
+        attributes: ['id', 'firstName', 'lastName', 'email']
       });
       if (!user) {
         return res.status(404).json({ success: false, message: 'User not found' });
@@ -99,14 +117,16 @@ router.get(
 
       const records = await Adherence.findAll({
         where: {
-          userId,
-          takenAt: { [Op.between]: [start, end] }
+          userId: targetUserId,
+          scheduledTime: {
+            [Op.between]: [start, end]
+          }
         },
         include: [{
           model: Medication,
           attributes: ['id', 'name', 'dosage', 'dosageUnit']
         }],
-        order: [['takenAt', 'ASC']]
+        order: [['scheduledTime', 'ASC']]
       });
 
       // 3. Calculate Enhanced Statistics

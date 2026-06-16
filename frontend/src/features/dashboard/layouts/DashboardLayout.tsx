@@ -14,6 +14,7 @@ import {
   LogOut,
   Menu,
   X,
+  ShieldCheck,
 } from 'lucide-react'
 
 // Import the CareSync logo
@@ -34,14 +35,16 @@ const patientNav: NavItem[] = [
   { label: 'Dashboard',   to: '/app/patient',      icon: <LayoutDashboard size={18} /> },
   { label: 'Medications', to: '/app/medications',   icon: <Pill size={18} /> },
   { label: 'Schedule',    to: '/app/schedule',      icon: <CalendarDays size={18} /> },
+  { label: 'Caregivers',  to: '/app/caregivers',    icon: <ShieldCheck size={18} /> },
   { label: 'Devices',     to: '/app/devices',       icon: <Cpu size={18} /> },
   { label: 'Reports',     to: '/app/reports',       icon: <FileBarChart size={18} /> },
 ]
 
 const caregiverNav: NavItem[] = [
-  { label: 'Dashboard', to: '/app/caregiver', icon: <LayoutDashboard size={18} /> },
-  { label: 'Patients',  to: '/app/patients',  icon: <Users size={18} />,           disabled: true },
-  { label: 'Reports',   to: '/app/reports',   icon: <FileBarChart size={18} />,    disabled: true },
+  { label: 'Dashboard',   to: '/app/caregiver',     icon: <LayoutDashboard size={18} /> },
+  { label: 'My Patients', to: '/app/caregiver/patients',      icon: <Users size={18} /> },
+  { label: 'Medications', to: '/app/caregiver/medications',   icon: <Pill size={18} /> },
+  { label: 'Reports',     to: '/app/caregiver/reports',       icon: <FileBarChart size={18} /> },
 ]
 
 const bottomNav: NavItem[] = [

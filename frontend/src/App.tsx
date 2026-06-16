@@ -32,6 +32,7 @@ import { SystemManualsPage } from './features/showcase/pages/SystemManualsPage'
 // Dashboard Pages
 import { PatientDashboard } from './features/dashboard/pages/PatientDashboard'
 import { CaregiverDashboard } from './features/dashboard/pages/CaregiverDashboard'
+import { CaregiverPatientDetail } from './features/dashboard/pages/CaregiverPatientDetail'
 import { SecuritySettings } from './features/dashboard/pages/SecuritySettings'
 
 // Medication Pages
@@ -43,6 +44,12 @@ import { SchedulePage } from './features/medications/pages/SchedulePage'
 // Device & Report Pages
 import { DevicesPage } from './features/devices/pages/DevicesPage'
 import { ReportsPage } from './features/reports/pages/ReportsPage'
+
+// Caregivers
+import { MyCaregiversPage } from './features/caregivers/pages/MyCaregiversPage'
+import { CaregiverPatientsPage } from './features/caregivers/pages/CaregiverPatientsPage'
+import { CaregiverMedicationsPage } from './features/medications/pages/CaregiverMedicationsPage'
+import { CaregiverReportsPage } from './features/reports/pages/CaregiverReportsPage'
 
 // Helper: redirects /app to the user's role-appropriate dashboard
 import { useAuthStore } from './shared/store/authStore'
@@ -114,12 +121,51 @@ export function App() {
             }
           />
 
-          {/* Caregiver / healthcare_provider */}
           <Route
             path="caregiver"
             element={
               <RoleBasedRoute allowedRoles={['caregiver', 'healthcare_provider']}>
                 <CaregiverDashboard />
+              </RoleBasedRoute>
+            }
+          />
+          <Route
+            path="caregiver/patients"
+            element={
+              <RoleBasedRoute allowedRoles={['caregiver', 'healthcare_provider']}>
+                <CaregiverPatientsPage />
+              </RoleBasedRoute>
+            }
+          />
+          <Route
+            path="caregiver/patient/:patientId"
+            element={
+              <RoleBasedRoute allowedRoles={['caregiver', 'healthcare_provider']}>
+                <CaregiverPatientDetail />
+              </RoleBasedRoute>
+            }
+          />
+          <Route
+            path="caregiver/medications"
+            element={
+              <RoleBasedRoute allowedRoles={['caregiver', 'healthcare_provider']}>
+                <CaregiverMedicationsPage />
+              </RoleBasedRoute>
+            }
+          />
+          <Route
+            path="caregiver/medications/add"
+            element={
+              <RoleBasedRoute allowedRoles={['caregiver', 'healthcare_provider']}>
+                <AddMedicationPage />
+              </RoleBasedRoute>
+            }
+          />
+          <Route
+            path="caregiver/reports"
+            element={
+              <RoleBasedRoute allowedRoles={['caregiver', 'healthcare_provider']}>
+                <CaregiverReportsPage />
               </RoleBasedRoute>
             }
           />
@@ -146,6 +192,14 @@ export function App() {
             element={
               <RoleBasedRoute allowedRoles={['patient']}>
                 <EditMedicationPage />
+              </RoleBasedRoute>
+            }
+          />
+          <Route
+            path="caregivers"
+            element={
+              <RoleBasedRoute allowedRoles={['patient']}>
+                <MyCaregiversPage />
               </RoleBasedRoute>
             }
           />

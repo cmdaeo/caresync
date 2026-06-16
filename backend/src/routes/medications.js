@@ -122,6 +122,21 @@ const validateAdherenceRecord = [
 
 /**
  * @swagger
+ * /api/medications/caregiver:
+ *   get:
+ *     tags: [Medications]
+ *     summary: Get all medications for all active patients managed by the caregiver
+ *     security:
+ *       - bearerAuth: []
+ */
+router.get(
+  "/caregiver",
+  authMiddleware,
+  asyncHandler(medicationController.getCaregiverPatientsMedications)
+);
+
+/**
+ * @swagger
  * /api/medications/schedule:
  *   get:
  *     tags: [Medications]

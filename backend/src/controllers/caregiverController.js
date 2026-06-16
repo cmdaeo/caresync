@@ -136,6 +136,77 @@ class CaregiverController {
       throw error;
     }
   }
+
+  /**
+   * Invite a patient by email
+   */
+  async invitePatient(req, res) {
+    try {
+      const invitationData = req.body;
+      await caregiverService.invitePatient(req.user, invitationData);
+      res.status(201).json(ApiResponse.success(null, 'Invitation sent successfully', 201));
+    } catch (error) {
+      logger.error('Invite patient error:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get pending invitations for the logged-in patient
+   */
+  async getPatientPendingInvitations(req, res) {
+    try {
+      const invitations = await caregiverService.getPatientPendingInvitations(req.user);
+      res.json(ApiResponse.success(invitations));
+    } catch (error) {
+      logger.error('Get patient pending invitations error:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Accept a patient invitation
+   */
+  async acceptPatientInvitation(req, res) {
+    try {
+      const { id } = req.params;
+      const { permissions } = req.body;
+      const relationship = await caregiverService.acceptPatientInvitation(req.user, id, permissions);
+      res.json(ApiResponse.success(relationship, 'Invitation accepted successfully'));
+    } catch (error) {
+      logger.error('Accept patient invitation error:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Decline a patient invitation
+   */
+  async declinePatientInvitation(req, res) {
+    try {
+      const { id } = req.params;
+      await caregiverService.declinePatientInvitation(req.user, id);
+      res.json(ApiResponse.success(null, 'Invitation declined successfully'));
+    } catch (error) {
+      logger.error('Decline patient invitation error:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Update permissions for a caregiver relationship
+   */
+  async updatePermissions(req, res) {
+    try {
+      const { id } = req.params;
+      const { permissions } = req.body;
+      const relationship = await caregiverService.updatePermissions(req.user, id, permissions);
+      res.json(ApiResponse.success(relationship, 'Permissions updated successfully'));
+    } catch (error) {
+      logger.error('Update permissions error:', error);
+      throw error;
+    }
+  }
 }
 
 module.exports = new CaregiverController();

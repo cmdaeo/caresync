@@ -64,7 +64,7 @@ class MedicationService {
           isVerified: true,
         },
       });
-      return !!relation;
+      return !!relation && relation.permissions?.canViewMedications;
     }
 
     return false;
@@ -163,7 +163,57 @@ class MedicationService {
     return medication;
   }
 
+  async getCaregiverPatientsMedications(user) {
+    const { User } = require('../models');
+
+    // Get all verified patient relationships for this caregiver
+    const relationships = await CaregiverPatient.findAll({
+      where: {
+        caregiverId: user.id,
+        isActive: true,
+        isVerified: true
+      },
+      include: [{
+        model: User,
+        as: 'patient',
+        attributes: ['id', 'firstName', 'lastName', 'email']
+      }]
+    });
+
+    // Filter by permissions
+    const validPatients = relationships
+      .filter(rel => rel.permissions?.canViewMedications)
+      .map(rel => rel.patient);
+
+    if (validPatients.length === 0) return [];
+
+    const validPatientIds = validPatients.map(p => p.id);
+
+    const medications = await Medication.findAll({
+      where: { userId: { [Op.in]: validPatientIds } },
+      order: [['createdAt', 'DESC']]
+    });
+
+    // Stitch cross-db data
+    return medications.map(med => {
+      const patient = validPatients.find(p => p.id === med.userId);
+      return {
+        ...med.toJSON(),
+        patient: patient ? patient.toJSON() : null
+      };
+    });
+  }
+
   async createMedication(user, medData) {
+    let targetUserId = user.id;
+
+    if (medData.patientId && medData.patientId !== user.id) {
+      if (!(await this._validateAccess(user, medData.patientId))) {
+        throw new AuthorizationError("Access denied");
+      }
+      targetUserId = medData.patientId;
+    }
+
     // Defence in depth: re-enforce the rules already declared in the
     // route validator + the model `validate` block. Belts AND braces.
     const isPRN = medData.isPRN === true || medData.isPRN === "true";
@@ -195,7 +245,7 @@ class MedicationService {
       // PRN medications can omit endDate. Scheduled medications must have
       // one — already enforced above, but pass through cleanly.
       endDate: isPRN ? (medData.endDate ?? null) : medData.endDate,
-      userId: user.id,
+      userId: targetUserId,
       remainingQuantity:
         medData.totalQuantity != null ? Number(medData.totalQuantity) : null,
     };
@@ -206,10 +256,14 @@ class MedicationService {
 
   async updateMedication(user, id, medData) {
     const medication = await Medication.findOne({
-      where: { id, userId: user.id },
+      where: { id },
     });
 
     if (!medication) throw new AppError("Medication not found", 404);
+
+    if (!(await this._validateAccess(user, medication.userId))) {
+      throw new AuthorizationError("Access denied");
+    }
 
     // ────────────────────────────────────────────────────────────────
     // HISTORICAL IMMUTABILITY GUARD
@@ -305,10 +359,14 @@ class MedicationService {
 
   async deleteMedication(user, id) {
     const medication = await Medication.findOne({
-      where: { id, userId: user.id },
+      where: { id },
     });
 
     if (!medication) throw new AppError("Medication not found", 404);
+
+    if (!(await this._validateAccess(user, medication.userId))) {
+      throw new AuthorizationError("Access denied");
+    }
 
     // GDPR Art. 17 — hard delete with cascade to adherence records
     await Adherence.destroy({ where: { medicationId: medication.id } });

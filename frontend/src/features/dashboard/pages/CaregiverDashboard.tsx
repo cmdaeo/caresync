@@ -34,6 +34,12 @@ export const CaregiverDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
 
+  const [showInviteModal, setShowInviteModal] = useState(false);
+  const [inviteEmail, setInviteEmail] = useState('');
+  const [inviteLoading, setInviteLoading] = useState(false);
+  const [inviteError, setInviteError] = useState('');
+  const [inviteSuccess, setInviteSuccess] = useState(false);
+
   const fetchData = async () => {
     try {
       const [patientsRes, invitesRes] = await Promise.all([
@@ -44,7 +50,8 @@ export const CaregiverDashboard = () => {
       const pts = patientsRes.data?.data?.patients || patientsRes.data?.data || [];
       const invs = invitesRes.data?.data || [];
 
-      setPatients(Array.isArray(pts) ? pts : []);
+      const activePts = Array.isArray(pts) ? pts.filter(p => p.status === 'Active') : [];
+      setPatients(activePts);
       setInvitations(Array.isArray(invs) ? invs : []);
     } catch (err) {
       console.error('Failed to load dashboard data', err);
@@ -69,6 +76,31 @@ export const CaregiverDashboard = () => {
     }
   };
 
+  const handleInvitePatient = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setInviteLoading(true);
+    setInviteError('');
+    setInviteSuccess(false);
+
+    try {
+      await client.post('/patients/invite', {
+        email: inviteEmail,
+        relationship: 'Caregiver',
+        permissions: { canViewMedications: true, canViewAdherence: true }
+      });
+      setInviteSuccess(true);
+      setInviteEmail('');
+      setTimeout(() => {
+        setShowInviteModal(false);
+        setInviteSuccess(false);
+      }, 2000);
+    } catch (err: any) {
+      setInviteError(err.response?.data?.message || 'Failed to send invitation');
+    } finally {
+      setInviteLoading(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-24">
@@ -79,9 +111,18 @@ export const CaregiverDashboard = () => {
 
   return (
     <div className="max-w-5xl mx-auto space-y-8 animate-in fade-in duration-500">
-      <div className="flex items-center gap-3">
-        <Users className="text-brand-primary" size={28} />
-        <h1 className="text-3xl font-bold tracking-tight text-text-main">Caregiver Dashboard</h1>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <Users className="text-brand-primary" size={28} />
+          <h1 className="text-3xl font-bold tracking-tight text-text-main">Caregiver Dashboard</h1>
+        </div>
+        <button
+          onClick={() => setShowInviteModal(true)}
+          className="inline-flex items-center gap-2 px-4 py-2 bg-brand-primary text-white text-sm font-semibold rounded-lg hover:bg-brand-primary/90 transition-colors shadow-sm"
+        >
+          <UserPlus size={18} />
+          Invite Patient
+        </button>
       </div>
 
       {/* Pending Invitations */}
@@ -164,7 +205,7 @@ export const CaregiverDashboard = () => {
                 </div>
 
                 <button 
-                  onClick={() => window.location.href = `/dashboard/caregiver/patient/${p.patientId}`}
+                  onClick={() => window.location.href = `/app/caregiver/patient/${p.patientId}`}
                   className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-brand-primary text-white font-semibold text-sm rounded-lg transition-transform active:scale-[0.98] hover:bg-brand-primary/90 shadow-sm"
                 >
                   <Calendar size={16} />
@@ -175,6 +216,59 @@ export const CaregiverDashboard = () => {
           </div>
         )}
       </section>
+
+      {/* Invite Modal */}
+      {showInviteModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-bg-card border border-border-subtle rounded-2xl p-6 w-full max-w-md shadow-xl">
+            <h2 className="text-xl font-bold text-text-main mb-2">Invite a Patient</h2>
+            <p className="text-sm text-text-muted mb-6">Enter the email address of the patient you want to manage. They must be registered on CareSync.</p>
+            
+            <form onSubmit={handleInvitePatient} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-text-main mb-1.5">Patient Email</label>
+                <input
+                  type="email"
+                  required
+                  value={inviteEmail}
+                  onChange={(e) => setInviteEmail(e.target.value)}
+                  placeholder="patient@example.com"
+                  className="w-full px-3 py-2.5 rounded-xl border border-border-subtle bg-bg-main text-text-main focus:ring-2 focus:ring-brand-primary outline-none transition-all"
+                />
+              </div>
+
+              {inviteError && (
+                <div className="p-3 bg-red-500/10 border border-red-500/20 text-red-500 text-sm rounded-lg">
+                  {inviteError}
+                </div>
+              )}
+
+              {inviteSuccess && (
+                <div className="p-3 bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-sm rounded-lg flex items-center gap-2">
+                  <CheckCircle2 size={16} /> Invitation sent successfully!
+                </div>
+              )}
+
+              <div className="flex justify-end gap-3 pt-4">
+                <button
+                  type="button"
+                  onClick={() => setShowInviteModal(false)}
+                  className="px-4 py-2 text-sm font-medium text-text-muted hover:text-text-main transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={inviteLoading || !inviteEmail}
+                  className="inline-flex items-center gap-2 px-5 py-2 bg-brand-primary text-white text-sm font-bold rounded-lg hover:bg-brand-primary/90 transition-colors disabled:opacity-50"
+                >
+                  {inviteLoading ? <Loader2 size={16} className="animate-spin" /> : 'Send Invite'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

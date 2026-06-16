@@ -38,12 +38,22 @@ class MedicationController {
       const { id } = req.params;
       const { patientId } = req.query;
       const medication = await medicationService.getMedication(req.user, id, patientId);
-
-      const response = ApiResponse.success(medication);
-
-      res.json(response);
+      res.json(ApiResponse.success(medication));
     } catch (error) {
-      logger.error('Get medication error', error);
+      logger.error('Get medication error:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get all medications for all active patients managed by the caregiver
+   */
+  async getCaregiverPatientsMedications(req, res) {
+    try {
+      const medications = await medicationService.getCaregiverPatientsMedications(req.user);
+      res.json(ApiResponse.success(medications));
+    } catch (error) {
+      logger.error('Get caregiver patients medications error:', error);
       throw error;
     }
   }
