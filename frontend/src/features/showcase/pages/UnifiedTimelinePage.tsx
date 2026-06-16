@@ -40,6 +40,11 @@ const timelineData = [
         text: "Team responsibilities assigned and organizational structure established.",
       },
       {
+        date: "15/10/2025",
+        text: "CareSync Logo Creation & SVG transform",
+        subsystems: ["Marketing"]
+      },
+      {
         date: "23/10/2025",
         text: "Functional and technical specifications completed. Key technical risks identified and a two-iteration development strategy defined.",
       },
@@ -78,7 +83,7 @@ const timelineData = [
   {
     month: "February 2026",
     title: "Integration Phase Begins",
-    images: ["/4-1.jpeg"],
+    images: ["/4-1.jpeg", "/4-2.jpeg", "/4-3.jpeg", "/4-4.jpeg"],
     events: [
       {
         date: "18/02/2026",
@@ -112,7 +117,7 @@ const timelineData = [
   {
     month: "April 2026",
     title: "System Consolidation",
-    images: ["/7-2.jpeg"],
+    images: ["/6-1.jpeg", "/6-2.jpeg", "/6-2.png", "/6-3.jpeg","/6-3.png","/6-4.jpeg","/6-5.jpeg","/6-6.jpeg","/6-7.jpeg",],
     events: [
       {
         date: "08/04/2026",
@@ -131,7 +136,7 @@ const timelineData = [
   {
     month: "May 2026",
     title: "Validation & Final Dev",
-    images: ["/6-2.png", "/6-3.png"],
+    images: ["/7-1.jpeg","/7-1.png","/7-2.jpeg","/7-3.jpeg","/7-4.jpeg","/7-5.jpeg","/7-6.jpeg","/7-7.jpeg",],
     events: [
       {
         date: "13/05/2026",
@@ -150,7 +155,7 @@ const timelineData = [
   {
     month: "June 2026",
     title: "Project Closure",
-    images: ["/7-1.png"],
+    images: ["/8-1.jpeg","/8-2.jpeg","/8-3.jpeg","/8-4.jpeg"],
     events: [
       {
         date: "02/06/2026",
