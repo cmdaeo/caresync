@@ -145,7 +145,7 @@ export const PresentationPage: React.FC = () => {
 
   // --- LIGAÇÃO SSE ---
   useEffect(() => {
-    const adminCheck = document.cookie.includes('presenter_token="PEEBestProject=CareSync@26"');
+    const adminCheck = document.cookie.includes(`presenter_token="${import.meta.env.VITE_PRESENTER_TOKEN}"`);
     setIsAdmin(adminCheck);
     if (adminCheck) setHasInteracted(true); // O admin não precisa de clicar para iniciar
 

@@ -65,7 +65,7 @@ router.get('/stream', async (req, res) => {
   });
 
   const cookies = req.headers.cookie || '';
-  const presentationKey = process.env.PRESENTATION_COOKIE_KEY || 'presenter_token="PEEBestProject=CareSync@26"';
+  const presentationKey = `presenter_token="${process.env.VITE_PRESENTER_TOKEN || 'PEEBestProject=CareSync@26'}"`;
   const isAdmin = cookies.includes(presentationKey);
 
   if (!isAdmin) {
@@ -153,7 +153,7 @@ router.get('/stream', async (req, res) => {
 // POST: Mudar o slide ou estado principal
 router.post('/slide', async (req, res) => {
   const cookies = req.headers.cookie || '';
-  const presentationKey = process.env.PRESENTATION_COOKIE_KEY || 'presenter_token="PEEBestProject=CareSync@26"';
+  const presentationKey = `presenter_token="${process.env.VITE_PRESENTER_TOKEN || 'PEEBestProject=CareSync@26'}"`;
   if (!cookies.includes(presentationKey)) return res.status(403).json({ error: 'Unauthorized' });
   
   localState.ephemeral = { scroll: null, highlight: null, laser: null, models3D: {} };
@@ -199,7 +199,7 @@ router.post('/slide', async (req, res) => {
 // POST: Sincronizar Movimentos (DOM Clicks, Input, Laser, Scroll)
 router.post('/sync', (req, res) => {
   const cookies = req.headers.cookie || '';
-  const presentationKey = process.env.PRESENTATION_COOKIE_KEY || 'presenter_token="PEEBestProject=CareSync@26"';
+  const presentationKey = `presenter_token="${process.env.VITE_PRESENTER_TOKEN || 'PEEBestProject=CareSync@26'}"`;
   if (!cookies.includes(presentationKey)) return res.status(403).json({ error: 'Unauthorized' });
 
   const { action, payload } = req.body;

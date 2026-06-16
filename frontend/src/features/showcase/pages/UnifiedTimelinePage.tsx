@@ -31,6 +31,11 @@ const timelineData = [
         subsystems: ["CareBox", "CareBand", "CareApp", "Infrastructure", "Marketing"]
       },
       {
+        date: "15/10/2025",
+        text: "CareSync Logo Creation",
+        subsystems: ["Marketing"]
+      },
+      {
         date: "09/10/2025",
         text: "Team responsibilities assigned and organizational structure established."
       },
@@ -65,8 +70,7 @@ const timelineData = [
     images: [
       "/3-1.jpeg",
       "/3-2.jpeg",
-      "/3-3.jpeg",
-      "/3-4.jpeg"
+      "/3-3.jpeg"
     ],
     events: [
       {
@@ -83,7 +87,10 @@ const timelineData = [
     month: "February 2026",
     title: "Integration Phase Begins",
     images: [
-      "/4-1.jpeg"
+      "/4-1.jpeg",
+      "/4-2.jpeg",
+      "/4-3.jpeg",
+      "/4-4.jpeg",
     ],
     events: [
       {
@@ -122,6 +129,15 @@ const timelineData = [
   {
     month: "April 2026",
     title: "System Consolidation",
+    images: [
+      "/6-1.jpeg",
+      "/6-2.jpeg",
+      "/6-3.jpeg",
+      "/6-4.jpeg",
+      "/6-5.jpeg",
+      "/6-6.jpeg",
+      "/6-7.jpeg"
+    ],    
     events: [
       {
         date: "08/04/2026",
@@ -140,6 +156,15 @@ const timelineData = [
   {
     month: "May 2026",
     title: "Validation & Final Dev",
+    images: [
+      "/7-1.jpeg",
+      "/7-2.jpeg",
+      "/7-3.jpeg",
+      "/7-4.jpeg",
+      "/7-5.jpeg",
+      "/7-6.jpeg",
+      "/7-7.jpeg"
+    ], 
     events: [
       {
         date: "13/05/2026",
@@ -158,6 +183,12 @@ const timelineData = [
   {
     month: "June 2026",
     title: "Project Closure",
+    images: [
+      "/8-1.jpeg",
+      "/8-2.jpeg",
+      "/8-3.jpeg",
+      "/8-4.jpeg",
+    ], 
     events: [
       {
         date: "02/06/2026",
