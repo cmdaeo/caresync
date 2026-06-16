@@ -223,15 +223,18 @@ app.get('/api/csrf-token', (req, res) => {
   }
 });
 
-// Health check endpoint (no database required)
-app.get('/health', (req, res) => {
-  res.json({
+// Health check endpoints (cached at the edge to save requests on free tiers)
+const healthCheck = (req, res) => {
+  res.set('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=120');
+  res.status(200).json({
     status: 'OK',
     timestamp: new Date().toISOString(),
     uptime: process.uptime(),
     requestId: req.requestId
   });
-});
+};
+app.get('/health', healthCheck);
+app.get('/api/health', healthCheck);
 
 // Apply CSRF protection globally to all mutating API routes
 app.use(csrfProtection);
@@ -281,13 +284,7 @@ const reportLimiter = rateLimit({
 });
 app.use('/api/reports', reportLimiter);
 
-app.get('/health', (req, res) => {
-  res.status(200).json({
-    status: 'OK',
-    timestamp: new Date().toISOString(),
-    uptime: process.uptime()
-  });
-});
+
 
 // Swagger UI route (lazy loaded)
 app.use('/api-docs', (req, res, next) => {
