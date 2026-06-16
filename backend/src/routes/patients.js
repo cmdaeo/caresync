@@ -21,10 +21,13 @@ const caregiverController = require('../controllers/caregiverController');
  *               properties:
  *                 success:
  *                   type: boolean
+ *                   example: true
  *                 data:
  *                   type: array
  *                   items:
- *                     type: object
+ *                     $ref: '#/components/schemas/User'
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
  */
 router.get('/', caregiverController.getPatients);
 

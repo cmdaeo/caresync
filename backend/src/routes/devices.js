@@ -42,18 +42,16 @@ const handleValidationErrors = (req, res, next) => {
  *               properties:
  *                 success:
  *                   type: boolean
+ *                   example: true
  *                 data:
  *                   type: object
  *                   properties:
  *                     devices:
  *                       type: array
  *                       items:
- *                         type: object
- *                         properties:
- *                           id:
- *                             type: string
- *                           name:
- *                             type: string
+ *                         $ref: '#/components/schemas/Device'
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
  */
 router.get('/', deviceController.getDevices);
 
@@ -92,13 +90,19 @@ router.get('/', deviceController.getDevices);
  *               properties:
  *                 success:
  *                   type: boolean
+ *                   example: true
  *                 message:
  *                   type: string
+ *                   example: "Device registered successfully"
  *                 data:
  *                   type: object
  *                   properties:
  *                     device:
- *                       type: object
+ *                       $ref: '#/components/schemas/Device'
+ *       400:
+ *         $ref: '#/components/responses/ValidationError'
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
  */
 router.post('/', validateDeviceId, validateDeviceName, handleValidationErrors, deviceController.registerDevice);
 
@@ -141,13 +145,19 @@ router.post('/', validateDeviceId, validateDeviceName, handleValidationErrors, d
  *               properties:
  *                 success:
  *                   type: boolean
+ *                   example: true
  *                 message:
  *                   type: string
+ *                   example: "Device registered successfully with signature"
  *                 data:
  *                   type: object
  *                   properties:
  *                     device:
- *                       type: object
+ *                       $ref: '#/components/schemas/Device'
+ *       400:
+ *         $ref: '#/components/responses/ValidationError'
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
  */
 router.post('/register-with-signature', validateDeviceId, validateDeviceName, handleValidationErrors, deviceController.registerDeviceWithSignature);
 
@@ -175,11 +185,16 @@ router.post('/register-with-signature', validateDeviceId, validateDeviceName, ha
  *               properties:
  *                 success:
  *                   type: boolean
+ *                   example: true
  *                 data:
  *                   type: object
  *                   properties:
  *                     device:
- *                       type: object
+ *                       $ref: '#/components/schemas/Device'
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ *       404:
+ *         $ref: '#/components/responses/NotFound'
  */
 router.get('/:id', deviceController.getDevice);
 
@@ -222,13 +237,21 @@ router.get('/:id', deviceController.getDevice);
  *               properties:
  *                 success:
  *                   type: boolean
+ *                   example: true
  *                 message:
  *                   type: string
+ *                   example: "Device updated successfully"
  *                 data:
  *                   type: object
  *                   properties:
  *                     device:
- *                       type: object
+ *                       $ref: '#/components/schemas/Device'
+ *       400:
+ *         $ref: '#/components/responses/ValidationError'
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ *       404:
+ *         $ref: '#/components/responses/NotFound'
  */
 router.put('/:id', deviceController.updateDevice);
 
@@ -256,8 +279,14 @@ router.put('/:id', deviceController.updateDevice);
  *               properties:
  *                 success:
  *                   type: boolean
+ *                   example: true
  *                 message:
  *                   type: string
+ *                   example: "Device removed successfully"
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ *       404:
+ *         $ref: '#/components/responses/NotFound'
  */
 router.delete('/:id', deviceController.deleteDevice);
 
@@ -298,8 +327,16 @@ router.delete('/:id', deviceController.deleteDevice);
  *               properties:
  *                 success:
  *                   type: boolean
+ *                   example: true
  *                 message:
  *                   type: string
+ *                   example: "Device synced"
+ *       400:
+ *         $ref: '#/components/responses/ValidationError'
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ *       404:
+ *         $ref: '#/components/responses/NotFound'
  */
 router.post('/:deviceId/sync', deviceController.syncStatus);
 
@@ -341,13 +378,21 @@ router.post('/:deviceId/sync', deviceController.syncStatus);
  *               properties:
  *                 success:
  *                   type: boolean
+ *                   example: true
  *                 message:
  *                   type: string
+ *                   example: "Caregiver invitation created successfully"
  *                 data:
  *                   type: object
  *                   properties:
  *                     invitation:
- *                       type: object
+ *                       $ref: '#/components/schemas/DeviceInvitation'
+ *       400:
+ *         $ref: '#/components/responses/ValidationError'
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ *       404:
+ *         $ref: '#/components/responses/NotFound'
  */
 router.post('/:deviceId/invite-caregiver', deviceController.inviteCaregiver);
 
@@ -380,13 +425,21 @@ router.post('/:deviceId/invite-caregiver', deviceController.inviteCaregiver);
  *               properties:
  *                 success:
  *                   type: boolean
+ *                   example: true
  *                 message:
  *                   type: string
+ *                   example: "Caregiver invitation accepted successfully"
  *                 data:
  *                   type: object
  *                   properties:
  *                     permission:
- *                       type: object
+ *                       $ref: '#/components/schemas/DeviceAccessPermission'
+ *       400:
+ *         $ref: '#/components/responses/ValidationError'
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ *       404:
+ *         $ref: '#/components/responses/NotFound'
  */
 router.post('/:deviceId/caregivers/:invitationId/accept', deviceController.acceptCaregiverInvitation);
 
@@ -414,13 +467,18 @@ router.post('/:deviceId/caregivers/:invitationId/accept', deviceController.accep
  *               properties:
  *                 success:
  *                   type: boolean
+ *                   example: true
  *                 data:
  *                   type: object
  *                   properties:
  *                     caregivers:
  *                       type: array
  *                       items:
- *                         type: object
+ *                         $ref: '#/components/schemas/DeviceAccessPermission'
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ *       404:
+ *         $ref: '#/components/responses/NotFound'
  */
 router.get('/:deviceId/caregivers', deviceController.getDeviceCaregivers);
 
@@ -453,8 +511,14 @@ router.get('/:deviceId/caregivers', deviceController.getDeviceCaregivers);
  *               properties:
  *                 success:
  *                   type: boolean
+ *                   example: true
  *                 message:
  *                   type: string
+ *                   example: "Caregiver access removed successfully"
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ *       404:
+ *         $ref: '#/components/responses/NotFound'
  */
 router.delete('/:deviceId/caregivers/:caregiverId', deviceController.removeCaregiver);
 

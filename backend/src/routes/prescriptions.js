@@ -57,6 +57,59 @@ const upload = multer({
   }
 });
 
+/**
+ * @swagger
+ * /api/prescriptions:
+ *   get:
+ *     tags: [Prescriptions]
+ *     summary: Get all prescriptions for user
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *       - in: query
+ *         name: status
+ *         schema:
+ *           type: string
+ *           enum: [active, expired, filled, cancelled, pending]
+ *       - in: query
+ *         name: needsReview
+ *         schema:
+ *           type: boolean
+ *     responses:
+ *       200:
+ *         description: List of prescriptions retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     prescriptions:
+ *                       type: array
+ *                       items:
+ *                         $ref: '#/components/schemas/DocumentMetadata'
+ *                     pagination:
+ *                       $ref: '#/components/schemas/Pagination'
+ *                     statistics:
+ *                       type: object
+ *       400:
+ *         $ref: '#/components/responses/ValidationError'
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ */
 // @desc    Get all prescriptions for user
 // @route   GET /api/prescriptions
 // @access  Private
@@ -131,9 +184,47 @@ router.get(
 );
 
 /**
- * @desc    Get daily medication schedule
- * @route   GET /api/prescriptions/schedule
- * @access  Private
+ * @swagger
+ * /api/prescriptions/schedule:
+ *   get:
+ *     tags: [Prescriptions]
+ *     summary: Get daily medication schedule
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: date
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: date
+ *     responses:
+ *       200:
+ *         description: Schedule retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     schedule:
+ *                       type: array
+ *                       items:
+ *                         type: object
+ *                     date:
+ *                       type: string
+ *                       format: date
+ *                     totalDoses:
+ *                       type: integer
+ *       400:
+ *         $ref: '#/components/responses/ValidationError'
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
  */
 router.get('/schedule', 
   authMiddleware,
@@ -224,6 +315,47 @@ router.get('/schedule',
   }
 );
 
+/**
+ * @swagger
+ * /api/prescriptions/{id}:
+ *   get:
+ *     tags: [Prescriptions]
+ *     summary: Get single prescription
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: patientId
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Prescription retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     prescription:
+ *                       $ref: '#/components/schemas/DocumentMetadata'
+ *       400:
+ *         $ref: '#/components/responses/ValidationError'
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ *       404:
+ *         $ref: '#/components/responses/NotFound'
+ */
 // @desc    Get single prescription
 // @route   GET /api/prescriptions/:id
 // @access  Private
@@ -271,6 +403,56 @@ router.get(
   })
 );
 
+/**
+ * @swagger
+ * /api/prescriptions/upload:
+ *   post:
+ *     tags: [Prescriptions]
+ *     summary: Upload and process prescription PDF
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             required: [prescription]
+ *             properties:
+ *               prescription:
+ *                 type: string
+ *                 format: binary
+ *     responses:
+ *       201:
+ *         description: Prescription uploaded and processed successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     prescription:
+ *                       $ref: '#/components/schemas/DocumentMetadata'
+ *                     extractedData:
+ *                       type: object
+ *                     needsReview:
+ *                       type: boolean
+ *                     medicationsCount:
+ *                       type: integer
+ *       400:
+ *         $ref: '#/components/responses/ValidationError'
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ *       500:
+ *         description: Error processing prescription PDF
+ */
 // @desc    Upload and process prescription PDF
 // @route   POST /api/prescriptions/upload
 // @access  Private
@@ -371,6 +553,57 @@ router.post(
   })
 );
 
+/**
+ * @swagger
+ * /api/prescriptions:
+ *   post:
+ *     tags: [Prescriptions]
+ *     summary: Create prescription manually
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [prescriberName, medications]
+ *             properties:
+ *               prescriberName:
+ *                 type: string
+ *               medications:
+ *                 type: array
+ *                 items:
+ *                   type: object
+ *               issueDate:
+ *                 type: string
+ *                 format: date
+ *               expiryDate:
+ *                 type: string
+ *                 format: date
+ *     responses:
+ *       201:
+ *         description: Prescription created successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     prescription:
+ *                       $ref: '#/components/schemas/DocumentMetadata'
+ *       400:
+ *         $ref: '#/components/responses/ValidationError'
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ */
 // @desc    Create prescription manually
 // @route   POST /api/prescriptions
 // @access  Private
@@ -420,6 +653,65 @@ router.post(
   })
 );
 
+/**
+ * @swagger
+ * /api/prescriptions/{id}:
+ *   put:
+ *     tags: [Prescriptions]
+ *     summary: Update prescription
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: patientId
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               status:
+ *                 type: string
+ *                 enum: [active, expired, filled, cancelled, pending]
+ *               medications:
+ *                 type: array
+ *                 items:
+ *                   type: object
+ *               reviewNotes:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Prescription updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     prescription:
+ *                       $ref: '#/components/schemas/DocumentMetadata'
+ *       400:
+ *         $ref: '#/components/responses/ValidationError'
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ *       404:
+ *         $ref: '#/components/responses/NotFound'
+ */
 // @desc    Update prescription
 // @route   PUT /api/prescriptions/:id
 // @access  Private
@@ -480,6 +772,44 @@ router.put(
   })
 );
 
+/**
+ * @swagger
+ * /api/prescriptions/{id}:
+ *   delete:
+ *     tags: [Prescriptions]
+ *     summary: Delete prescription
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: patientId
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Prescription deleted successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *       400:
+ *         $ref: '#/components/responses/ValidationError'
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ *       404:
+ *         $ref: '#/components/responses/NotFound'
+ */
 // @desc    Delete prescription
 // @route   DELETE /api/prescriptions/:id
 // @access  Private
@@ -527,6 +857,64 @@ router.delete(
   })
 );
 
+/**
+ * @swagger
+ * /api/prescriptions/{id}/review:
+ *   put:
+ *     tags: [Prescriptions]
+ *     summary: Review prescription (for healthcare providers)
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               patientId:
+ *                 type: string
+ *               reviewNotes:
+ *                 type: string
+ *               medications:
+ *                 type: array
+ *                 items:
+ *                   type: object
+ *               status:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Prescription reviewed successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     prescription:
+ *                       $ref: '#/components/schemas/DocumentMetadata'
+ *       400:
+ *         $ref: '#/components/responses/ValidationError'
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
+ *       404:
+ *         $ref: '#/components/responses/NotFound'
+ */
 // @desc    Review prescription (for healthcare providers)
 // @route   PUT /api/prescriptions/:id/review
 // @access  Private (Healthcare Provider)
@@ -589,6 +977,50 @@ router.put(
   })
 );
 
+/**
+ * @swagger
+ * /api/prescriptions/needing-review:
+ *   get:
+ *     tags: [Prescriptions]
+ *     summary: Get prescriptions needing review
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: List of prescriptions needing review retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     prescriptions:
+ *                       type: array
+ *                       items:
+ *                         $ref: '#/components/schemas/DocumentMetadata'
+ *                     pagination:
+ *                       $ref: '#/components/schemas/Pagination'
+ *       400:
+ *         $ref: '#/components/responses/ValidationError'
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
+ */
 // @desc    Get prescriptions needing review
 // @route   GET /api/prescriptions/needing-review
 // @access  Private (Healthcare Provider)
@@ -650,6 +1082,33 @@ router.get(
   })
 );
 
+/**
+ * @swagger
+ * /api/prescriptions/stats:
+ *   get:
+ *     tags: [Prescriptions]
+ *     summary: Get prescription statistics
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Prescription statistics retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     statistics:
+ *                       type: object
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ */
 // @desc    Get prescription statistics
 // @route   GET /api/prescriptions/stats
 // @access  Private

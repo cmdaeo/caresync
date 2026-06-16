@@ -14,7 +14,8 @@ import {
   Smartphone,
   Lock
 } from 'lucide-react';
-import apiDocumentationRaw from '../../../api-docs.json';
+import apiDocumentationRaw from '../../../assets/api-docs.json';
+
 import { useTheme } from '../../../context/ThemeContext';
 
 /* ════════════════════════════════════════════════════════════════
@@ -175,15 +176,9 @@ export const SoftwareArchitecturePage = () => {
         animate={{ opacity: 1, y: 0 }}
         className="relative z-10 max-w-4xl mx-auto mb-20 text-center"
       >
-        <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-brand-primary/10 border border-brand-primary/20 mb-6">
-          <Layers size={32} className="text-brand-primary" />
-        </div>
         <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold text-text-main tracking-tight mb-5 leading-tight">
           Software Architecture
         </h1>
-        <p className="text-sm sm:text-base text-text-muted max-w-2xl mx-auto leading-relaxed">
-          A production-ready, full-stack ecosystem built on scalable technologies. Designed for HIPAA compliance, real-time telemetry, and seamless cross-platform delivery.
-        </p>
       </motion.div>
 
       <div className="relative z-10 max-w-6xl mx-auto space-y-24">

@@ -93,15 +93,9 @@ export const SecurityDeepDivePage = () => {
         animate={{ opacity: 1, y: 0 }}
         className="relative z-10 max-w-4xl mx-auto mb-20 text-center"
       >
-        <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-red-500/10 border border-red-500/20 mb-6">
-          <Shield size={32} className="text-red-500" />
-        </div>
         <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold text-text-main tracking-tight mb-5 leading-tight">
           Security Architecture
         </h1>
-        <p className="text-sm sm:text-base text-text-muted max-w-2xl mx-auto leading-relaxed">
-          Enterprise-grade protection built on a zero-trust model. Engineered to safeguard Protected Health Information (PHI) through defense-in-depth methodologies and strict regulatory compliance.
-        </p>
       </motion.div>
 
       <div className="relative z-10 max-w-6xl mx-auto space-y-24">

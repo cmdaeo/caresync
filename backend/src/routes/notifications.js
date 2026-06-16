@@ -48,9 +48,13 @@ const { body, query, param, validationResult } = require('express-validator');
  *                     notifications:
  *                       type: array
  *                       items:
- *                         type: object
+ *                         $ref: '#/components/schemas/Notification'
  *                     pagination:
- *                       type: object
+ *                       $ref: '#/components/schemas/Pagination'
+ *       400:
+ *         $ref: '#/components/responses/ValidationError'
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
  */
 // @desc    Get all notifications for user
 // @route   GET /api/notifications
@@ -144,7 +148,13 @@ router.get(
  *                   type: object
  *                   properties:
  *                     notification:
- *                       type: object
+ *                       $ref: '#/components/schemas/Notification'
+ *       400:
+ *         $ref: '#/components/responses/ValidationError'
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ *       404:
+ *         $ref: '#/components/responses/NotFound'
  */
 // @desc    Mark notification as read
 // @route   PUT /api/notifications/:id/read
@@ -216,6 +226,9 @@ router.put(
  *                   type: boolean
  *                 message:
  *                   type: string
+ *                   example: "All notifications marked as read"
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
  */
 // @desc    Mark all notifications as read
 // @route   PUT /api/notifications/read-all
@@ -272,6 +285,13 @@ router.put(
  *                   type: boolean
  *                 message:
  *                   type: string
+ *                   example: "Notification deleted successfully"
+ *       400:
+ *         $ref: '#/components/responses/ValidationError'
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ *       404:
+ *         $ref: '#/components/responses/NotFound'
  */
 // @desc    Delete notification
 // @route   DELETE /api/notifications/:id
@@ -343,6 +363,8 @@ router.delete(
  *                   properties:
  *                     unreadCount:
  *                       type: integer
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
  */
 // @desc    Get unread notification count
 // @route   GET /api/notifications/unread-count
@@ -413,7 +435,11 @@ router.get('/unread-count', authMiddleware, asyncHandler(async (req, res) => {
  *                   type: object
  *                   properties:
  *                     user:
- *                       type: object
+ *                       $ref: '#/components/schemas/User'
+ *       400:
+ *         $ref: '#/components/responses/ValidationError'
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
  */
 // @desc    Update notification preferences
 // @route   PUT /api/notifications/preferences
@@ -523,6 +549,11 @@ router.put(
  *                   type: boolean
  *                 message:
  *                   type: string
+ *                   example: "Device token registered successfully"
+ *       400:
+ *         $ref: '#/components/responses/ValidationError'
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
  */
 // @desc    Register device token for push notifications
 // @route   POST /api/notifications/register-token
@@ -604,7 +635,11 @@ router.post(
  *                   type: object
  *                   properties:
  *                     notification:
- *                       type: object
+ *                       $ref: '#/components/schemas/Notification'
+ *       400:
+ *         $ref: '#/components/responses/ValidationError'
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
  */
 // @desc    Test notification
 // @route   POST /api/notifications/test

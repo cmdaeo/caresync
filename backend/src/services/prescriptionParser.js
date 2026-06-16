@@ -193,10 +193,10 @@ function attemptFastParse(text) {
 }
 
 // ============================================================================
-// AI FALLBACK (Ollama — graceful degradation if not available)
+// AI FALLBACK (Groq API)
 // ============================================================================
 
-async function extractWithOllama(rawText) {
+async function extractWithGroq(rawText) {
   const schema = {
     type: 'object',
     properties: {
@@ -224,39 +224,57 @@ RULES:
 1. Split Name, Dosage, Form.
 2. Extract Frequency (pa-jantar, 8/8h).
 3. Extract Quantity.
+4. Output MUST be a valid JSON object matching this schema: ${JSON.stringify(schema)}
 
 TEXT:
 ${rawText}`;
 
   try {
+    if (!process.env.GROQ_API_KEY) {
+      throw new Error('GROQ_API_KEY is not defined in environment variables');
+    }
+
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 15000);
 
-    const response = await fetch('http://localhost:11434/api/generate', {
+    const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${process.env.GROQ_API_KEY}`
+      },
       body: JSON.stringify({
-        model: 'qwen2.5:3b',
-        prompt,
-        stream: false,
-        format: schema,
+        model: 'llama-3.3-70b-versatile',
+        messages: [
+          { role: 'system', content: 'You are an expert at parsing Portuguese medical prescriptions into JSON.' },
+          { role: 'user', content: prompt }
+        ],
+        response_format: { type: 'json_object' },
         temperature: 0.1,
       }),
       signal: controller.signal,
     });
 
     clearTimeout(timeout);
-    const data = await response.json();
-    if (!data.response) return [];
+    
+    if (!response.ok) {
+      throw new Error(`Groq API error: ${response.status} ${await response.text()}`);
+    }
 
-    const jsonStr = data.response.substring(
-      data.response.indexOf('{'),
-      data.response.lastIndexOf('}') + 1
+    const data = await response.json();
+    if (!data.choices || !data.choices[0] || !data.choices[0].message || !data.choices[0].message.content) {
+      return [];
+    }
+
+    const contentStr = data.choices[0].message.content;
+    const jsonStr = contentStr.substring(
+      contentStr.indexOf('{'),
+      contentStr.lastIndexOf('}') + 1
     );
     const parsed = JSON.parse(jsonStr);
     return parsed.medications || [];
   } catch (e) {
-    logger.warn('Ollama AI extraction unavailable: %s', e.message);
+    logger.warn('Groq AI extraction unavailable or failed: %s', e.message);
     return [];
   }
 }
@@ -345,10 +363,10 @@ async function parsePrescription(pdfBuffer, engine = 'regex') {
   // 2. Parse — explicit engine selection, no automatic fallback
   if (engine === 'ai') {
     logger.info('Prescription parser: AI mode selected by user');
-    mode = 'Deep AI (Qwen 2.5 via Ollama)';
-    results = await extractWithOllama(rawText);
+    mode = 'Deep AI (Llama 3.3 via Groq)';
+    results = await extractWithGroq(rawText);
     if (results.length === 0) {
-      logger.warn('Prescription parser: AI returned 0 results — is Ollama running?');
+      logger.warn('Prescription parser: AI returned 0 results — check Groq API key or quota');
     }
   } else {
     logger.info('Prescription parser: Regex mode selected by user');

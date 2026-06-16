@@ -63,13 +63,38 @@ async function issueFullTokens(user, res) {
  * @swagger
  * /api/auth/2fa/setup:
  *   post:
- *     tags: [Two-Factor Authentication]
+ *     tags: [2FA]
  *     summary: Begin 2FA setup — generates secret + QR code
  *     security:
  *       - bearerAuth: []
  *     responses:
  *       200:
  *         description: QR code and secret for authenticator app
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     secret:
+ *                       type: string
+ *                     otpauthUrl:
+ *                       type: string
+ *                     qrCode:
+ *                       type: string
+ *       400:
+ *         description: 2FA already enabled
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
  */
 router.post(
   '/setup',
@@ -107,7 +132,7 @@ router.post(
  * @swagger
  * /api/auth/2fa/confirm-setup:
  *   post:
- *     tags: [Two-Factor Authentication]
+ *     tags: [2FA]
  *     summary: Confirm 2FA setup by verifying a TOTP code from the authenticator app
  *     security:
  *       - bearerAuth: []
@@ -125,6 +150,35 @@ router.post(
  *     responses:
  *       200:
  *         description: 2FA enabled, recovery codes returned
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     recoveryCodes:
+ *                       type: array
+ *                       items:
+ *                         type: string
+ *       400:
+ *         description: Validation error or 2FA already enabled/not setup
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       401:
+ *         description: Invalid TOTP code or unauthorized
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  */
 router.post(
   '/confirm-setup',
@@ -194,6 +248,31 @@ router.post(
  *     responses:
  *       200:
  *         description: Full JWT tokens returned
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     token:
+ *                       type: string
+ *                     user:
+ *                       $ref: '#/components/schemas/User'
+ *       400:
+ *         $ref: '#/components/responses/ValidationError'
+ *       401:
+ *         description: Invalid TOTP code or expired token
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  */
 router.post(
   '/verify',
@@ -266,6 +345,33 @@ router.post(
  *     responses:
  *       200:
  *         description: Full JWT tokens returned
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     token:
+ *                       type: string
+ *                     user:
+ *                       $ref: '#/components/schemas/User'
+ *                     remainingRecoveryCodes:
+ *                       type: integer
+ *       400:
+ *         $ref: '#/components/responses/ValidationError'
+ *       401:
+ *         description: Invalid or expired token or invalid recovery code
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  */
 router.post(
   '/recovery',
@@ -348,6 +454,28 @@ router.post(
  *     responses:
  *       200:
  *         description: 2FA disabled
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *       400:
+ *         description: Validation error or 2FA not enabled
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       401:
+ *         description: Invalid password or unauthorized
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  */
 router.post(
   '/disable',
@@ -388,6 +516,24 @@ router.post(
  *     responses:
  *       200:
  *         description: 2FA status
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     isTwoFactorEnabled:
+ *                       type: boolean
+ *                     remainingRecoveryCodes:
+ *                       type: integer
+ *                       nullable: true
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
  */
 router.get(
   '/status',

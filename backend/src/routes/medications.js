@@ -162,6 +162,8 @@ const validateAdherenceRecord = [
  *                         type: object
  *                     dateRange:
  *                       type: object
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
  */
 // Matches GET /api/medications/schedule
 // (Moved to top so "schedule" isn't treated as an :id)
@@ -210,7 +212,11 @@ router.get(
  *                 message:
  *                   type: string
  *                 data:
- *                   type: object
+ *                   $ref: '#/components/schemas/Adherence'
+ *       400:
+ *         $ref: '#/components/responses/ValidationError'
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
  */
 // Matches POST /api/medications/adherence
 router.post(
@@ -267,7 +273,11 @@ router.post(
  *                 success:
  *                   type: boolean
  *                 data:
- *                   type: object
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/Adherence'
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
  */
 // Matches GET /api/medications/adherence
 router.get(
@@ -330,6 +340,8 @@ router.get(
  *                       type: number
  *                     period:
  *                       type: string
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
  */
 // Matches GET /api/medications/adherence/stats
 router.get(
@@ -387,9 +399,11 @@ router.get(
  *                 data:
  *                   type: array
  *                   items:
- *                     type: object
+ *                     $ref: '#/components/schemas/Medication'
  *                 pagination:
- *                   type: object
+ *                   $ref: '#/components/schemas/Pagination'
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
  */
 router.get(
   "/",
@@ -440,7 +454,11 @@ router.get(
  *                 message:
  *                   type: string
  *                 data:
- *                   type: object
+ *                   $ref: '#/components/schemas/Medication'
+ *       400:
+ *         $ref: '#/components/responses/ValidationError'
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
  */
 router.post(
   "/",
@@ -452,6 +470,44 @@ router.post(
   ),
 );
 
+/**
+ * @swagger
+ * /api/medications/pem-scan:
+ *   post:
+ *     tags: [Medications]
+ *     summary: Import medication from PEM QR code scan
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [qrData]
+ *             properties:
+ *               qrData:
+ *                 type: string
+ *     responses:
+ *       201:
+ *         description: PEM Prescription imported successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                 data:
+ *                   $ref: '#/components/schemas/Medication'
+ *       400:
+ *         $ref: '#/components/responses/ValidationError'
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ */
 router.post(
   "/pem-scan",
   authMiddleware,
@@ -460,6 +516,67 @@ router.post(
   asyncHandler(medicationController.processPemScan.bind(medicationController)),
 );
 
+/**
+ * @swagger
+ * /api/medications/parse-prescription:
+ *   post:
+ *     tags: [Medications]
+ *     summary: Parse SNS Prescription PDF using OCR and Regex or AI
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             required: [prescription]
+ *             properties:
+ *               prescription:
+ *                 type: string
+ *                 format: binary
+ *               engine:
+ *                 type: string
+ *                 enum: [regex, ai]
+ *                 default: regex
+ *     responses:
+ *       200:
+ *         description: Prescription parsed successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     success:
+ *                       type: boolean
+ *                     medications:
+ *                       type: array
+ *                       items:
+ *                         type: object
+ *                     mode:
+ *                       type: string
+ *                     confidence:
+ *                       type: number
+ *                     textExcerpts:
+ *                       type: array
+ *                       items:
+ *                         type: string
+ *                     extractedAt:
+ *                       type: string
+ *                       format: date-time
+ *       400:
+ *         $ref: '#/components/responses/ValidationError'
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ */
 // SNS Prescription PDF parser
 router.post(
   "/parse-prescription",
@@ -500,7 +617,11 @@ router.post(
  *                 success:
  *                   type: boolean
  *                 data:
- *                   type: object
+ *                   $ref: '#/components/schemas/Medication'
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ *       404:
+ *         $ref: '#/components/responses/NotFound'
  */
 router.get(
   "/:id",
@@ -557,7 +678,13 @@ router.get(
  *                 message:
  *                   type: string
  *                 data:
- *                   type: object
+ *                   $ref: '#/components/schemas/Medication'
+ *       400:
+ *         $ref: '#/components/responses/ValidationError'
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ *       404:
+ *         $ref: '#/components/responses/NotFound'
  */
 router.put(
   "/:id",
@@ -595,6 +722,10 @@ router.put(
  *                   type: boolean
  *                 message:
  *                   type: string
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ *       404:
+ *         $ref: '#/components/responses/NotFound'
  */
 router.delete(
   "/:id",

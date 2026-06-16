@@ -21,13 +21,16 @@ const caregiverController = require('../controllers/caregiverController');
  *               properties:
  *                 success:
  *                   type: boolean
+ *                   example: true
  *                 data:
  *                   type: object
  *                   properties:
  *                     caregivers:
  *                       type: array
  *                       items:
- *                         type: object
+ *                         $ref: '#/components/schemas/CaregiverPatient'
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
  */
 router.get('/', caregiverController.getCaregivers);
 
@@ -63,8 +66,14 @@ router.get('/', caregiverController.getCaregivers);
  *               properties:
  *                 success:
  *                   type: boolean
+ *                   example: true
  *                 message:
  *                   type: string
+ *                   example: "Invitation sent successfully"
+ *       400:
+ *         $ref: '#/components/responses/ValidationError'
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
  */
 router.post('/invite', caregiverController.inviteCaregiver);
 
@@ -92,8 +101,14 @@ router.post('/invite', caregiverController.inviteCaregiver);
  *               properties:
  *                 success:
  *                   type: boolean
+ *                   example: true
  *                 message:
  *                   type: string
+ *                   example: "Caregiver removed successfully"
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ *       404:
+ *         $ref: '#/components/responses/NotFound'
  */
 router.delete('/:id', caregiverController.removeCaregiver);
 
@@ -116,10 +131,13 @@ router.delete('/:id', caregiverController.removeCaregiver);
  *               properties:
  *                 success:
  *                   type: boolean
+ *                   example: true
  *                 data:
  *                   type: array
  *                   items:
- *                     type: object
+ *                     $ref: '#/components/schemas/CaregiverPatient'
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
  */
 router.get('/pending', caregiverController.getPendingInvitations);
 
@@ -147,10 +165,16 @@ router.get('/pending', caregiverController.getPendingInvitations);
  *               properties:
  *                 success:
  *                   type: boolean
+ *                   example: true
  *                 message:
  *                   type: string
+ *                   example: "Invitation accepted successfully"
  *                 data:
- *                   type: object
+ *                   $ref: '#/components/schemas/CaregiverPatient'
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ *       404:
+ *         $ref: '#/components/responses/NotFound'
  */
 router.post('/:id/accept', caregiverController.acceptInvitation);
 
@@ -178,8 +202,14 @@ router.post('/:id/accept', caregiverController.acceptInvitation);
  *               properties:
  *                 success:
  *                   type: boolean
+ *                   example: true
  *                 message:
  *                   type: string
+ *                   example: "Invitation declined successfully"
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ *       404:
+ *         $ref: '#/components/responses/NotFound'
  */
 router.post('/:id/decline', caregiverController.declineInvitation);
 

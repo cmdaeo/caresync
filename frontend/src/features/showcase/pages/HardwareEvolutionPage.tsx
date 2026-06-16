@@ -115,9 +115,6 @@ export const HardwareEvolutionPage = () => {
         <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold text-text-main tracking-tight mb-5 leading-tight">
           Hardware Architecture
         </h1>
-        <p className="text-sm sm:text-base text-text-muted max-w-2xl mx-auto leading-relaxed">
-          Engineered for low latency, zero-fail reliability, and maximum accessibility. From zero-footprint wearables to automated dispensing hubs.
-        </p>
       </motion.div>
 
       <div className="relative z-10 max-w-6xl mx-auto space-y-32">

@@ -8,7 +8,8 @@ import {
   ShieldCheck, 
   Cpu, 
   Check,
-  ChevronRight
+  ChevronRight,
+  Image as ImageIcon
 } from 'lucide-react';
 
 /* ════════════════════════════════════════════════════════════════
@@ -18,6 +19,11 @@ const timelineData = [
   {
     month: "October 2025",
     title: "Concept Definition & Planning",
+    images: [
+      "/1-1.jpeg",
+      "/1-2.jpeg",
+      "/1-3.jpeg"
+    ],
     events: [
       {
         date: "02/10/2025",
@@ -37,6 +43,11 @@ const timelineData = [
   {
     month: "November 2025",
     title: "Architecture & Components",
+    images: [
+      "/2-1.jpeg",
+      "/2-2.jpeg",
+      "/2-3.jpeg"
+    ],
     events: [
       {
         date: "06/11/2025",
@@ -51,6 +62,12 @@ const timelineData = [
   {
     month: "December 2025",
     title: "First Prototypes",
+    images: [
+      "/3-1.jpeg",
+      "/3-2.jpeg",
+      "/3-3.jpeg",
+      "/3-4.jpeg"
+    ],
     events: [
       {
         date: "11/12/2025",
@@ -65,6 +82,9 @@ const timelineData = [
   {
     month: "February 2026",
     title: "Integration Phase Begins",
+    images: [
+      "/4-1.jpeg"
+    ],
     events: [
       {
         date: "18/02/2026",
@@ -79,6 +99,11 @@ const timelineData = [
   {
     month: "March 2026",
     title: "Technological Evolution",
+    images: [
+      "/5-1.jpeg",
+      "/5-2.jpeg",
+      "/5-3.jpeg"
+    ],
     events: [
       {
         date: "04/03/2026",
@@ -154,6 +179,36 @@ const getSectionIcon = (month: string) => {
 };
 
 /* ════════════════════════════════════════════════════════════════
+   ANIMATION ORCHESTRATION (Staggering & Parallax)
+════════════════════════════════════════════════════════════════ */
+const staggerContainer = {
+  hidden: { opacity: 0 },
+  show: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1, 
+    }
+  },
+  exit: {
+    opacity: 0,
+    transition: {
+      staggerChildren: 0.05,
+      staggerDirection: -1 
+    }
+  }
+};
+
+const parallaxFadeUp = {
+  hidden: { opacity: 0, y: 20 },
+  show: { 
+    opacity: 1, 
+    y: 0, 
+    transition: { type: "spring", stiffness: 300, damping: 25 } 
+  },
+  exit: { opacity: 0, y: -10, transition: { duration: 0.2 } }
+};
+
+/* ════════════════════════════════════════════════════════════════
    MAIN PAGE
 ════════════════════════════════════════════════════════════════ */
 export const UnifiedTimelinePage = () => {
@@ -161,27 +216,34 @@ export const UnifiedTimelinePage = () => {
   const currentSection = timelineData[activeIndex];
 
   return (
-    <div className="relative h-full w-full overflow-y-auto tsc bg-bg-page px-4 pt-10 pb-4 sm:px-8 lg:px-16 overflow-x-hidden flex flex-col justify-between">
+    <div className="relative h-full w-full overflow-y-auto tsc bg-bg-page px-4 py-12 sm:px-8 lg:px-16 overflow-x-hidden flex flex-col">
       
       {/* Background Micro Gradients */}
-      <div className="pointer-events-none absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[300px] bg-brand-primary/[0.02] rounded-full blur-[100px]" />
+      <motion.div 
+        animate={{ 
+          x: activeIndex * -15, 
+          scale: 1 + (activeIndex * 0.02)
+        }}
+        transition={{ type: "spring", stiffness: 100, damping: 30 }}
+        className="pointer-events-none absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[300px] bg-brand-primary/[0.02] rounded-full blur-[100px]" 
+      />
 
       {/* Main Container */}
-      <div className="w-full max-w-5xl mx-auto flex-grow flex flex-col justify-center">
+      <div className="w-full max-w-5xl mx-auto flex-grow flex flex-col relative z-10">
         
-        {/* Simplified, Compact Header */}
-        <div className="text-center mb-8">
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-text-main tracking-tight mb-2 flex items-center justify-center gap-2">
-            <Activity size={22} className="text-brand-primary animate-pulse" />
-            CareSync Project Timeline
+        {/* Consistent Page Header */}
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="relative z-10 max-w-4xl mx-auto mb-10 text-center"
+        >
+          <h1 className="text-4xl sm:text-5xl font-extrabold text-text-main tracking-tight mb-4">
+            Project Timeline
           </h1>
-          <p className="text-xs text-text-muted max-w-xl mx-auto">
-            Select a milestones phase to review system specifications, prototype iterations, and security baselines.
-          </p>
-        </div>
+        </motion.div>
 
-        {/* 1. HORIZONTAL TRACK SELECTOR (Extremely Scalable & Clean) */}
-        <div className="w-full bg-bg-card/40 border border-border-subtle rounded-xl p-2 mb-6 shadow-sm overflow-x-auto whitespace-nowrap scrollbar-none flex items-center gap-1">
+        {/* 1. HORIZONTAL TRACK SELECTOR */}
+        <div className="w-full bg-bg-card/40 border border-border-subtle rounded-xl p-2 mb-8 shadow-sm overflow-x-auto whitespace-nowrap scrollbar-none flex items-center gap-1">
           {timelineData.map((section, idx) => {
             const isSelected = idx === activeIndex;
             return (
@@ -207,76 +269,115 @@ export const UnifiedTimelinePage = () => {
           <AnimatePresence mode="wait">
             <motion.div
               key={activeIndex}
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -8 }}
-              transition={{ duration: 0.25, ease: "easeInOut" }}
-              className="grid grid-cols-1 md:grid-cols-3 gap-6 items-stretch"
+              variants={staggerContainer}
+              initial="hidden"
+              animate="show"
+              exit="exit"
+              className="flex flex-col gap-8"
             >
-              {/* Target Highlight Meta Block */}
-              <div className="md:col-span-1 bg-bg-card/20 border border-border-subtle p-5 rounded-xl flex flex-col justify-center">
-                <span className="text-[10px] font-mono font-bold tracking-widest text-brand-primary uppercase mb-1">
-                  Active Milestone
-                </span>
-                <h2 className="text-xl font-bold text-text-main mb-2">
-                  {currentSection.month}
-                </h2>
-                <p className="text-xs text-text-muted leading-relaxed">
-                  {currentSection.title}
-                </p>
+              
+              {/* ════════ TEXT CONTENT GRID (ON TOP) ════════ */}
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
                 
-                {activeIndex === timelineData.length - 1 && (
-                  <div className="mt-4 inline-flex items-center gap-1.5 text-[11px] font-medium text-emerald-500 bg-emerald-500/10 border border-emerald-500/20 px-2 py-1 rounded w-max">
-                    <CheckCircle2 size={12} />
-                    System Live
-                  </div>
-                )}
+                {/* LEFT COLUMN: META BLOCK */}
+                <motion.div 
+                  variants={parallaxFadeUp}
+                  className="lg:col-span-1 bg-bg-card/20 border border-border-subtle p-5 rounded-xl flex flex-col sticky top-4"
+                >
+                  <span className="text-[10px] font-mono font-bold tracking-widest text-brand-primary uppercase mb-1">
+                    Active Milestone
+                  </span>
+                  <h2 className="text-xl font-bold text-text-main mb-2">
+                    {currentSection.month}
+                  </h2>
+                  <p className="text-xs text-text-muted leading-relaxed">
+                    {currentSection.title}
+                  </p>
+                  
+                  {activeIndex === timelineData.length - 1 && (
+                    <div className="mt-4 inline-flex items-center gap-1.5 text-[11px] font-medium text-emerald-500 bg-emerald-500/10 border border-emerald-500/20 px-2 py-1 rounded w-max">
+                      <CheckCircle2 size={12} />
+                      System Live
+                    </div>
+                  )}
+                </motion.div>
+
+                {/* RIGHT COLUMN: EVENTS LIST */}
+                <div className="lg:col-span-2 flex flex-col gap-3">
+                  {currentSection.events.map((event, idx) => (
+                    <motion.div 
+                      variants={parallaxFadeUp}
+                      key={idx}
+                      className="p-4 rounded-xl border border-border-subtle bg-bg-card/40 hover:border-border-subtle/80 transition-all flex items-start gap-3"
+                    >
+                      <div className="flex items-center gap-1 bg-bg-page px-2 py-1 rounded border border-border-subtle text-[10px] font-mono text-text-muted shrink-0 mt-0.5">
+                        <Calendar size={11} className="text-brand-primary" />
+                        {event.date.split('/')[0]}
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <p className="text-xs text-text-main leading-relaxed">
+                          {event.text}
+                        </p>
+
+                        {event.subsystems && (
+                          <div className="flex flex-wrap gap-1 pt-1">
+                            {event.subsystems.map((sub) => (
+                              <span 
+                                key={sub} 
+                                className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-brand-primary/5 text-brand-primary border border-brand-primary/10"
+                              >
+                                {sub}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+
+                        {event.text.includes("core operational states") && (
+                          <div className="flex flex-wrap gap-1.5 pt-1">
+                            {["Initialization", "Configuration", "Waiting", "Alert", "Dispensing"].map((state) => (
+                              <span key={state} className="inline-flex items-center gap-1 text-[10px] text-text-muted bg-bg-page border border-border-subtle px-1.5 py-0.5 rounded">
+                                <Check size={10} className="text-brand-primary" />
+                                {state}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
               </div>
 
-              {/* Dynamic Event Mapping Row */}
-              <div className="md:col-span-2 flex flex-col justify-center gap-3">
-                {currentSection.events.map((event, idx) => (
-                  <div 
-                    key={idx}
-                    className="p-4 rounded-xl border border-border-subtle bg-bg-card/40 hover:border-border-subtle/80 transition-all flex items-start gap-3"
-                  >
-                    <div className="flex items-center gap-1 bg-bg-page px-2 py-1 rounded border border-border-subtle text-[10px] font-mono text-text-muted shrink-0 mt-0.5">
-                      <Calendar size={11} className="text-brand-primary" />
-                      {event.date.split('/')[0]}
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <p className="text-xs text-text-main leading-relaxed">
-                        {event.text}
-                      </p>
-
-                      {event.subsystems && (
-                        <div className="flex flex-wrap gap-1 pt-1">
-                          {event.subsystems.map((sub) => (
-                            <span 
-                              key={sub} 
-                              className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-brand-primary/5 text-brand-primary border border-brand-primary/10"
-                            >
-                              {sub}
-                            </span>
-                          ))}
-                        </div>
-                      )}
-
-                      {event.text.includes("core operational states") && (
-                        <div className="flex flex-wrap gap-1.5 pt-1">
-                          {["Initialization", "Configuration", "Waiting", "Alert", "Dispensing"].map((state) => (
-                            <span key={state} className="inline-flex items-center gap-1 text-[10px] text-text-muted bg-bg-page border border-border-subtle px-1.5 py-0.5 rounded">
-                              <Check size={10} className="text-brand-primary" />
-                              {state}
-                            </span>
-                          ))}
-                        </div>
-                      )}
-                    </div>
+              {/* ════════ BOTTOM: NO-CROP HORIZONTAL IMAGE GALLERY ════════ */}
+              {currentSection.images && (
+                <motion.div variants={parallaxFadeUp} className="w-full border-t border-border-subtle pt-6">
+                  <div className="flex items-center gap-2 mb-4 px-1">
+                    <ImageIcon size={14} className="text-brand-primary" />
+                    <span className="text-[11px] font-mono font-bold tracking-widest text-text-main uppercase">
+                      Gallery
+                    </span>
+                    <span className="text-[10px] text-text-muted ml-2 bg-bg-card px-2 py-0.5 rounded-full border border-border-subtle">
+                      Scroll →
+                    </span>
                   </div>
-                ))}
-              </div>
+                  
+                  {/* Container with Horizontal Scroll */}
+                  <div className="flex gap-4 overflow-x-auto pb-4 snap-x scrollbar-thin scrollbar-thumb-border-subtle hover:scrollbar-thumb-brand-primary/50 scrollbar-track-transparent">
+                    {currentSection.images.map((img, i) => (
+                      <div key={i} className="shrink-0 snap-center">
+                        <img 
+                          src={img} 
+                          alt={`Milestone visual ${i + 1}`} 
+                          className="h-48 sm:h-56 md:h-64 w-auto rounded-xl object-contain border border-border-subtle bg-bg-card/50 shadow-sm" 
+                          loading="lazy"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </motion.div>
+              )}
+
             </motion.div>
           </AnimatePresence>
         </div>

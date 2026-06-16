@@ -37,6 +37,25 @@ async function updatePresentationState(updates) {
   return localState;
 }
 
+/**
+ * @swagger
+ * /api/presentation/stream:
+ *   get:
+ *     tags: [Presentation]
+ *     summary: Server-Sent Events stream for real-time presentation
+ *     description: Returns a continuous SSE stream. Does not return a standard JSON response.
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: SSE stream connected successfully
+ *         content:
+ *           text/event-stream:
+ *             schema:
+ *               type: string
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ */
 // GET: SSE Stream (Tempo Real)
 router.get('/stream', async (req, res) => {
   res.writeHead(200, {
@@ -46,7 +65,8 @@ router.get('/stream', async (req, res) => {
   });
 
   const cookies = req.headers.cookie || '';
-  const isAdmin = cookies.includes('presenter_token="PEEBestProject=CareSync@26"');
+  const presentationKey = process.env.PRESENTATION_COOKIE_KEY || 'presenter_token="PEEBestProject=CareSync@26"';
+  const isAdmin = cookies.includes(presentationKey);
 
   if (!isAdmin) {
     activeViewers++;
@@ -88,10 +108,53 @@ router.get('/stream', async (req, res) => {
   });
 });
 
+/**
+ * @swagger
+ * /api/presentation/slide:
+ *   post:
+ *     tags: [Presentation]
+ *     summary: Change the current slide or main state
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               slide:
+ *                 type: string
+ *               blackout:
+ *                 type: boolean
+ *     responses:
+ *       200:
+ *         description: Slide updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 state:
+ *                   type: object
+ *                   properties:
+ *                     slide:
+ *                       type: string
+ *                     blackout:
+ *                       type: boolean
+ *                     ephemeral:
+ *                       type: object
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
+ */
 // POST: Mudar o slide ou estado principal
 router.post('/slide', async (req, res) => {
   const cookies = req.headers.cookie || '';
-  if (!cookies.includes('presenter_token="PEEBestProject=CareSync@26"')) return res.status(403).json({ error: 'Unauthorized' });
+  const presentationKey = process.env.PRESENTATION_COOKIE_KEY || 'presenter_token="PEEBestProject=CareSync@26"';
+  if (!cookies.includes(presentationKey)) return res.status(403).json({ error: 'Unauthorized' });
   
   localState.ephemeral = { scroll: null, highlight: null, laser: null, models3D: {} };
   const newState = await updatePresentationState(req.body);
@@ -100,10 +163,44 @@ router.post('/slide', async (req, res) => {
   res.json({ success: true, state: newState });
 });
 
+/**
+ * @swagger
+ * /api/presentation/sync:
+ *   post:
+ *     tags: [Presentation]
+ *     summary: Synchronize movements (clicks, input, laser, scroll)
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               action:
+ *                 type: string
+ *               payload:
+ *                 type: object
+ *     responses:
+ *       200:
+ *         description: Sync successful
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
+ */
 // POST: Sincronizar Movimentos (DOM Clicks, Input, Laser, Scroll)
 router.post('/sync', (req, res) => {
   const cookies = req.headers.cookie || '';
-  if (!cookies.includes('presenter_token="PEEBestProject=CareSync@26"')) return res.status(403).json({ error: 'Unauthorized' });
+  const presentationKey = process.env.PRESENTATION_COOKIE_KEY || 'presenter_token="PEEBestProject=CareSync@26"';
+  if (!cookies.includes(presentationKey)) return res.status(403).json({ error: 'Unauthorized' });
 
   const { action, payload } = req.body;
   if (action === 'BATCH' && Array.isArray(payload)) {

@@ -27,7 +27,7 @@ import { PrivacyPolicyPage } from './features/showcase/pages/PrivacyPolicyPage'
 import { TermsOfServicePage } from './features/showcase/pages/TermsOfServicePage'
 import { StatusPage } from './features/showcase/pages/StatusPage'
 import { ReviewsPage } from './features/showcase/pages/ReviewsPage' // <--- Imported new page
-import { UserManualPage } from './features/showcase/pages/UserManualPage'
+import { SystemManualsPage } from './features/showcase/pages/SystemManualsPage'
 
 // Dashboard Pages
 import { PatientDashboard } from './features/dashboard/pages/PatientDashboard'
@@ -87,7 +87,7 @@ export function App() {
           <Route path="software" element={<SoftwareArchitecturePage />} />
           <Route path="security" element={<SecurityDeepDivePage />} />
           <Route path="timeline" element={<UnifiedTimelinePage />} />
-          <Route path="manual" element={<UserManualPage />} />
+          <Route path="manual" element={<SystemManualsPage />} />
           <Route path="team" element={<TeamPage />} />
           <Route index element={<Navigate to="hardware" replace />} />
         </Route>

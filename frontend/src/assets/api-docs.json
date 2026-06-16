@@ -1,27 +1,63 @@
 {
   "endpoints": [
     {
-      "method": "DELETE",
-      "path": "/api/auth/account",
-      "description": "Delete user account",
+      "method": "POST",
+      "path": "/api/auth/2fa/confirm-setup",
+      "description": "Confirm 2FA setup by verifying a TOTP code from the authenticator app",
       "tags": [
-        "Auth"
+        "2FA"
       ],
       "auth": true,
-      "rateLimit": "1 request / 24 hours",
+      "rateLimit": "200 requests / 15 minutes",
       "dataCollected": [
-        "User confirmation",
-        "Deletion reason (optional)",
-        "Account deletion timestamp"
+        "User ID",
+        "Request metadata",
+        "Timestamp",
+        "Token"
       ],
       "dataShared": [
-        "None"
+        "None - internal use only"
       ],
-      "retention": "Immediate deletion with 30-day grace period. Audit logs: 7 years (compliance)",
+      "retention": "Standard retention policies apply (see Privacy Policy)",
       "hipaaCompliant": true,
       "gdprCompliant": true,
       "requestBody": {
-        "password": "********"
+        "token": "string"
+      },
+      "responseBody": {
+        "success": true,
+        "message": "string",
+        "data": {
+          "recoveryCodes": [
+            "string"
+          ]
+        }
+      },
+      "parameters": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/2fa/disable",
+      "description": "Disable 2FA (requires password confirmation)",
+      "tags": [
+        "Two-Factor Authentication"
+      ],
+      "auth": true,
+      "rateLimit": "200 requests / 15 minutes",
+      "dataCollected": [
+        "User ID",
+        "Request metadata",
+        "Timestamp",
+        "Password"
+      ],
+      "dataShared": [
+        "None - internal use only"
+      ],
+      "retention": "Standard retention policies apply (see Privacy Policy)",
+      "hipaaCompliant": true,
+      "gdprCompliant": true,
+      "requestBody": {
+        "password": "string"
       },
       "responseBody": {
         "success": true,
@@ -31,45 +67,49 @@
     },
     {
       "method": "POST",
-      "path": "/api/auth/login",
-      "description": "Login user",
+      "path": "/api/auth/2fa/recovery",
+      "description": "Use a recovery code to complete login when TOTP device is unavailable",
       "tags": [
-        "Auth"
+        "Two-Factor Authentication"
       ],
       "rateLimit": "5 requests / 15 minutes",
       "dataCollected": [
-        "Email address",
-        "Password hash",
-        "Login timestamp",
-        "IP address",
-        "User-Agent"
+        "User ID",
+        "Request metadata",
+        "Timestamp",
+        "Temp Token",
+        "Recovery Code"
       ],
       "dataShared": [
-        "None - credentials never leave the system"
+        "None - internal use only"
       ],
-      "retention": "Login logs: 90 days (audit trail)",
+      "retention": "Standard retention policies apply (see Privacy Policy)",
       "hipaaCompliant": true,
       "gdprCompliant": true,
       "requestBody": {
-        "email": "user@example.com",
-        "password": "********"
+        "tempToken": "string",
+        "recoveryCode": "string"
       },
       "responseBody": {
         "success": true,
         "message": "string",
-        "data": {}
+        "data": {
+          "token": "string",
+          "user": null,
+          "remainingRecoveryCodes": 0
+        }
       },
       "parameters": []
     },
     {
       "method": "POST",
-      "path": "/api/auth/logout",
-      "description": "Logout user",
+      "path": "/api/auth/2fa/setup",
+      "description": "Begin 2FA setup — generates secret + QR code",
       "tags": [
-        "Auth"
+        "2FA"
       ],
       "auth": true,
-      "rateLimit": "100 requests / 15 minutes",
+      "rateLimit": "200 requests / 15 minutes",
       "dataCollected": [
         "User ID",
         "Request metadata",
@@ -84,7 +124,192 @@
       "requestBody": null,
       "responseBody": {
         "success": true,
-        "message": "string"
+        "data": {
+          "secret": "string",
+          "otpauthUrl": "string",
+          "qrCode": "string"
+        }
+      },
+      "parameters": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/auth/2fa/status",
+      "description": "Check if 2FA is enabled for the current user",
+      "tags": [
+        "Two-Factor Authentication"
+      ],
+      "auth": true,
+      "rateLimit": "200 requests / 15 minutes",
+      "dataCollected": [
+        "User ID",
+        "Request metadata",
+        "Timestamp"
+      ],
+      "dataShared": [
+        "None - internal use only"
+      ],
+      "retention": "Standard retention policies apply (see Privacy Policy)",
+      "hipaaCompliant": true,
+      "gdprCompliant": true,
+      "requestBody": null,
+      "responseBody": {
+        "success": true,
+        "data": {
+          "isTwoFactorEnabled": true,
+          "remainingRecoveryCodes": 0
+        }
+      },
+      "parameters": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/2fa/verify",
+      "description": "Verify TOTP code during login (partial auth state)",
+      "tags": [
+        "Two-Factor Authentication"
+      ],
+      "rateLimit": "5 requests / 15 minutes",
+      "dataCollected": [
+        "User ID",
+        "Request metadata",
+        "Timestamp",
+        "Temp Token",
+        "Token"
+      ],
+      "dataShared": [
+        "None - internal use only"
+      ],
+      "retention": "Standard retention policies apply (see Privacy Policy)",
+      "hipaaCompliant": true,
+      "gdprCompliant": true,
+      "requestBody": {
+        "tempToken": "string",
+        "token": "string"
+      },
+      "responseBody": {
+        "success": true,
+        "message": "string",
+        "data": {
+          "token": "string",
+          "user": null
+        }
+      },
+      "parameters": []
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/auth/account",
+      "description": "Delete user account",
+      "tags": [
+        "Auth"
+      ],
+      "auth": true,
+      "rateLimit": "200 requests / 15 minutes",
+      "dataCollected": [
+        "User confirmation",
+        "Deletion reason (optional)",
+        "Account deletion timestamp",
+        "Password"
+      ],
+      "dataShared": [
+        "None"
+      ],
+      "retention": "Immediate deletion with 30-day grace period. Audit logs: 7 years (compliance)",
+      "hipaaCompliant": true,
+      "gdprCompliant": true,
+      "requestBody": {
+        "password": "string"
+      },
+      "responseBody": {
+        "success": true,
+        "message": "Account deleted successfully"
+      },
+      "parameters": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/forgot-password",
+      "description": "Request a password reset link",
+      "tags": [
+        "Auth"
+      ],
+      "rateLimit": "10 requests / 15 minutes",
+      "dataCollected": [
+        "User ID",
+        "Request metadata",
+        "Timestamp",
+        "Email"
+      ],
+      "dataShared": [
+        "None - internal use only"
+      ],
+      "retention": "Standard retention policies apply (see Privacy Policy)",
+      "hipaaCompliant": true,
+      "gdprCompliant": true,
+      "requestBody": {
+        "email": "user@example.com"
+      },
+      "responseBody": {
+        "success": true,
+        "message": "If that email is registered, you will receive a reset link shortly."
+      },
+      "parameters": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/login",
+      "description": "Login user",
+      "tags": [
+        "Auth"
+      ],
+      "rateLimit": "10 requests / 15 minutes",
+      "dataCollected": [
+        "Email address",
+        "Password hash",
+        "Login timestamp",
+        "IP address",
+        "User-Agent",
+        "Email",
+        "Password"
+      ],
+      "dataShared": [
+        "None - credentials never leave the system"
+      ],
+      "retention": "Login logs: 90 days (audit trail)",
+      "hipaaCompliant": true,
+      "gdprCompliant": true,
+      "requestBody": {
+        "email": "user@example.com",
+        "password": "string"
+      },
+      "responseBody": null,
+      "parameters": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/logout",
+      "description": "Logout user",
+      "tags": [
+        "Auth"
+      ],
+      "auth": true,
+      "rateLimit": "200 requests / 15 minutes",
+      "dataCollected": [
+        "User ID",
+        "Request metadata",
+        "Timestamp"
+      ],
+      "dataShared": [
+        "None - internal use only"
+      ],
+      "retention": "Standard retention policies apply (see Privacy Policy)",
+      "hipaaCompliant": true,
+      "gdprCompliant": true,
+      "requestBody": null,
+      "responseBody": {
+        "success": true,
+        "message": "Logged out successfully"
       },
       "parameters": []
     },
@@ -96,7 +321,7 @@
         "Auth"
       ],
       "auth": true,
-      "rateLimit": "100 requests / 15 minutes",
+      "rateLimit": "200 requests / 15 minutes",
       "dataCollected": [
         "User ID from JWT token"
       ],
@@ -109,7 +334,9 @@
       "requestBody": null,
       "responseBody": {
         "success": true,
-        "data": {}
+        "data": {
+          "$ref": null
+        }
       },
       "parameters": []
     },
@@ -121,11 +348,13 @@
         "Auth"
       ],
       "auth": true,
-      "rateLimit": "5 requests / hour",
+      "rateLimit": "200 requests / 15 minutes",
       "dataCollected": [
         "Password change request",
         "Timestamp",
-        "IP address"
+        "IP address",
+        "Current Password",
+        "New Password"
       ],
       "dataShared": [
         "None - passwords are hashed with bcrypt"
@@ -134,13 +363,10 @@
       "hipaaCompliant": true,
       "gdprCompliant": true,
       "requestBody": {
-        "currentPassword": "********",
-        "newPassword": "********"
+        "currentPassword": "string",
+        "newPassword": "string"
       },
-      "responseBody": {
-        "success": true,
-        "message": "string"
-      },
+      "responseBody": {},
       "parameters": []
     },
     {
@@ -151,10 +377,14 @@
         "Auth"
       ],
       "auth": true,
-      "rateLimit": "50 requests / 15 minutes",
+      "rateLimit": "200 requests / 15 minutes",
       "dataCollected": [
         "Updated profile fields",
-        "Modification timestamp"
+        "Modification timestamp",
+        "First Name",
+        "Last Name",
+        "Phone",
+        "Preferences"
       ],
       "dataShared": [
         "None - user controls their own data"
@@ -166,14 +396,14 @@
         "firstName": "string",
         "lastName": "string",
         "phone": "string",
-        "dateOfBirth": "2025-12-22",
-        "preferences": {},
-        "emergencyContact": {}
+        "preferences": {}
       },
       "responseBody": {
         "success": true,
-        "message": "string",
-        "data": {}
+        "message": "Profile updated successfully",
+        "data": {
+          "user": null
+        }
       },
       "parameters": []
     },
@@ -184,11 +414,12 @@
       "tags": [
         "Auth"
       ],
-      "rateLimit": "100 requests / 15 minutes",
+      "rateLimit": "200 requests / 15 minutes",
       "dataCollected": [
         "User ID",
         "Request metadata",
-        "Timestamp"
+        "Timestamp",
+        "Refresh Token"
       ],
       "dataShared": [
         "None - internal use only"
@@ -197,11 +428,13 @@
       "hipaaCompliant": true,
       "gdprCompliant": true,
       "requestBody": {
-        "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+        "refreshToken": "string"
       },
       "responseBody": {
         "success": true,
-        "data": {}
+        "data": {
+          "token": "string"
+        }
       },
       "parameters": []
     },
@@ -212,13 +445,17 @@
       "tags": [
         "Auth"
       ],
-      "rateLimit": "5 requests / 15 minutes",
+      "rateLimit": "10 requests / 15 minutes",
       "dataCollected": [
         "Email address",
         "Password hash",
         "Full name",
         "Role",
-        "Registration timestamp"
+        "Registration timestamp",
+        "Email",
+        "Password",
+        "First Name",
+        "Last Name"
       ],
       "dataShared": [
         "None - stored securely with AES-256 encryption"
@@ -228,15 +465,81 @@
       "gdprCompliant": true,
       "requestBody": {
         "email": "user@example.com",
-        "password": "********",
+        "password": "string",
         "firstName": "string",
         "lastName": "string",
         "role": "patient"
       },
       "responseBody": {
         "success": true,
-        "message": "string",
-        "data": {}
+        "message": "User registered successfully",
+        "data": {
+          "user": null,
+          "token": "string"
+        }
+      },
+      "parameters": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/reset-password",
+      "description": "Reset password using a token",
+      "tags": [
+        "Auth"
+      ],
+      "rateLimit": "10 requests / 15 minutes",
+      "dataCollected": [
+        "User ID",
+        "Request metadata",
+        "Timestamp",
+        "Token",
+        "New Password"
+      ],
+      "dataShared": [
+        "None - internal use only"
+      ],
+      "retention": "Standard retention policies apply (see Privacy Policy)",
+      "hipaaCompliant": true,
+      "gdprCompliant": true,
+      "requestBody": {
+        "token": "string",
+        "newPassword": "string"
+      },
+      "responseBody": {
+        "success": true,
+        "message": "Password has been reset successfully. Please sign in."
+      },
+      "parameters": []
+    },
+    {
+      "method": "PUT",
+      "path": "/api/auth/role",
+      "description": "Change user role (patient/caregiver)",
+      "tags": [
+        "Auth"
+      ],
+      "auth": true,
+      "rateLimit": "200 requests / 15 minutes",
+      "dataCollected": [
+        "User ID",
+        "Request metadata",
+        "Timestamp",
+        "New Role",
+        "Current Password"
+      ],
+      "dataShared": [
+        "None - internal use only"
+      ],
+      "retention": "Standard retention policies apply (see Privacy Policy)",
+      "hipaaCompliant": true,
+      "gdprCompliant": true,
+      "requestBody": {
+        "newRole": "patient",
+        "currentPassword": "string"
+      },
+      "responseBody": {
+        "success": true,
+        "message": "Role changed to caregiver. All previous data was wiped. Please sign in again."
       },
       "parameters": []
     },
@@ -248,7 +551,7 @@
         "Caregivers"
       ],
       "auth": true,
-      "rateLimit": "100 requests / 15 minutes",
+      "rateLimit": "200 requests / 15 minutes",
       "dataCollected": [
         "User ID",
         "Caregiver relationships",
@@ -263,7 +566,11 @@
       "requestBody": null,
       "responseBody": {
         "success": true,
-        "data": {}
+        "data": {
+          "caregivers": [
+            null
+          ]
+        }
       },
       "parameters": []
     },
@@ -275,7 +582,7 @@
         "Caregivers"
       ],
       "auth": true,
-      "rateLimit": "100 requests / 15 minutes",
+      "rateLimit": "200 requests / 15 minutes",
       "dataCollected": [
         "User ID",
         "Caregiver relationships",
@@ -290,7 +597,7 @@
       "requestBody": null,
       "responseBody": {
         "success": true,
-        "message": "string"
+        "message": "Caregiver removed successfully"
       },
       "parameters": [
         {
@@ -311,7 +618,7 @@
         "Caregivers"
       ],
       "auth": true,
-      "rateLimit": "100 requests / 15 minutes",
+      "rateLimit": "200 requests / 15 minutes",
       "dataCollected": [
         "User ID",
         "Caregiver relationships",
@@ -326,8 +633,8 @@
       "requestBody": null,
       "responseBody": {
         "success": true,
-        "message": "string",
-        "data": {}
+        "message": "Invitation accepted successfully",
+        "data": null
       },
       "parameters": [
         {
@@ -348,7 +655,7 @@
         "Caregivers"
       ],
       "auth": true,
-      "rateLimit": "100 requests / 15 minutes",
+      "rateLimit": "200 requests / 15 minutes",
       "dataCollected": [
         "User ID",
         "Caregiver relationships",
@@ -363,7 +670,7 @@
       "requestBody": null,
       "responseBody": {
         "success": true,
-        "message": "string"
+        "message": "Invitation declined successfully"
       },
       "parameters": [
         {
@@ -384,12 +691,15 @@
         "Caregivers"
       ],
       "auth": true,
-      "rateLimit": "20 requests / hour",
+      "rateLimit": "200 requests / 15 minutes",
       "dataCollected": [
         "Caregiver email",
         "Relationship type",
         "Permission levels",
-        "Invitation timestamp"
+        "Invitation timestamp",
+        "Email",
+        "Relationship",
+        "Permissions"
       ],
       "dataShared": [
         "Email sent to invited caregiver",
@@ -405,7 +715,7 @@
       },
       "responseBody": {
         "success": true,
-        "message": "string"
+        "message": "Invitation sent successfully"
       },
       "parameters": []
     },
@@ -417,7 +727,7 @@
         "Caregivers"
       ],
       "auth": true,
-      "rateLimit": "50 requests / 15 minutes",
+      "rateLimit": "200 requests / 15 minutes",
       "dataCollected": [
         "Pending invitation IDs",
         "Invitation metadata"
@@ -431,7 +741,113 @@
       "requestBody": null,
       "responseBody": {
         "success": true,
-        "data": []
+        "data": [
+          null
+        ]
+      },
+      "parameters": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/consent",
+      "description": "Get current consent status for all types",
+      "tags": [
+        "Consent"
+      ],
+      "auth": true,
+      "rateLimit": "200 requests / 15 minutes",
+      "dataCollected": [
+        "User ID",
+        "Request metadata",
+        "Timestamp"
+      ],
+      "dataShared": [
+        "None - internal use only"
+      ],
+      "retention": "Standard retention policies apply (see Privacy Policy)",
+      "hipaaCompliant": true,
+      "gdprCompliant": true,
+      "requestBody": null,
+      "responseBody": {
+        "success": true,
+        "data": {
+          "consents": null
+        }
+      },
+      "parameters": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/consent",
+      "description": "Grant or revoke a specific consent",
+      "tags": [
+        "Consent"
+      ],
+      "auth": true,
+      "rateLimit": "200 requests / 15 minutes",
+      "dataCollected": [
+        "User ID",
+        "Request metadata",
+        "Timestamp",
+        "Consent Type",
+        "Action"
+      ],
+      "dataShared": [
+        "None - internal use only"
+      ],
+      "retention": "Standard retention policies apply (see Privacy Policy)",
+      "hipaaCompliant": true,
+      "gdprCompliant": true,
+      "requestBody": {
+        "consentType": "symptom_processing",
+        "action": "grant"
+      },
+      "responseBody": {
+        "success": true,
+        "message": "Consent granted for symptom_processing",
+        "data": {
+          "id": "123e4567-e89b-12d3-a456-426614174000",
+          "consentType": "string",
+          "action": "string",
+          "createdAt": "2026-06-15T22:57:42.344Z"
+        }
+      },
+      "parameters": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/consent/history",
+      "description": "Get full consent audit trail for the user",
+      "tags": [
+        "Consent"
+      ],
+      "auth": true,
+      "rateLimit": "200 requests / 15 minutes",
+      "dataCollected": [
+        "User ID",
+        "Request metadata",
+        "Timestamp"
+      ],
+      "dataShared": [
+        "None - internal use only"
+      ],
+      "retention": "Standard retention policies apply (see Privacy Policy)",
+      "hipaaCompliant": true,
+      "gdprCompliant": true,
+      "requestBody": null,
+      "responseBody": {
+        "success": true,
+        "data": {
+          "history": [
+            {
+              "id": "123e4567-e89b-12d3-a456-426614174000",
+              "consentType": "string",
+              "action": "string",
+              "ipAddress": "string",
+              "createdAt": "2026-06-15T22:57:42.350Z"
+            }
+          ]
+        }
       },
       "parameters": []
     },
@@ -443,7 +859,7 @@
         "Devices"
       ],
       "auth": true,
-      "rateLimit": "100 requests / 15 minutes",
+      "rateLimit": "200 requests / 15 minutes",
       "dataCollected": [
         "Device metadata",
         "Sync status",
@@ -458,7 +874,11 @@
       "requestBody": null,
       "responseBody": {
         "success": true,
-        "data": {}
+        "data": {
+          "devices": [
+            null
+          ]
+        }
       },
       "parameters": []
     },
@@ -470,11 +890,16 @@
         "Devices"
       ],
       "auth": true,
-      "rateLimit": "100 requests / 15 minutes",
+      "rateLimit": "200 requests / 15 minutes",
       "dataCollected": [
         "Device metadata",
         "Sync status",
-        "Last connection timestamp"
+        "Last connection timestamp",
+        "Device Id",
+        "Name",
+        "Device Type",
+        "Model",
+        "Serial Number"
       ],
       "dataShared": [
         "With device owner and authorized caregivers only"
@@ -491,8 +916,10 @@
       },
       "responseBody": {
         "success": true,
-        "message": "string",
-        "data": {}
+        "message": "Device registered successfully",
+        "data": {
+          "device": null
+        }
       },
       "parameters": []
     },
@@ -504,7 +931,7 @@
         "Devices"
       ],
       "auth": true,
-      "rateLimit": "100 requests / 15 minutes",
+      "rateLimit": "200 requests / 15 minutes",
       "dataCollected": [
         "Device metadata",
         "Sync status",
@@ -519,7 +946,11 @@
       "requestBody": null,
       "responseBody": {
         "success": true,
-        "data": {}
+        "data": {
+          "caregivers": [
+            null
+          ]
+        }
       },
       "parameters": [
         {
@@ -540,7 +971,7 @@
         "Devices"
       ],
       "auth": true,
-      "rateLimit": "100 requests / 15 minutes",
+      "rateLimit": "200 requests / 15 minutes",
       "dataCollected": [
         "Device metadata",
         "Sync status",
@@ -555,7 +986,7 @@
       "requestBody": null,
       "responseBody": {
         "success": true,
-        "message": "string"
+        "message": "Caregiver access removed successfully"
       },
       "parameters": [
         {
@@ -584,7 +1015,7 @@
         "Devices"
       ],
       "auth": true,
-      "rateLimit": "100 requests / 15 minutes",
+      "rateLimit": "200 requests / 15 minutes",
       "dataCollected": [
         "Device metadata",
         "Sync status",
@@ -599,8 +1030,10 @@
       "requestBody": null,
       "responseBody": {
         "success": true,
-        "message": "string",
-        "data": {}
+        "message": "Caregiver invitation accepted successfully",
+        "data": {
+          "permission": null
+        }
       },
       "parameters": [
         {
@@ -629,11 +1062,13 @@
         "Devices"
       ],
       "auth": true,
-      "rateLimit": "100 requests / 15 minutes",
+      "rateLimit": "200 requests / 15 minutes",
       "dataCollected": [
         "Device metadata",
         "Sync status",
-        "Last connection timestamp"
+        "Last connection timestamp",
+        "Email",
+        "Access Level"
       ],
       "dataShared": [
         "With device owner and authorized caregivers only"
@@ -647,8 +1082,10 @@
       },
       "responseBody": {
         "success": true,
-        "message": "string",
-        "data": {}
+        "message": "Caregiver invitation created successfully",
+        "data": {
+          "invitation": null
+        }
       },
       "parameters": [
         {
@@ -669,11 +1106,14 @@
         "Devices"
       ],
       "auth": true,
-      "rateLimit": "100 requests / 15 minutes",
+      "rateLimit": "200 requests / 15 minutes",
       "dataCollected": [
         "Device metadata",
         "Sync status",
-        "Last connection timestamp"
+        "Last connection timestamp",
+        "Battery Level",
+        "Connection Status",
+        "Status"
       ],
       "dataShared": [
         "With device owner and authorized caregivers only"
@@ -688,7 +1128,7 @@
       },
       "responseBody": {
         "success": true,
-        "message": "string"
+        "message": "Device synced"
       },
       "parameters": [
         {
@@ -709,7 +1149,7 @@
         "Devices"
       ],
       "auth": true,
-      "rateLimit": "100 requests / 15 minutes",
+      "rateLimit": "200 requests / 15 minutes",
       "dataCollected": [
         "Device metadata",
         "Sync status",
@@ -724,7 +1164,9 @@
       "requestBody": null,
       "responseBody": {
         "success": true,
-        "data": {}
+        "data": {
+          "device": null
+        }
       },
       "parameters": [
         {
@@ -745,11 +1187,15 @@
         "Devices"
       ],
       "auth": true,
-      "rateLimit": "100 requests / 15 minutes",
+      "rateLimit": "200 requests / 15 minutes",
       "dataCollected": [
         "Device metadata",
         "Sync status",
-        "Last connection timestamp"
+        "Last connection timestamp",
+        "Name",
+        "Device Type",
+        "Model",
+        "Serial Number"
       ],
       "dataShared": [
         "With device owner and authorized caregivers only"
@@ -765,8 +1211,10 @@
       },
       "responseBody": {
         "success": true,
-        "message": "string",
-        "data": {}
+        "message": "Device updated successfully",
+        "data": {
+          "device": null
+        }
       },
       "parameters": [
         {
@@ -787,7 +1235,7 @@
         "Devices"
       ],
       "auth": true,
-      "rateLimit": "100 requests / 15 minutes",
+      "rateLimit": "200 requests / 15 minutes",
       "dataCollected": [
         "Device metadata",
         "Sync status",
@@ -802,7 +1250,7 @@
       "requestBody": null,
       "responseBody": {
         "success": true,
-        "message": "string"
+        "message": "Device removed successfully"
       },
       "parameters": [
         {
@@ -823,13 +1271,20 @@
         "Devices"
       ],
       "auth": true,
-      "rateLimit": "10 requests / hour",
+      "rateLimit": "200 requests / 15 minutes",
       "dataCollected": [
         "Device serial number",
         "Device type",
         "Firmware version",
         "MAC address",
-        "Public key"
+        "Public key",
+        "Device Id",
+        "Device Public Key",
+        "Signature",
+        "Name",
+        "Device Type",
+        "Model",
+        "Serial Number"
       ],
       "dataShared": [
         "None - device identifiers encrypted at rest"
@@ -848,8 +1303,10 @@
       },
       "responseBody": {
         "success": true,
-        "message": "string",
-        "data": {}
+        "message": "Device registered successfully with signature",
+        "data": {
+          "device": null
+        }
       },
       "parameters": []
     },
@@ -861,7 +1318,7 @@
         "Medications"
       ],
       "auth": true,
-      "rateLimit": "100 requests / 15 minutes",
+      "rateLimit": "200 requests / 15 minutes",
       "dataCollected": [
         "User ID",
         "Medication names",
@@ -879,8 +1336,10 @@
       "requestBody": null,
       "responseBody": {
         "success": true,
-        "data": [],
-        "pagination": {}
+        "data": [
+          null
+        ],
+        "pagination": null
       },
       "parameters": [
         {
@@ -928,13 +1387,18 @@
         "Medications"
       ],
       "auth": true,
-      "rateLimit": "100 requests / 15 minutes",
+      "rateLimit": "200 requests / 15 minutes",
       "dataCollected": [
         "User ID",
         "Medication names",
         "Dosage",
         "Frequency",
-        "Schedule timestamps"
+        "Schedule timestamps",
+        "Name",
+        "Dosage Unit",
+        "Times Per Day",
+        "Total Quantity",
+        "Start Date"
       ],
       "dataShared": [
         "With authorized caregivers (explicit consent)",
@@ -950,12 +1414,12 @@
         "frequency": "string",
         "timesPerDay": 0,
         "totalQuantity": 0,
-        "startDate": "2025-12-22"
+        "startDate": "2026-06-15T22:57:42.353Z"
       },
       "responseBody": {
         "success": true,
         "message": "string",
-        "data": {}
+        "data": null
       },
       "parameters": []
     },
@@ -967,7 +1431,7 @@
         "Medications"
       ],
       "auth": true,
-      "rateLimit": "100 requests / 15 minutes",
+      "rateLimit": "200 requests / 15 minutes",
       "dataCollected": [
         "User ID",
         "Medication names",
@@ -985,7 +1449,7 @@
       "requestBody": null,
       "responseBody": {
         "success": true,
-        "data": {}
+        "data": null
       },
       "parameters": [
         {
@@ -1013,13 +1477,18 @@
         "Medications"
       ],
       "auth": true,
-      "rateLimit": "100 requests / 15 minutes",
+      "rateLimit": "200 requests / 15 minutes",
       "dataCollected": [
         "User ID",
         "Medication names",
         "Dosage",
         "Frequency",
-        "Schedule timestamps"
+        "Schedule timestamps",
+        "Name",
+        "Dosage Unit",
+        "Times Per Day",
+        "Total Quantity",
+        "Start Date"
       ],
       "dataShared": [
         "With authorized caregivers (explicit consent)",
@@ -1035,12 +1504,12 @@
         "frequency": "string",
         "timesPerDay": 0,
         "totalQuantity": 0,
-        "startDate": "2025-12-22"
+        "startDate": "2026-06-15T22:57:42.353Z"
       },
       "responseBody": {
         "success": true,
         "message": "string",
-        "data": {}
+        "data": null
       },
       "parameters": [
         {
@@ -1061,7 +1530,7 @@
         "Medications"
       ],
       "auth": true,
-      "rateLimit": "100 requests / 15 minutes",
+      "rateLimit": "200 requests / 15 minutes",
       "dataCollected": [
         "User ID",
         "Medication names",
@@ -1106,7 +1575,11 @@
         "Timestamp",
         "Geolocation (optional)",
         "Device ID",
-        "Notes"
+        "Notes",
+        "Medication Id",
+        "Status",
+        "Taken At",
+        "Scheduled Time"
       ],
       "dataShared": [
         "With caregivers (if sharing enabled)",
@@ -1118,15 +1591,92 @@
       "requestBody": {
         "medicationId": "string",
         "status": "taken",
-        "takenAt": "string",
-        "scheduledTime": "string"
+        "takenAt": "2026-06-15T22:57:42.353Z",
+        "scheduledTime": "2026-06-15T22:57:42.353Z"
       },
       "responseBody": {
         "success": true,
         "message": "string",
-        "data": {}
+        "data": null
       },
       "parameters": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/medications/adherence",
+      "description": "Get adherence records for medications",
+      "tags": [
+        "Medications"
+      ],
+      "auth": true,
+      "rateLimit": "200 requests / 15 minutes",
+      "dataCollected": [
+        "Medication ID",
+        "Timestamp",
+        "Geolocation (optional)",
+        "Device ID",
+        "Notes"
+      ],
+      "dataShared": [
+        "With caregivers (if sharing enabled)",
+        "Anonymized for analytics (opt-in only)"
+      ],
+      "retention": "7 years (HIPAA compliance for medical records)",
+      "hipaaCompliant": true,
+      "gdprCompliant": true,
+      "requestBody": null,
+      "responseBody": {
+        "success": true,
+        "data": [
+          null
+        ]
+      },
+      "parameters": [
+        {
+          "in": "query",
+          "name": "medicationId",
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "in": "query",
+          "name": "startDate",
+          "schema": {
+            "type": "string",
+            "format": "date"
+          }
+        },
+        {
+          "in": "query",
+          "name": "endDate",
+          "schema": {
+            "type": "string",
+            "format": "date"
+          }
+        },
+        {
+          "in": "query",
+          "name": "patientId",
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "in": "query",
+          "name": "page",
+          "schema": {
+            "type": "integer"
+          }
+        },
+        {
+          "in": "query",
+          "name": "limit",
+          "schema": {
+            "type": "integer"
+          }
+        }
+      ]
     },
     {
       "method": "GET",
@@ -1154,7 +1704,14 @@
       "requestBody": null,
       "responseBody": {
         "success": true,
-        "data": {}
+        "data": {
+          "rate": 0,
+          "total": 0,
+          "taken": 0,
+          "missed": 0,
+          "skipped": 0,
+          "period": "string"
+        }
       },
       "parameters": [
         {
@@ -1190,6 +1747,87 @@
       ]
     },
     {
+      "method": "POST",
+      "path": "/api/medications/parse-prescription",
+      "description": "Parse SNS Prescription PDF using OCR and Regex or AI",
+      "tags": [
+        "Medications"
+      ],
+      "auth": true,
+      "rateLimit": "200 requests / 15 minutes",
+      "dataCollected": [
+        "User ID",
+        "Medication names",
+        "Dosage",
+        "Frequency",
+        "Schedule timestamps",
+        "Prescription",
+        "Engine"
+      ],
+      "dataShared": [
+        "With authorized caregivers (explicit consent)",
+        "Healthcare providers (HIPAA BAA)"
+      ],
+      "retention": "Active medications: Indefinite. Deleted: 7 years (regulatory compliance)",
+      "hipaaCompliant": true,
+      "gdprCompliant": true,
+      "requestBody": {
+        "prescription": "binary_file_data",
+        "engine": "regex"
+      },
+      "responseBody": {
+        "success": true,
+        "message": "string",
+        "data": {
+          "success": true,
+          "medications": [
+            {}
+          ],
+          "mode": "string",
+          "confidence": 0,
+          "textExcerpts": [
+            "string"
+          ],
+          "extractedAt": "2026-06-15T22:57:42.353Z"
+        }
+      },
+      "parameters": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/medications/pem-scan",
+      "description": "Import medication from PEM QR code scan",
+      "tags": [
+        "Medications"
+      ],
+      "auth": true,
+      "rateLimit": "200 requests / 15 minutes",
+      "dataCollected": [
+        "User ID",
+        "Medication names",
+        "Dosage",
+        "Frequency",
+        "Schedule timestamps",
+        "Qr Data"
+      ],
+      "dataShared": [
+        "With authorized caregivers (explicit consent)",
+        "Healthcare providers (HIPAA BAA)"
+      ],
+      "retention": "Active medications: Indefinite. Deleted: 7 years (regulatory compliance)",
+      "hipaaCompliant": true,
+      "gdprCompliant": true,
+      "requestBody": {
+        "qrData": "string"
+      },
+      "responseBody": {
+        "success": true,
+        "message": "string",
+        "data": null
+      },
+      "parameters": []
+    },
+    {
       "method": "GET",
       "path": "/api/medications/schedule",
       "description": "Get calendar data for medications",
@@ -1197,7 +1835,7 @@
         "Medications"
       ],
       "auth": true,
-      "rateLimit": "100 requests / 15 minutes",
+      "rateLimit": "200 requests / 15 minutes",
       "dataCollected": [
         "User ID",
         "Medication names",
@@ -1215,7 +1853,12 @@
       "requestBody": null,
       "responseBody": {
         "success": true,
-        "data": {}
+        "data": {
+          "calendar": [
+            {}
+          ],
+          "dateRange": {}
+        }
       },
       "parameters": [
         {
@@ -1251,7 +1894,7 @@
         "Notifications"
       ],
       "auth": true,
-      "rateLimit": "100 requests / 15 minutes",
+      "rateLimit": "200 requests / 15 minutes",
       "dataCollected": [
         "Notification type",
         "Recipient ID",
@@ -1267,7 +1910,12 @@
       "requestBody": null,
       "responseBody": {
         "success": true,
-        "data": {}
+        "data": {
+          "notifications": [
+            null
+          ],
+          "pagination": null
+        }
       },
       "parameters": [
         {
@@ -1316,7 +1964,7 @@
         "Notifications"
       ],
       "auth": true,
-      "rateLimit": "100 requests / 15 minutes",
+      "rateLimit": "200 requests / 15 minutes",
       "dataCollected": [
         "Notification type",
         "Recipient ID",
@@ -1332,7 +1980,7 @@
       "requestBody": null,
       "responseBody": {
         "success": true,
-        "message": "string"
+        "message": "Notification deleted successfully"
       },
       "parameters": [
         {
@@ -1353,7 +2001,7 @@
         "Notifications"
       ],
       "auth": true,
-      "rateLimit": "100 requests / 15 minutes",
+      "rateLimit": "200 requests / 15 minutes",
       "dataCollected": [
         "Notification type",
         "Recipient ID",
@@ -1370,7 +2018,9 @@
       "responseBody": {
         "success": true,
         "message": "string",
-        "data": {}
+        "data": {
+          "notification": null
+        }
       },
       "parameters": [
         {
@@ -1391,12 +2041,20 @@
         "Notifications"
       ],
       "auth": true,
-      "rateLimit": "100 requests / 15 minutes",
+      "rateLimit": "200 requests / 15 minutes",
       "dataCollected": [
         "Notification type",
         "Recipient ID",
         "Delivery timestamp",
-        "Read status"
+        "Read status",
+        "Email",
+        "Push",
+        "Sms",
+        "Medication Reminders",
+        "Missed Dose Alerts",
+        "Refill Reminders",
+        "Device Alerts",
+        "Caregiver Alerts"
       ],
       "dataShared": [
         "Only with intended recipient"
@@ -1417,7 +2075,9 @@
       "responseBody": {
         "success": true,
         "message": "string",
-        "data": {}
+        "data": {
+          "user": null
+        }
       },
       "parameters": []
     },
@@ -1429,7 +2089,7 @@
         "Notifications"
       ],
       "auth": true,
-      "rateLimit": "100 requests / 15 minutes",
+      "rateLimit": "200 requests / 15 minutes",
       "dataCollected": [
         "Notification type",
         "Recipient ID",
@@ -1445,7 +2105,7 @@
       "requestBody": null,
       "responseBody": {
         "success": true,
-        "message": "string"
+        "message": "All notifications marked as read"
       },
       "parameters": []
     },
@@ -1457,12 +2117,14 @@
         "Notifications"
       ],
       "auth": true,
-      "rateLimit": "100 requests / 15 minutes",
+      "rateLimit": "200 requests / 15 minutes",
       "dataCollected": [
         "Notification type",
         "Recipient ID",
         "Delivery timestamp",
-        "Read status"
+        "Read status",
+        "Token",
+        "Platform"
       ],
       "dataShared": [
         "Only with intended recipient"
@@ -1471,12 +2133,12 @@
       "hipaaCompliant": true,
       "gdprCompliant": true,
       "requestBody": {
-        "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+        "token": "string",
         "platform": "ios"
       },
       "responseBody": {
         "success": true,
-        "message": "string"
+        "message": "Device token registered successfully"
       },
       "parameters": []
     },
@@ -1488,12 +2150,14 @@
         "Notifications"
       ],
       "auth": true,
-      "rateLimit": "100 requests / 15 minutes",
+      "rateLimit": "200 requests / 15 minutes",
       "dataCollected": [
         "Notification type",
         "Recipient ID",
         "Delivery timestamp",
-        "Read status"
+        "Read status",
+        "Type",
+        "Message"
       ],
       "dataShared": [
         "Only with intended recipient"
@@ -1508,7 +2172,9 @@
       "responseBody": {
         "success": true,
         "message": "string",
-        "data": {}
+        "data": {
+          "notification": null
+        }
       },
       "parameters": []
     },
@@ -1520,7 +2186,7 @@
         "Notifications"
       ],
       "auth": true,
-      "rateLimit": "100 requests / 15 minutes",
+      "rateLimit": "200 requests / 15 minutes",
       "dataCollected": [
         "Notification type",
         "Recipient ID",
@@ -1536,7 +2202,9 @@
       "requestBody": null,
       "responseBody": {
         "success": true,
-        "data": {}
+        "data": {
+          "unreadCount": 0
+        }
       },
       "parameters": []
     },
@@ -1548,7 +2216,7 @@
         "Patients"
       ],
       "auth": true,
-      "rateLimit": "100 requests / 15 minutes",
+      "rateLimit": "200 requests / 15 minutes",
       "dataCollected": [
         "User ID",
         "Request metadata",
@@ -1563,7 +2231,558 @@
       "requestBody": null,
       "responseBody": {
         "success": true,
-        "data": []
+        "data": [
+          null
+        ]
+      },
+      "parameters": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/prescriptions",
+      "description": "Get all prescriptions for user",
+      "tags": [
+        "Prescriptions"
+      ],
+      "auth": true,
+      "rateLimit": "200 requests / 15 minutes",
+      "dataCollected": [
+        "User ID",
+        "Request metadata",
+        "Timestamp"
+      ],
+      "dataShared": [
+        "None - internal use only"
+      ],
+      "retention": "Standard retention policies apply (see Privacy Policy)",
+      "hipaaCompliant": true,
+      "gdprCompliant": true,
+      "requestBody": null,
+      "responseBody": {
+        "success": true,
+        "data": {
+          "prescriptions": [
+            null
+          ],
+          "pagination": null,
+          "statistics": {}
+        }
+      },
+      "parameters": [
+        {
+          "in": "query",
+          "name": "page",
+          "schema": {
+            "type": "integer"
+          }
+        },
+        {
+          "in": "query",
+          "name": "limit",
+          "schema": {
+            "type": "integer"
+          }
+        },
+        {
+          "in": "query",
+          "name": "status",
+          "schema": {
+            "type": "string",
+            "enum": [
+              "active",
+              "expired",
+              "filled",
+              "cancelled",
+              "pending"
+            ]
+          }
+        },
+        {
+          "in": "query",
+          "name": "needsReview",
+          "schema": {
+            "type": "boolean"
+          }
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/prescriptions",
+      "description": "Create prescription manually",
+      "tags": [
+        "Prescriptions"
+      ],
+      "auth": true,
+      "rateLimit": "200 requests / 15 minutes",
+      "dataCollected": [
+        "User ID",
+        "Request metadata",
+        "Timestamp",
+        "Prescriber Name",
+        "Medications",
+        "Issue Date",
+        "Expiry Date"
+      ],
+      "dataShared": [
+        "None - internal use only"
+      ],
+      "retention": "Standard retention policies apply (see Privacy Policy)",
+      "hipaaCompliant": true,
+      "gdprCompliant": true,
+      "requestBody": {
+        "prescriberName": "string",
+        "medications": [
+          {}
+        ],
+        "issueDate": "2026-06-15T22:57:42.354Z",
+        "expiryDate": "2026-06-15T22:57:42.354Z"
+      },
+      "responseBody": {
+        "success": true,
+        "message": "string",
+        "data": {
+          "prescription": null
+        }
+      },
+      "parameters": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/prescriptions/{id}",
+      "description": "Get single prescription",
+      "tags": [
+        "Prescriptions"
+      ],
+      "auth": true,
+      "rateLimit": "200 requests / 15 minutes",
+      "dataCollected": [
+        "User ID",
+        "Request metadata",
+        "Timestamp"
+      ],
+      "dataShared": [
+        "None - internal use only"
+      ],
+      "retention": "Standard retention policies apply (see Privacy Policy)",
+      "hipaaCompliant": true,
+      "gdprCompliant": true,
+      "requestBody": null,
+      "responseBody": {
+        "success": true,
+        "data": {
+          "prescription": null
+        }
+      },
+      "parameters": [
+        {
+          "in": "path",
+          "name": "id",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "in": "query",
+          "name": "patientId",
+          "schema": {
+            "type": "string"
+          }
+        }
+      ]
+    },
+    {
+      "method": "PUT",
+      "path": "/api/prescriptions/{id}",
+      "description": "Update prescription",
+      "tags": [
+        "Prescriptions"
+      ],
+      "auth": true,
+      "rateLimit": "200 requests / 15 minutes",
+      "dataCollected": [
+        "User ID",
+        "Request metadata",
+        "Timestamp",
+        "Status",
+        "Medications",
+        "Review Notes"
+      ],
+      "dataShared": [
+        "None - internal use only"
+      ],
+      "retention": "Standard retention policies apply (see Privacy Policy)",
+      "hipaaCompliant": true,
+      "gdprCompliant": true,
+      "requestBody": {
+        "status": "active",
+        "medications": [
+          {}
+        ],
+        "reviewNotes": "string"
+      },
+      "responseBody": {
+        "success": true,
+        "message": "string",
+        "data": {
+          "prescription": null
+        }
+      },
+      "parameters": [
+        {
+          "in": "path",
+          "name": "id",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "in": "query",
+          "name": "patientId",
+          "schema": {
+            "type": "string"
+          }
+        }
+      ]
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/prescriptions/{id}",
+      "description": "Delete prescription",
+      "tags": [
+        "Prescriptions"
+      ],
+      "auth": true,
+      "rateLimit": "200 requests / 15 minutes",
+      "dataCollected": [
+        "User ID",
+        "Request metadata",
+        "Timestamp"
+      ],
+      "dataShared": [
+        "None - internal use only"
+      ],
+      "retention": "Standard retention policies apply (see Privacy Policy)",
+      "hipaaCompliant": true,
+      "gdprCompliant": true,
+      "requestBody": null,
+      "responseBody": {
+        "success": true,
+        "message": "string"
+      },
+      "parameters": [
+        {
+          "in": "path",
+          "name": "id",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "in": "query",
+          "name": "patientId",
+          "schema": {
+            "type": "string"
+          }
+        }
+      ]
+    },
+    {
+      "method": "PUT",
+      "path": "/api/prescriptions/{id}/review",
+      "description": "Review prescription (for healthcare providers)",
+      "tags": [
+        "Prescriptions"
+      ],
+      "auth": true,
+      "rateLimit": "200 requests / 15 minutes",
+      "dataCollected": [
+        "User ID",
+        "Request metadata",
+        "Timestamp",
+        "Patient Id",
+        "Review Notes",
+        "Medications",
+        "Status"
+      ],
+      "dataShared": [
+        "None - internal use only"
+      ],
+      "retention": "Standard retention policies apply (see Privacy Policy)",
+      "hipaaCompliant": true,
+      "gdprCompliant": true,
+      "requestBody": {
+        "patientId": "string",
+        "reviewNotes": "string",
+        "medications": [
+          {}
+        ],
+        "status": "string"
+      },
+      "responseBody": {
+        "success": true,
+        "message": "string",
+        "data": {
+          "prescription": null
+        }
+      },
+      "parameters": [
+        {
+          "in": "path",
+          "name": "id",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/prescriptions/needing-review",
+      "description": "Get prescriptions needing review",
+      "tags": [
+        "Prescriptions"
+      ],
+      "auth": true,
+      "rateLimit": "200 requests / 15 minutes",
+      "dataCollected": [
+        "User ID",
+        "Request metadata",
+        "Timestamp"
+      ],
+      "dataShared": [
+        "None - internal use only"
+      ],
+      "retention": "Standard retention policies apply (see Privacy Policy)",
+      "hipaaCompliant": true,
+      "gdprCompliant": true,
+      "requestBody": null,
+      "responseBody": {
+        "success": true,
+        "data": {
+          "prescriptions": [
+            null
+          ],
+          "pagination": null
+        }
+      },
+      "parameters": [
+        {
+          "in": "query",
+          "name": "page",
+          "schema": {
+            "type": "integer"
+          }
+        },
+        {
+          "in": "query",
+          "name": "limit",
+          "schema": {
+            "type": "integer"
+          }
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/prescriptions/schedule",
+      "description": "Get daily medication schedule",
+      "tags": [
+        "Prescriptions"
+      ],
+      "auth": true,
+      "rateLimit": "200 requests / 15 minutes",
+      "dataCollected": [
+        "User ID",
+        "Request metadata",
+        "Timestamp"
+      ],
+      "dataShared": [
+        "None - internal use only"
+      ],
+      "retention": "Standard retention policies apply (see Privacy Policy)",
+      "hipaaCompliant": true,
+      "gdprCompliant": true,
+      "requestBody": null,
+      "responseBody": {
+        "success": true,
+        "data": {
+          "schedule": [
+            {}
+          ],
+          "date": "2026-06-15T22:57:42.354Z",
+          "totalDoses": 0
+        }
+      },
+      "parameters": [
+        {
+          "in": "query",
+          "name": "date",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "date"
+          }
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/prescriptions/stats",
+      "description": "Get prescription statistics",
+      "tags": [
+        "Prescriptions"
+      ],
+      "auth": true,
+      "rateLimit": "200 requests / 15 minutes",
+      "dataCollected": [
+        "User ID",
+        "Request metadata",
+        "Timestamp"
+      ],
+      "dataShared": [
+        "None - internal use only"
+      ],
+      "retention": "Standard retention policies apply (see Privacy Policy)",
+      "hipaaCompliant": true,
+      "gdprCompliant": true,
+      "requestBody": null,
+      "responseBody": {
+        "success": true,
+        "data": {
+          "statistics": {}
+        }
+      },
+      "parameters": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/prescriptions/upload",
+      "description": "Upload and process prescription PDF",
+      "tags": [
+        "Prescriptions"
+      ],
+      "auth": true,
+      "rateLimit": "200 requests / 15 minutes",
+      "dataCollected": [
+        "User ID",
+        "Request metadata",
+        "Timestamp",
+        "Prescription"
+      ],
+      "dataShared": [
+        "None - internal use only"
+      ],
+      "retention": "Standard retention policies apply (see Privacy Policy)",
+      "hipaaCompliant": true,
+      "gdprCompliant": true,
+      "requestBody": {
+        "prescription": "binary_file_data"
+      },
+      "responseBody": {
+        "success": true,
+        "message": "string",
+        "data": {
+          "prescription": null,
+          "extractedData": {},
+          "needsReview": true,
+          "medicationsCount": 0
+        }
+      },
+      "parameters": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/presentation/slide",
+      "description": "Change the current slide or main state",
+      "tags": [
+        "Presentation"
+      ],
+      "auth": true,
+      "rateLimit": "200 requests / 15 minutes",
+      "dataCollected": [
+        "User ID",
+        "Request metadata",
+        "Timestamp",
+        "Slide",
+        "Blackout"
+      ],
+      "dataShared": [
+        "None - internal use only"
+      ],
+      "retention": "Standard retention policies apply (see Privacy Policy)",
+      "hipaaCompliant": true,
+      "gdprCompliant": true,
+      "requestBody": {
+        "slide": "string",
+        "blackout": true
+      },
+      "responseBody": {
+        "success": true,
+        "state": {
+          "slide": "string",
+          "blackout": true,
+          "ephemeral": {}
+        }
+      },
+      "parameters": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/presentation/stream",
+      "description": "Server-Sent Events stream for real-time presentation",
+      "tags": [
+        "Presentation"
+      ],
+      "auth": true,
+      "rateLimit": "200 requests / 15 minutes",
+      "dataCollected": [
+        "User ID",
+        "Request metadata",
+        "Timestamp"
+      ],
+      "dataShared": [
+        "None - internal use only"
+      ],
+      "retention": "Standard retention policies apply (see Privacy Policy)",
+      "hipaaCompliant": true,
+      "gdprCompliant": true,
+      "requestBody": null,
+      "responseBody": null,
+      "parameters": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/presentation/sync",
+      "description": "Synchronize movements (clicks, input, laser, scroll)",
+      "tags": [
+        "Presentation"
+      ],
+      "auth": true,
+      "rateLimit": "200 requests / 15 minutes",
+      "dataCollected": [
+        "User ID",
+        "Request metadata",
+        "Timestamp",
+        "Action",
+        "Payload"
+      ],
+      "dataShared": [
+        "None - internal use only"
+      ],
+      "retention": "Standard retention policies apply (see Privacy Policy)",
+      "hipaaCompliant": true,
+      "gdprCompliant": true,
+      "requestBody": {
+        "action": "string",
+        "payload": {}
+      },
+      "responseBody": {
+        "success": true
       },
       "parameters": []
     },
@@ -1575,7 +2794,7 @@
         "Reports"
       ],
       "auth": true,
-      "rateLimit": "5 requests / hour",
+      "rateLimit": "20 requests / 1 hour",
       "dataCollected": [
         "Report date range",
         "Medication adherence data",
@@ -1646,7 +2865,7 @@
       "tags": [
         "Reports"
       ],
-      "rateLimit": "5 requests / hour",
+      "rateLimit": "20 requests / 1 hour",
       "dataCollected": [
         "Report date range",
         "Medication adherence data",
@@ -1665,7 +2884,7 @@
         "success": true,
         "valid": true,
         "message": "string",
-        "document": {}
+        "document": null
       },
       "parameters": [
         {
@@ -1681,13 +2900,12 @@
     },
     {
       "method": "GET",
-      "path": "/api/users/{id}",
-      "description": "Get user by ID",
+      "path": "/api/reviews",
+      "description": "Get all reviews",
       "tags": [
-        "Users"
+        "Reviews"
       ],
-      "auth": true,
-      "rateLimit": "100 requests / 15 minutes",
+      "rateLimit": "200 requests / 15 minutes",
       "dataCollected": [
         "User ID",
         "Request metadata",
@@ -1702,7 +2920,78 @@
       "requestBody": null,
       "responseBody": {
         "success": true,
-        "data": {}
+        "data": [
+          null
+        ]
+      },
+      "parameters": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/reviews",
+      "description": "Submit a new review",
+      "tags": [
+        "Reviews"
+      ],
+      "rateLimit": "200 requests / 15 minutes",
+      "dataCollected": [
+        "User ID",
+        "Request metadata",
+        "Timestamp",
+        "Name",
+        "Role",
+        "Type",
+        "Content",
+        "Rating"
+      ],
+      "dataShared": [
+        "None - internal use only"
+      ],
+      "retention": "Standard retention policies apply (see Privacy Policy)",
+      "hipaaCompliant": true,
+      "gdprCompliant": true,
+      "requestBody": {
+        "name": "string",
+        "role": "string",
+        "type": "clinical",
+        "content": "string",
+        "rating": 0
+      },
+      "responseBody": {
+        "success": true,
+        "message": "string",
+        "data": {
+          "review": null
+        }
+      },
+      "parameters": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/users/{id}",
+      "description": "Get user by ID",
+      "tags": [
+        "Users"
+      ],
+      "auth": true,
+      "rateLimit": "200 requests / 15 minutes",
+      "dataCollected": [
+        "User ID",
+        "Request metadata",
+        "Timestamp"
+      ],
+      "dataShared": [
+        "None - internal use only"
+      ],
+      "retention": "Standard retention policies apply (see Privacy Policy)",
+      "hipaaCompliant": true,
+      "gdprCompliant": true,
+      "requestBody": null,
+      "responseBody": {
+        "success": true,
+        "data": {
+          "user": null
+        }
       },
       "parameters": [
         {
@@ -1723,11 +3012,12 @@
         "Users"
       ],
       "auth": true,
-      "rateLimit": "100 requests / 15 minutes",
+      "rateLimit": "200 requests / 15 minutes",
       "dataCollected": [
         "User ID",
         "Request metadata",
-        "Timestamp"
+        "Timestamp",
+        "Status"
       ],
       "dataShared": [
         "None - internal use only"
@@ -1754,7 +3044,7 @@
       ]
     }
   ],
-  "totalEndpoints": 46,
-  "generated": "2025-12-22T13:24:23.914Z",
+  "totalEndpoints": 76,
+  "generated": "2026-06-15T22:57:42.354Z",
   "version": "1.0.0"
 }

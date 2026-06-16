@@ -55,6 +55,14 @@ const { Op } = require('sequelize');
  *             schema:
  *               type: string
  *               format: binary
+ *       400:
+ *         $ref: '#/components/responses/ValidationError'
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ *       404:
+ *         $ref: '#/components/responses/NotFound'
+ *       500:
+ *         description: Internal server error
  */
 router.get(
   '/report/pdf',
@@ -171,12 +179,21 @@ router.get(
  *               properties:
  *                 success:
  *                   type: boolean
+ *                   example: true
  *                 valid:
  *                   type: boolean
  *                 message:
  *                   type: string
  *                 document:
- *                   type: object
+ *                   $ref: '#/components/schemas/DocumentMetadata'
+ *       400:
+ *         $ref: '#/components/responses/ValidationError'
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ *       404:
+ *         $ref: '#/components/responses/NotFound'
+ *       500:
+ *         description: Internal server error
  */
 router.get(
   '/verify',

@@ -35,6 +35,21 @@ const handleValidationErrors = (req, res, next) => {
  *     responses:
  *       200:
  *         description: Current consent status
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     consents:
+ *                       $ref: '#/components/schemas/ConsentStatus'
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
  */
 router.get(
   '/',
@@ -83,6 +98,34 @@ router.get(
  *     responses:
  *       201:
  *         description: Consent recorded
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "Consent granted for symptom_processing"
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     id:
+ *                       type: string
+ *                       format: uuid
+ *                     consentType:
+ *                       type: string
+ *                     action:
+ *                       type: string
+ *                     createdAt:
+ *                       type: string
+ *                       format: date-time
+ *       400:
+ *         $ref: '#/components/responses/ValidationError'
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
  */
 router.post(
   '/',
@@ -134,6 +177,37 @@ router.post(
  *     responses:
  *       200:
  *         description: Consent history
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     history:
+ *                       type: array
+ *                       items:
+ *                         type: object
+ *                         properties:
+ *                           id:
+ *                             type: string
+ *                             format: uuid
+ *                           consentType:
+ *                             type: string
+ *                           action:
+ *                             type: string
+ *                           ipAddress:
+ *                             type: string
+ *                             nullable: true
+ *                           createdAt:
+ *                             type: string
+ *                             format: date-time
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
  */
 router.get(
   '/history',
