@@ -63,7 +63,7 @@ const timelineData = [
   {
     month: "December 2025",
     title: "First Prototypes",
-    images: ["/3-1.jpeg", "/3-2.jpeg", "/3-3.jpeg", "/3-4.jpeg"],
+    images: ["/3-1.jpeg", "/3-2.jpeg", "/3-3.jpeg"],
     events: [
       {
         date: "11/12/2025",
