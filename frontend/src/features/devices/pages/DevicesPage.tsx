@@ -13,10 +13,12 @@ import {
   Pill
 } from 'lucide-react';
 import { useCareBox } from '../../../hooks/useCareBox';
+import { useTheme } from '../../../context/ThemeContext'; // Importado para manter consistência, caso precises
 
 const DIAS_SEMANA = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'];
 
 export function DevicesPage() {
+  const { theme: _ } = useTheme(); // Para garantir que reage ao contexto
   const { 
     isConnected, 
     lastEvent, 
@@ -70,7 +72,7 @@ export function DevicesPage() {
   };
 
   const renderLastEvent = () => {
-    if (!lastEvent) return <p className="text-gray-500 italic">A aguardar dados da CareBox...</p>;
+    if (!lastEvent) return <p className="text-text-muted italic">A aguardar dados da CareBox...</p>;
 
     const parts = lastEvent.split('|');
     const type = parts[0];
@@ -78,37 +80,37 @@ export function DevicesPage() {
     switch (type) {
       case 'MED_TOMADA':
         return (
-          <div className="flex items-center text-green-700 bg-green-50 p-3 rounded-lg border border-green-200 w-full">
+          <div className="flex items-center text-emerald-500 bg-emerald-500/10 p-3 rounded-lg border border-emerald-500/20 w-full">
             <CheckCircle2 className="w-5 h-5 mr-3 flex-shrink-0" />
-            <span>
-              <strong>{parts[1]}</strong> tomada {parts[2] === 'pontual' ? 'a horas' : `com ${parts[3]} de atraso`}.
+            <span className="text-sm">
+              <strong className="font-bold">{parts[1]}</strong> tomada {parts[2] === 'pontual' ? 'a horas' : `com ${parts[3]} de atraso`}.
             </span>
           </div>
         );
       case 'MED_IGNORADA':
         return (
-          <div className="flex items-center text-red-700 bg-red-50 p-3 rounded-lg border border-red-200 w-full">
+          <div className="flex items-center text-red-500 bg-red-500/10 p-3 rounded-lg border border-red-500/20 w-full">
             <AlertCircle className="w-5 h-5 mr-3 flex-shrink-0" />
-            <span>Alerta: A toma de <strong>{parts[1]}</strong> foi falhada/ignorada!</span>
+            <span className="text-sm">Alerta: A toma de <strong className="font-bold">{parts[1]}</strong> foi falhada/ignorada!</span>
           </div>
         );
       case 'RESTOCK':
         return (
-          <div className="flex items-center text-amber-700 bg-amber-50 p-3 rounded-lg border border-amber-200 w-full">
+          <div className="flex items-center text-amber-500 bg-amber-500/10 p-3 rounded-lg border border-amber-500/20 w-full">
             <Package className="w-5 h-5 mr-3 flex-shrink-0" />
-            <span>Gaveta vazia! Faltam apenas <strong>{parts[1]}</strong> tomas.</span>
+            <span className="text-sm">Gaveta vazia! Faltam apenas <strong className="font-bold">{parts[1]}</strong> tomas.</span>
           </div>
         );
       case 'RFID':
         return (
-          <div className="flex items-center text-blue-700 bg-blue-50 p-3 rounded-lg border border-blue-200 w-full">
+          <div className="flex items-center text-brand-primary bg-brand-primary/10 p-3 rounded-lg border border-brand-primary/20 w-full">
             <Activity className="w-5 h-5 mr-3 flex-shrink-0" />
-            <span>RFID Lido: {parts[1] === 'UNKNOWN' ? 'Desconhecido' : `Plano ${parts[1]}`}</span>
+            <span className="text-sm">RFID Lido: {parts[1] === 'UNKNOWN' ? 'Desconhecido' : `Plano ${parts[1]}`}</span>
           </div>
         );
       default:
         return (
-          <div className="p-3 bg-gray-100 rounded-lg text-gray-700 font-mono text-sm w-full break-all">
+          <div className="p-3 bg-bg-page border border-border-subtle rounded-lg text-text-muted font-mono text-xs w-full break-all">
             Raw: {lastEvent}
           </div>
         );
@@ -116,23 +118,26 @@ export function DevicesPage() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6 pb-20">
+    <div className="max-w-4xl mx-auto space-y-6 pb-20 pt-8 px-4 sm:px-0">
       
       {/* HEADER: STATUS BLUETOOTH */}
-      <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 flex flex-col sm:flex-row justify-between items-center gap-4">
+      <div className="bg-bg-card p-6 rounded-xl shadow-sm border border-border-subtle flex flex-col sm:flex-row justify-between items-center gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-            CareBox Control <span className="text-xs font-semibold text-blue-600 bg-blue-100 px-2 py-1 rounded-full">BLE Módulo</span>
+          <h1 className="text-2xl font-bold text-text-main flex items-center gap-2">
+            CareBox Control 
+            <span className="text-[10px] font-bold uppercase tracking-wider text-brand-primary bg-brand-primary/10 border border-brand-primary/20 px-2.5 py-1 rounded-full">
+              BLE Módulo
+            </span>
           </h1>
-          <p className="text-gray-500 text-sm mt-1">Modo de Depuração e Configuração Manual</p>
+          <p className="text-text-muted text-sm mt-1">Modo de Depuração e Configuração Manual</p>
         </div>
 
         <button
           onClick={isConnected ? disconnect : connectToBox}
-          className={`flex items-center gap-2 px-6 py-3 rounded-xl font-bold text-white transition-all shadow-md ${
+          className={`flex items-center gap-2 px-6 py-3 rounded-xl font-bold transition-all shadow-sm border ${
             isConnected 
-              ? 'bg-red-500 hover:bg-red-600' 
-              : 'bg-blue-600 hover:bg-blue-700 active:scale-95'
+              ? 'bg-red-500/10 text-red-500 border-red-500/20 hover:bg-red-500/20' 
+              : 'bg-brand-primary text-white border-transparent hover:opacity-90 active:scale-95 shadow-md'
           }`}
         >
           {isConnected ? <BluetoothConnected className="w-5 h-5" /> : <Bluetooth className="w-5 h-5 animate-pulse" />}
@@ -141,62 +146,62 @@ export function DevicesPage() {
       </div>
 
       {!isConnected ? (
-        <div className="bg-blue-50 border border-blue-100 rounded-xl p-10 text-center flex flex-col items-center">
-          <div className="bg-blue-100 p-4 rounded-full mb-4">
-            <Bluetooth className="w-10 h-10 text-blue-500" />
+        <div className="bg-brand-primary/5 border border-brand-primary/20 rounded-xl p-10 text-center flex flex-col items-center">
+          <div className="bg-brand-primary/10 p-4 rounded-full mb-4 border border-brand-primary/20">
+            <Bluetooth className="w-10 h-10 text-brand-primary" />
           </div>
-          <h3 className="text-xl font-semibold text-blue-900 mb-2">À procura da CareBox...</h3>
-          <p className="text-blue-700 max-w-md">
-            Liga o Bluetooth do teu telemóvel, liga a CareBox à corrente e clica no botão acima para iniciar o emparelhamento.
+          <h3 className="text-xl font-bold text-text-main mb-2">À procura da CareBox...</h3>
+          <p className="text-text-muted max-w-md">
+            Liga o Bluetooth do teu dispositivo, liga a CareBox à corrente e clica no botão acima para iniciar o emparelhamento.
           </p>
         </div>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           
           {/* PAINEL ESQUERDO: ENVIO DE DADOS (WRITE) */}
-          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 flex flex-col">
-            <h2 className="text-lg font-bold mb-5 flex items-center gap-2 text-gray-800">
-              <Pill className="w-5 h-5 text-indigo-500" />
+          <div className="bg-bg-card p-6 rounded-xl shadow-sm border border-border-subtle flex flex-col">
+            <h2 className="text-lg font-bold mb-5 flex items-center gap-2 text-text-main">
+              <Pill className="w-5 h-5 text-brand-primary" />
               Testar Configuração (Write)
             </h2>
             
             <form onSubmit={handleSendConfig} className="space-y-4 flex-1">
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1">Nome do Medicamento</label>
+                <label className="block text-sm font-semibold text-text-main mb-1.5">Nome do Medicamento</label>
                 <input 
                   type="text" 
                   value={medName}
                   onChange={(e) => setMedName(e.target.value)}
                   placeholder="Ex: Brufen 600mg"
-                  className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
+                  className="w-full p-3 bg-bg-page border border-border-subtle text-text-main rounded-xl focus:ring-2 focus:ring-brand-primary/50 focus:border-brand-primary outline-none transition-all placeholder:text-text-muted/50"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1">Hora da Toma</label>
+                <label className="block text-sm font-semibold text-text-main mb-1.5">Hora da Toma</label>
                 <div className="relative">
-                  <Clock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                  <Clock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-text-muted w-5 h-5" />
                   <input 
                     type="time" 
                     value={medTime}
                     onChange={(e) => setMedTime(e.target.value)}
-                    className="w-full p-3 pl-10 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none"
+                    className="w-full p-3 pl-10 bg-bg-page border border-border-subtle text-text-main rounded-xl focus:ring-2 focus:ring-brand-primary/50 focus:border-brand-primary outline-none transition-all"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Dias da Semana</label>
+                <label className="block text-sm font-semibold text-text-main mb-2">Dias da Semana</label>
                 <div className="flex justify-between gap-1">
                   {DIAS_SEMANA.map((dia, index) => (
                     <button
                       key={dia}
                       type="button"
                       onClick={() => handleToggleDay(index)}
-                      className={`w-10 h-10 rounded-full text-xs font-bold transition-colors ${
+                      className={`w-10 h-10 rounded-full text-xs font-bold transition-all border ${
                         medDays[index] 
-                          ? 'bg-indigo-600 text-white shadow-md' 
-                          : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+                          ? 'bg-brand-primary text-white border-transparent shadow-md' 
+                          : 'bg-bg-page text-text-muted border-border-subtle hover:border-brand-primary/50 hover:text-brand-primary'
                       }`}
                     >
                       {dia}
@@ -209,7 +214,7 @@ export function DevicesPage() {
                 <button
                   type="submit"
                   disabled={isSending}
-                  className="w-full flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white py-4 rounded-xl font-bold transition-all disabled:opacity-50 active:scale-95 shadow-lg shadow-indigo-200"
+                  className="w-full flex items-center justify-center gap-2 bg-brand-primary hover:opacity-90 text-white py-4 rounded-xl font-bold transition-all disabled:opacity-50 active:scale-95 shadow-md shadow-brand-primary/20 border border-transparent"
                 >
                   <Send className={`w-5 h-5 ${isSending ? 'animate-pulse' : ''}`} />
                   {isSending ? 'A enviar...' : 'Enviar para a Caixa'}
@@ -222,23 +227,23 @@ export function DevicesPage() {
           <div className="space-y-6 flex flex-col">
             
             {/* EVENTOS EM TEMPO REAL */}
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 flex-1">
-              <h2 className="text-lg font-bold mb-4 flex items-center gap-2 text-gray-800">
-                <Activity className="w-5 h-5 text-green-500 animate-pulse" />
+            <div className="bg-bg-card p-6 rounded-xl shadow-sm border border-border-subtle flex-1">
+              <h2 className="text-lg font-bold mb-3 flex items-center gap-2 text-text-main">
+                <Activity className="w-5 h-5 text-emerald-500 animate-pulse" />
                 Monitor de Eventos (Notify)
               </h2>
-              <p className="text-sm text-gray-500 mb-4">
+              <p className="text-xs text-text-muted mb-4 leading-relaxed">
                 Abre a gaveta da CareBox, usa o cartão RFID ou espera pela hora configurada para ver a caixa a comunicar com a App.
               </p>
-              <div className="min-h-[80px] flex items-center justify-center bg-gray-50 border border-gray-100 rounded-xl p-2">
+              <div className="min-h-[80px] flex items-center justify-center bg-bg-page border border-border-subtle rounded-xl p-3">
                 {renderLastEvent()}
               </div>
             </div>
 
             {/* MOTOR */}
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-              <h2 className="text-lg font-bold mb-4 flex items-center gap-2 text-gray-800">
-                <Settings className="w-5 h-5 text-gray-500" />
+            <div className="bg-bg-card p-6 rounded-xl shadow-sm border border-border-subtle">
+              <h2 className="text-lg font-bold mb-4 flex items-center gap-2 text-text-main">
+                <Settings className="w-5 h-5 text-text-muted" />
                 Teste de Motor Stepper
               </h2>
               <div className="flex flex-col sm:flex-row gap-3">
@@ -248,12 +253,12 @@ export function DevicesPage() {
                     value={motorSteps}
                     onChange={(e) => setMotorSteps(Number(e.target.value))}
                     placeholder="Passos (Ex: 512)"
-                    className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-gray-800 outline-none"
+                    className="w-full p-3 bg-bg-page border border-border-subtle text-text-main rounded-xl focus:ring-2 focus:ring-brand-primary/50 focus:border-brand-primary outline-none transition-all placeholder:text-text-muted/50"
                   />
                 </div>
                 <button
                   onClick={handleTestMotor}
-                  className="bg-gray-800 hover:bg-gray-900 text-white px-6 py-3 rounded-xl font-bold transition-all active:scale-95"
+                  className="bg-bg-page border border-border-subtle text-text-main hover:border-brand-primary/50 hover:text-brand-primary px-6 py-3 rounded-xl font-bold transition-all active:scale-95"
                 >
                   Rodar Gaveta
                 </button>
