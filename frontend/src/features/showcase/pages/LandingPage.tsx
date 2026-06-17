@@ -398,7 +398,7 @@ function CinematicVideoShowcase() {
       <div className="absolute inset-0 w-full h-full overflow-hidden pointer-events-none z-0">
         <video
           ref={blurVideoRef}
-          src="/video.mp4" 
+          src="/video.mp4?cache=blur" 
           muted
           loop
           playsInline
@@ -429,7 +429,7 @@ function CinematicVideoShowcase() {
           <div className="absolute inset-0 flex justify-center items-center pointer-events-none z-0">
             <video
               ref={glowVideoRef}
-              src="/video.mp4"
+              src="/video.mp4?cache=glow"
               muted
               loop
               playsInline
@@ -471,7 +471,7 @@ function CinematicVideoShowcase() {
             >
               <video
                 ref={videoRef}
-                src="/video.mp4" 
+                src="/video.mp4?cache=main" 
                 preload="auto" 
                 onTimeUpdate={handleTimeUpdate}
                 className={`absolute inset-0 w-full h-full object-cover transition-all duration-700 ${(!isPlaying || !isActivated) ? 'blur-sm brightness-50 grayscale-[30%]' : 'blur-0 brightness-100 grayscale-0'}`}

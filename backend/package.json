@@ -14,6 +14,7 @@
     "generate-docs": "node scripts/generateApiDocs.js"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.108.2",
     "@vercel/kv": "^3.0.0",
     "bcryptjs": "^3.0.3",
     "compression": "^1.8.1",

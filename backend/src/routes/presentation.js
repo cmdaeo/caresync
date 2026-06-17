@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { kv } = require('@vercel/kv');
 const EventEmitter = require('events');
+const { presentationChannel } = require('../utils/supabase');
 
 const presentationEvents = new EventEmitter();
 presentationEvents.setMaxListeners(500);
@@ -159,7 +160,10 @@ router.post('/slide', async (req, res) => {
   localState.ephemeral = { scroll: null, highlight: null, laser: null, models3D: {} };
   const newState = await updatePresentationState(req.body);
   
-  presentationEvents.emit('update', { type: 'state_sync', state: { slide: newState.slide, blackout: newState.blackout } });
+  const payload = { type: 'state_sync', state: { slide: newState.slide, blackout: newState.blackout } };
+  presentationEvents.emit('update', payload);
+  presentationChannel.send({ type: 'broadcast', event: 'sync', payload });
+
   res.json({ success: true, state: newState });
 });
 
@@ -210,9 +214,13 @@ router.post('/sync', (req, res) => {
       if (item.action === 'LASER') localState.ephemeral.laser = item.payload;
       if (item.action === 'MODEL_3D') localState.ephemeral.models3D[item.payload.path.join('-')] = item.payload;
     });
-    presentationEvents.emit('update', { type: 'batch_sync', batch: payload });
+    const eventPayload = { type: 'batch_sync', batch: payload };
+    presentationEvents.emit('update', eventPayload);
+    presentationChannel.send({ type: 'broadcast', event: 'sync', payload: eventPayload });
   } else {
-    presentationEvents.emit('update', { type: 'sync', action, payload });
+    const eventPayload = { type: 'sync', action, payload };
+    presentationEvents.emit('update', eventPayload);
+    presentationChannel.send({ type: 'broadcast', event: 'sync', payload: eventPayload });
   }
 
   res.json({ success: true });

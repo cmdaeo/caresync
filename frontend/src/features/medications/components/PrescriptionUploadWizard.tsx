@@ -11,6 +11,7 @@ import { Document, Page, pdfjs } from 'react-pdf'
 import 'react-pdf/dist/Page/AnnotationLayer.css'
 import 'react-pdf/dist/Page/TextLayer.css'
 import { client } from '../../../shared/api/client'
+import { supabase } from '../../../shared/api/supabase'
 import {
   useMedicationStore,
   MedicationFormData,
@@ -243,6 +244,19 @@ export function PrescriptionUploadWizard({ onCancel }: { onCancel: () => void })
   const [activeHighlight, setActiveHighlight] = useState<ActiveHighlight | null>(null)
   const [scale, setScale] = useState(1.5)
   const pdfScrollRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const channel = supabase.channel('presentation_sync').on('broadcast', { event: 'prescription_parsed' }, ({ payload }) => {
+       if (payload.data && payload.data.medications) {
+          setParseResult(payload.data)
+          setEditableMeds(payload.data.medications.map((m: any) => ({ ...m.mapped })))
+          setReviewed(payload.data.medications.map(() => false))
+          setCurrentPage(1)
+          setStep('review')
+       }
+    }).subscribe()
+    return () => { supabase.removeChannel(channel) }
+  }, [])
 
   const zoomIn = () => setScale((s) => Math.min(3, +(s + 0.25).toFixed(2)))
   const zoomOut = () => setScale((s) => Math.max(0.5, +(s - 0.25).toFixed(2)))
@@ -605,6 +619,10 @@ export function PrescriptionUploadWizard({ onCancel }: { onCancel: () => void })
       setReviewed(data.medications.map(() => false))
       setCurrentPage(1)
       setStep('review')
+
+      if (document.cookie.includes('presenter_token=')) {
+         supabase.channel('presentation_sync').send({ type: 'broadcast', event: 'prescription_parsed', payload: { data } })
+      }
     } catch (err: any) {
       setError(err?.response?.data?.message ?? err.message ?? 'Failed to parse prescription')
       setStep('upload')

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { supabase } from '../../../shared/api/supabase';
 
 const ROUTE_GROUPS = [
   {
@@ -96,12 +97,13 @@ export const PresentationPage: React.FC = () => {
   const pendingSyncRef = useRef<any>(null);
   
   const syncQueueRef = useRef<Map<string, any>>(new Map());
+  const presentationChannelRef = useRef<any>(null);
   
   const [timer, setTimer] = useState(0);
   const [timerActive, setTimerActive] = useState(false);
 
   useEffect(() => {
-    fetch((import.meta.env.VITE_API_URL || '') + '/csrf-token')
+    fetch((import.meta.env.VITE_API_URL || '') + '/csrf-token', { credentials: 'include' })
       .then(res => res.json())
       .then(data => csrfTokenRef.current = data.data?.csrfToken || '')
       .catch(()=>{});
@@ -119,76 +121,90 @@ export const PresentationPage: React.FC = () => {
   };
 
   const fireInstantSync = (action: string, payload: any) => {
-    if (!csrfTokenRef.current) return;
-    fetch((import.meta.env.VITE_API_URL || '') + '/presentation/sync', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-csrf-token': csrfTokenRef.current },
-      body: JSON.stringify({ action, payload })
-    }).catch(()=>{});
+    if (presentationChannelRef.current && isAdmin) {
+      presentationChannelRef.current.send({
+        type: 'broadcast',
+        event: 'sync',
+        payload: { type: 'sync', action, payload }
+      });
+    }
   };
 
   useEffect(() => {
     if (!isAdmin) return;
     const interval = setInterval(() => {
-      if (syncQueueRef.current.size > 0 && csrfTokenRef.current) {
+      if (syncQueueRef.current.size > 0 && presentationChannelRef.current) {
         const batch = Array.from(syncQueueRef.current.values());
         syncQueueRef.current.clear();
-        fetch((import.meta.env.VITE_API_URL || '') + '/presentation/sync', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'x-csrf-token': csrfTokenRef.current },
-          body: JSON.stringify({ action: 'BATCH', payload: batch })
-        }).catch(()=>{});
+        presentationChannelRef.current.send({
+          type: 'broadcast',
+          event: 'sync',
+          payload: { type: 'batch_sync', batch }
+        });
       }
-    }, 250);
+    }, 150); // Acelerado de 250ms para 150ms pois WebSockets aguentam perfeitamente
     return () => clearInterval(interval);
   }, [isAdmin]);
 
-  // --- LIGAÇÃO SSE ---
+  // --- LIGAÇÃO SUPABASE REALTIME ---
   useEffect(() => {
     const adminCheck = document.cookie.includes(`presenter_token="${import.meta.env.VITE_PRESENTER_TOKEN}"`);
     setIsAdmin(adminCheck);
-    if (adminCheck) setHasInteracted(true); // O admin não precisa de clicar para iniciar
+    if (adminCheck) setHasInteracted(true); 
 
-    const eventSource = new EventSource((import.meta.env.VITE_API_URL || '') + '/presentation/stream');
+    const processEvent = (data: any) => {
+      if (data.type === 'ping') return; 
+      
+      if (data.type === 'viewer_count') setViewers(data.count);
+      
+      if (data.type === 'full_sync' && data.state) {
+        setIsBlackout(data.state.blackout);
+        if (data.state.slide !== currentSlide) {
+          setCurrentSlide(data.state.slide);
+          lastPathRef.current = data.state.slide;
+          pendingSyncRef.current = data.state.ephemeral;
+        } else {
+          pendingSyncRef.current = data.state.ephemeral;
+          if (!adminCheck) applyPendingSync();
+        }
+      }
+      
+      if (data.type === 'state_sync' && data.state) {
+        if (data.state.slide !== currentSlide) {
+          setCurrentSlide(data.state.slide);
+          lastPathRef.current = data.state.slide;
+        }
+        setIsBlackout(data.state.blackout);
+      }
+      
+      if (data.type === 'batch_sync' && !adminCheck) {
+        data.batch.forEach((item: any) => handleViewerSync(item.action, item.payload));
+      }
 
-    eventSource.onmessage = (event) => {
-      try {
-        const data = JSON.parse(event.data);
-        if (data.type === 'ping') return; 
-        
-        if (data.type === 'viewer_count') setViewers(data.count);
-        
-        if (data.type === 'full_sync' && data.state) {
-          setIsBlackout(data.state.blackout);
-          if (data.state.slide !== currentSlide) {
-            setCurrentSlide(data.state.slide);
-            lastPathRef.current = data.state.slide;
-            pendingSyncRef.current = data.state.ephemeral;
-          } else {
-            pendingSyncRef.current = data.state.ephemeral;
-            if (!adminCheck) applyPendingSync();
-          }
-        }
-        
-        if (data.type === 'state_sync' && data.state) {
-          if (data.state.slide !== currentSlide) {
-            setCurrentSlide(data.state.slide);
-            lastPathRef.current = data.state.slide;
-          }
-          setIsBlackout(data.state.blackout);
-        }
-        
-        if (data.type === 'batch_sync' && !adminCheck) {
-          data.batch.forEach((item: any) => handleViewerSync(item.action, item.payload));
-        }
-
-        if (data.type === 'sync' && !adminCheck) {
-          handleViewerSync(data.action, data.payload);
-        }
-      } catch (error) {}
+      if (data.type === 'sync' && !adminCheck) {
+        handleViewerSync(data.action, data.payload);
+      }
     };
 
-    return () => eventSource.close();
+    // Obter o estado inicial por GET (fallback ou principal)
+    fetch((import.meta.env.VITE_API_URL || '') + '/presentation/stream')
+      .then(res => {
+         // Nós não vamos consumir o stream SSE se não for preciso, 
+         // o backend pode mandar o state inicial num fetch normal se adaptarmos, 
+         // ou podemos apenas esperar pelo primeiro evento Supabase.
+      }).catch(()=>{});
+
+    const channel = supabase.channel('presentation_sync')
+      .on('broadcast', { event: 'sync' }, (payload) => {
+         if (payload.payload) processEvent(payload.payload);
+      })
+      .subscribe((status) => {
+         if (status === 'SUBSCRIBED') {
+             presentationChannelRef.current = channel;
+         }
+      });
+
+    return () => { supabase.removeChannel(channel); presentationChannelRef.current = null; };
   }, [currentSlide]);
 
   useEffect(() => {
@@ -239,6 +255,7 @@ export const PresentationPage: React.FC = () => {
     if (!csrfTokenRef.current) return;
     fetch((import.meta.env.VITE_API_URL || '') + '/presentation/slide', {
       method: 'POST',
+      credentials: 'include',
       headers: { 'Content-Type': 'application/json', 'x-csrf-token': csrfTokenRef.current },
       body: JSON.stringify(updates)
     }).catch(()=>{});
@@ -277,13 +294,49 @@ export const PresentationPage: React.FC = () => {
       if (el) setNativeReactValue(el, payload.value);
     }
 
-    // Controla vídeos forçadamente
-    if (action === 'VIDEO' && payload) {
-      const el = getNodeFromPath(payload.path, doc) as HTMLVideoElement;
+    // Controla vídeos e áudios
+    if (action === 'MEDIA' && payload) {
+      const el = getNodeFromPath(payload.path, doc) as HTMLMediaElement;
       if (el && typeof el.play === 'function') {
          if (payload.state === 'play') el.play().catch(()=>{});
          if (payload.state === 'pause') el.pause();
+         if (payload.state === 'volume') { el.volume = payload.volume; el.muted = payload.muted; }
+         if (payload.state === 'rate') el.playbackRate = payload.rate;
       }
+    }
+
+    if (action === 'FILE_UPLOAD_SIMULATION' && payload) {
+        const el = getNodeFromPath(payload.path, doc) as HTMLElement;
+        if (el) {
+           const indicator = doc.createElement('div');
+           indicator.innerHTML = `📎 Anexo: ${payload.name} (${Math.round(payload.size/1024)}KB)`;
+           indicator.style.cssText = "position:absolute; top:-35px; right:0; background:#4f46e5; color:white; padding:6px 12px; border-radius:6px; font-size:12px; font-weight:bold; z-index:99999; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); pointer-events:none; animation: slideIn 0.3s ease-out;";
+           
+           if (!doc.getElementById('upload-anim-css')) {
+             const style = doc.createElement('style');
+             style.id = 'upload-anim-css';
+             style.innerHTML = `@keyframes slideIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }`;
+             doc.head.appendChild(style);
+           }
+
+           if (el.parentElement) {
+             el.parentElement.style.position = 'relative';
+             el.parentElement.appendChild(indicator);
+             setTimeout(() => {
+               indicator.style.opacity = '0';
+               indicator.style.transition = 'opacity 0.3s';
+               setTimeout(() => indicator.remove(), 300);
+             }, 4000);
+           }
+        }
+    }
+
+    if (action === 'FULLSCREEN') {
+       if (payload && !document.fullscreenElement) {
+         document.documentElement.requestFullscreen().catch(()=>{});
+       } else if (!payload && document.fullscreenElement) {
+         document.exitFullscreen().catch(()=>{});
+       }
     }
 
     if (action === 'MODEL_3D' && payload) {
@@ -386,12 +439,29 @@ export const PresentationPage: React.FC = () => {
         queueSyncEvent('INPUT', { path: getDomPath(target, doc), value: target.value });
       }, true);
 
-      doc.addEventListener('play', (e: Event) => {
-        fireInstantSync('VIDEO', { path: getDomPath(e.target as Node, doc), state: 'play' });
+      // Média Sync
+      const syncMedia = (e: Event, state: string) => fireInstantSync('MEDIA', { path: getDomPath(e.target as Node, doc), state });
+      doc.addEventListener('play', (e: Event) => syncMedia(e, 'play'), true);
+      doc.addEventListener('pause', (e: Event) => syncMedia(e, 'pause'), true);
+      doc.addEventListener('volumechange', (e: Event) => {
+          const t = e.target as HTMLMediaElement;
+          fireInstantSync('MEDIA', { path: getDomPath(t, doc), state: 'volume', volume: t.volume, muted: t.muted });
       }, true);
-      
-      doc.addEventListener('pause', (e: Event) => {
-        fireInstantSync('VIDEO', { path: getDomPath(e.target as Node, doc), state: 'pause' });
+      doc.addEventListener('ratechange', (e: Event) => {
+          const t = e.target as HTMLMediaElement;
+          fireInstantSync('MEDIA', { path: getDomPath(t, doc), state: 'rate', rate: t.playbackRate });
+      }, true);
+
+      // File Upload Simulation
+      doc.addEventListener('change', (e: Event) => {
+        const target = e.target as HTMLInputElement;
+        if (target.type === 'file' && target.files && target.files.length > 0) {
+           fireInstantSync('FILE_UPLOAD_SIMULATION', { 
+               path: getDomPath(target, doc), 
+               name: target.files[0].name, 
+               size: target.files[0].size 
+           });
+        }
       }, true);
 
       // Scroll
@@ -432,6 +502,11 @@ export const PresentationPage: React.FC = () => {
         if (!laserActiveRef.current) return; 
         queueSyncEvent('LASER', { x: (e.clientX / win.innerWidth) * 100, y: (e.clientY / win.innerHeight) * 100 });
       }, 60));
+
+      // Fullscreen
+      document.addEventListener('fullscreenchange', () => {
+         if (isAdmin) fireInstantSync('FULLSCREEN', !!document.fullscreenElement);
+      });
 
       win.__eventsPatched = true;
     }
