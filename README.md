@@ -1,105 +1,115 @@
-# CareSync — Next-Generation Healthcare Platform
+# CareSync
 
-> A cross-platform healthcare management application combining a smart IoT medication dispenser (CareBand/CareBox) with a highly advanced web and mobile interface for patients, caregivers, and healthcare providers.
+A cross-platform healthcare management application combining a smart IoT medication dispenser (CareBand/CareBox) with a web and mobile interface for patients, caregivers, and healthcare providers.
 
 [![Node.js](https://img.shields.io/badge/Node.js-18%2B-green)](https://nodejs.org)
 [![React](https://img.shields.io/badge/React-18-blue)](https://reactjs.org)
-[![Supabase](https://img.shields.io/badge/Realtime-Supabase%20WebSockets-green)](https://supabase.com)
+[![Supabase](https://img.shields.io/badge/Realtime-Supabase-green)](https://supabase.com)
 [![Vercel](https://img.shields.io/badge/Deployed-Vercel-black)](https://vercel.com)
-[![WebGL](https://img.shields.io/badge/3D-WebGL%20Model%20Viewer-orange)](https://modelviewer.dev)
 
 ---
 
-## 🌟 The CareSync Showcase Experience
+## Overview
 
-CareSync is not just an application; it is a meticulously crafted technical showcase demonstrating the bleeding edge of modern web development, IoT integration, and medical data security. We built this with strict constraints in mind (free tiers on Vercel and Supabase) and engineered creative workarounds to deliver a premium experience.
+CareSync manages medication adherence through a unified software platform and connected IoT hardware. The system supports three primary roles (Patient, Caregiver, Doctor) and focuses on secure data handling, prescription parsing, and real-time synchronization.
 
-### 🎭 Batched Presentation Engine (Free-Tier Optimized)
-We built a custom presentation synchronization engine to drive live demonstrations across multiple devices without relying on screen sharing. Because we are hosted on free tiers, we could not afford true 0ms zero-latency real-time sync without burning through Vercel execution limits or Supabase quota limits.
-**How we implemented it:**
-- **The 150ms Batch Queue**: Instead of sending every single mouse movement or scroll event immediately, the Admin's client heavily intercepts the DOM and queues `SCROLL`, `LASER`, `INPUT`, and `CLICK` events into a Map. Every 150ms, the queue flushes and broadcasts a single `batch_sync` payload over **Supabase WebSockets**. This keeps the presentation buttery smooth (simulating real-time) while massively reducing network requests.
-- **Vercel vs. Supabase Hybrid**: High-frequency ephemeral events (laser pointer, scrolling) completely bypass the Vercel backend and broadcast directly via Supabase WebSockets (which allows 200 concurrent connections for free). However, persistent state changes (like switching to a new slide) are securely `POST`ed to the Vercel backend so late-joining audience members know exactly which slide to render.
-- **Advanced Media Sync**: Native `<video>` and `<audio>` events (`play`, `pause`, `volumechange`, `ratechange`) are intercepted and synced across the audience.
-- **File Simulation & Parsing Sync**: Security protocols in browsers block scripts from modifying `<input type="file">`. To simulate the Admin uploading a prescription for the audience, we intercept the upload event and broadcast a `FILE_UPLOAD_SIMULATION`. The audience sees a custom CSS-animated overlay toast (`📎 Anexo: document.pdf`) visually proving the file was "uploaded". Once the backend parses the PDF, the extracted medication payload is broadcasted over WebSockets, instantly populating the audience's screen with the live results!
+This repository serves as both the functional application and a technical showcase of the architecture. Due to hosting constraints (Vercel and Supabase free tiers), several technical workarounds were implemented to maintain performance and stay within quota limits.
 
-### 📄 Cryptographic Adherence PDFs
-CareSync doesn't just display data; it generates secure, medically verifiable reports.
-**How we implemented it:**
-- **Server-Side Generation**: Uses `pdfkit` and `@napi-rs/canvas` to render high-fidelity, multipage adherence reports entirely on the Node.js backend.
-- **Military-Grade Security**: PDFs are generated with AES-128 RC4 password protection. We strictly enforce document permissions, disabling unauthorized copying, text extraction, and modification natively within the PDF headers.
-- **Blockchain-Ready Verification**: When a PDF is generated, we compute a SHA-256 cryptographic hash of the file buffer and store it in our `DocumentMetadata` table. We then embed a dynamically generated QR code (via `qrcode`) directly into the PDF. Scanning this printed QR code directs a doctor to a verification page that strictly extracts `req.headers.origin` to ensure the verification domain matches the deployment environment exactly, preventing spoofing.
+## Core Features & Technical Implementation
 
-### 👨‍⚕️ Zero-Trust Caregiver Portal
-The system supports distinct roles (Patient, Caregiver, Doctor) interacting with the same underlying IoT hardware.
-**How we implemented it:**
-- **Granular JSONB Permissions**: Patients can invite caregivers through an email invitation flow. The relationship (`CaregiverPatient` table) utilizes a granular JSONB permission model (`canViewMedications`, `canManageMedications`, `canReceiveAlerts`). 
-- **Medical vs. PII Isolation**: The backend uses a **dual-sequelize** architecture. PII (Personally Identifiable Information) is strictly isolated and encrypted at rest using AES field-level encryption (`sequelize-encrypted`), completely decoupled from the medical adherence data.
+### 1. Presentation Synchronization Engine
+A real-time presentation engine used for live demonstrations across multiple devices.
 
-### 🎬 Ambilight & 3D Hardware Showcase
-The landing page and hardware showcase push browser limits to impress users visually.
-**How we implemented it:**
-- **WebGL 3D PCB Rendering**: Native Google `<model-viewer>` integration allows users to interact with high-fidelity CAD models of the CareBox and CareBand PCBs natively in the browser.
-- **Optical Ambilight Video Sync**: We implemented an "Ambilight" CSS engine without using heavy canvas processing. We render three identical `<video>` tags simultaneously. The bottom layer is a heavy `blur-[100px]` wash, the middle layer is a mapped `blur-[30px]` glowing aura constrained exactly to the phone's border-radius, and the top layer is the sharp video. 
-- **Chromium Cache Bypass**: To prevent Chromium browsers from throwing `net::ERR_CACHE_OPERATION_NOT_SUPPORTED` when three videos request identical chunks simultaneously, we dynamically append cache-busting query strings (`?cache=main`, `?cache=blur`) to isolate the browser's internal media chunk cache.
-- **Native Fast-Forwarding**: Instead of manually manipulating `currentTime` (which causes irregular frame skipping), we manipulate the browser's native engine (`playbackRate = 8.0`) to create perfectly smooth, hardware-accelerated time-lapses.
+**Implementation details & constraints:**
+- **Batched Syncing:** To stay within Supabase and Vercel free-tier limits, true 0ms synchronization is not used. DOM events (`scroll`, `click`, `input`, pointer movement) are intercepted and queued into a Map. The queue is flushed every 150ms and sent as a single `batch_sync` payload via Supabase WebSockets.
+- **Hybrid Architecture:** High-frequency ephemeral events (like scrolling and pointer movements) bypass the Vercel backend entirely, establishing a direct frontend-to-frontend WebSocket connection via Supabase. Persistent state changes (e.g., changing the current slide) are `POST`ed to the Vercel backend so late-joining clients receive the correct initial state.
+- **Media Sync:** Native `<video>` and `<audio>` events (`play`, `pause`, `volumechange`, `ratechange`) are intercepted and synced.
+- **File Upload Simulation:** Browsers restrict scripts from programmatically modifying `<input type="file">`. To simulate file uploads during a presentation, the application intercepts the upload event, broadcasts a `FILE_UPLOAD_SIMULATION` payload, and renders a custom CSS overlay on the audience's screen. Once the backend parses the PDF, the extracted data payload is broadcasted, updating the audience's React state to match the presenter's.
 
-### 💊 Dual-Engine Prescription Pipeline
-**How we implemented it:**
-- **OCR Extraction**: When a prescription is uploaded, the Node.js backend buffers the file and processes it via `pdf-parse`.
-- **Regex & AI Fallback**: We built a custom Regex extraction engine tailored for Portuguese SNS (Serviço Nacional de Saúde) prescriptions that scans for known posology patterns, circumventing the need for expensive LLM calls on standard formats. An AI fallback engine is available for complex, non-standard layouts.
+### 2. Adherence PDF Generation
+Generates verifiable medication adherence reports.
+
+**Implementation details:**
+- **Server-Side Generation:** Uses `pdfkit` and `@napi-rs/canvas` on the Node.js backend.
+- **Security & Validation:** PDFs are encrypted with AES-128 RC4 password protection. Document permissions are set to restrict copying and modification natively.
+- **Verification QR Code:** A SHA-256 cryptographic hash of the PDF buffer is stored in the `DocumentMetadata` table. A QR code is generated using `qrcode` and embedded in the PDF. Scanning the QR code points to a verification endpoint that extracts `req.headers.origin` to ensure the validation URL matches the exact deployment environment.
+
+### 3. Caregiver Portal & Role Isolation
+Manages patient-caregiver relationships and data access.
+
+**Implementation details:**
+- **Permissions:** Uses a granular JSONB permission model (`canViewMedications`, `canManageMedications`, `canReceiveAlerts`) stored in the `CaregiverPatient` mapping table.
+- **Data Isolation:** The backend uses a dual-sequelize architecture. Personally Identifiable Information (PII) is isolated and encrypted at rest using AES field-level encryption (`sequelize-encrypted`), separated from general medical adherence data.
+
+### 4. 3D Hardware Showcase & Video Sync
+Showcases the physical hardware models and UI features.
+
+**Implementation details:**
+- **3D Rendering:** Uses Google's `<model-viewer>` for WebGL-based interactions with CareBox and CareBand PCB CAD models (`.glb` files).
+- **Video Ambilight Effect:** Renders three identical `<video>` tags layered with CSS `blur` and `mask-image` properties to create an ambient light effect based on the video's current frame. 
+- **Cache Workaround:** To prevent Chromium-based browsers from throwing `net::ERR_CACHE_OPERATION_NOT_SUPPORTED` when three video tags request the same chunked file simultaneously, cache-busting query strings (`?cache=main`, `?cache=blur`) are dynamically appended to isolate the browser's media cache.
+- **Time-lapsing:** Fast-forwarding the video is handled by modifying the native `playbackRate` rather than manipulating `currentTime`, which prevents irregular frame skipping.
+
+### 5. Prescription Parsing Pipeline
+Extracts posology data from uploaded medical prescriptions.
+
+**Implementation details:**
+- **OCR:** Buffers the PDF upload and processes text via `pdf-parse` on the Node.js backend.
+- **Parsing Engines:** Implements a custom Regex extraction engine tailored for Portuguese SNS (Serviço Nacional de Saúde) prescription layouts to avoid unnecessary LLM API costs. An AI fallback engine is available for non-standard layouts.
 
 ---
 
-## 🏗 Architecture
+## Architecture
 
-CareSync follows a **monorepo** layout with a clear separation between frontend and backend concerns. The backend is deployed as a **serverless function** on Vercel, and the frontend is a Vite-built React SPA also deployed to Vercel.
+The project is a monorepo. The backend is deployed as a serverless function, and the frontend is a Vite SPA.
 
 ```text
 caresync/
 ├── backend/          # Express.js REST API (Node.js)
 │   └── src/
-│       ├── config/   # Dual-DB connection, rate limiter
+│       ├── config/   # DB connection, rate limiter
 │       ├── controllers/
-│       ├── models/   # Sequelize ORM models
+│       ├── models/   # Sequelize ORM
 │       ├── routes/
-│       ├── services/ # Enhanced PDF, Auth, Prescription Parsing
+│       ├── services/ # PDF, Auth, Prescription Parsing
 │       └── utils/
 ├── frontend/         # React + TypeScript SPA (Vite)
 │   ├── android/      # Capacitor Android build
 │   └── src/
-│       ├── features/ # Feature-based structure (showcase, medications, etc)
-│       └── shared/   # Zustand stores, Supabase Realtime client
+│       ├── features/ # Feature modules
+│       └── shared/   # Zustand stores, Supabase client
 └── supabase-schema.sql
 ```
 
----
-
-## 🛡 Security Model
-
-1. **Transport**: HTTPS enforced, HSTS headers via `helmet`.
-2. **WebSocket CSRF Immunity**: High-frequency syncs bypass standard HTTP, utilizing Supabase channel authentication to remain immune to Cross-Site Request Forgery.
-3. **Data Encryption**: Field-level AES encryption for PII columns via `sequelize-encrypted`.
-4. **Consent**: Granular consent model with an immutable, append-only audit trail.
-5. **2FA**: TOTP-based (Google Authenticator compatible) with recovery codes.
+**Database:** PostgreSQL hosted on Supabase (EU West region).
 
 ---
 
-## 🚀 Getting Started
+## Security Overview
+
+- **Transport:** HTTPS enforced, HSTS headers via `helmet`.
+- **CSRF:** Double-submit cookie pattern on HTTP routes. WebSocket connections rely on Supabase channel authentication.
+- **Encryption:** AES encryption for PII fields via `sequelize-encrypted`.
+- **Authentication:** JWT (Access/Refresh tokens) + TOTP 2FA (Google Authenticator compatible).
+- **IoT Verification:** Device registration requires a signed PEM public key.
+
+---
+
+## Local Development
 
 ### Prerequisites
 - Node.js >= 18
-- PostgreSQL (or a Supabase project)
+- PostgreSQL (or Supabase local development)
 
-### Backend Setup
+### Backend
 ```bash
 cd backend
 cp .env.example .env
-# Fill in your DATABASE_URL, JWT secrets, encryption keys
 npm install
 npm run dev
 ```
 
-### Frontend Setup
+### Frontend
 ```bash
 cd frontend
 npm install
@@ -118,4 +128,4 @@ cd android
 ---
 
 ## License
-MIT © CareSync Team
+MIT
