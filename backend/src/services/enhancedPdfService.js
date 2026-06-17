@@ -91,7 +91,7 @@ class EnhancedPdfService {
         // ── Build the document top-to-bottom ──
         (async () => {
           try {
-            await this._buildDocument(doc, userData, adherenceData, startDate, endDate, includeCharts, documentId, now);
+            await this._buildDocument(doc, userData, adherenceData, startDate, endDate, includeCharts, documentId, now, options.origin);
             doc.end();
           } catch (err) {
             reject(err);
@@ -107,7 +107,7 @@ class EnhancedPdfService {
   // ─────────────────────────────────────────────────────────
   //  Main document builder — purely sequential, top-to-bottom
   // ─────────────────────────────────────────────────────────
-  async _buildDocument(doc, userData, adherenceData, startDate, endDate, includeCharts, documentId, timestamp) {
+  async _buildDocument(doc, userData, adherenceData, startDate, endDate, includeCharts, documentId, timestamp, originUrl) {
     const pageW = doc.page.width;
     const contentW = pageW - M * 2;
 
@@ -116,7 +116,7 @@ class EnhancedPdfService {
 
     // ── QR Code (top-right) ──
     try {
-      const baseUrl = process.env.BASE_URL || 'http://localhost:5173';
+      const baseUrl = originUrl || process.env.BASE_URL || 'http://localhost:5173';
       const qrUrl = `${baseUrl}/verify?docId=${documentId}`;
       const qrDataUrl = await QRCode.toDataURL(qrUrl, { width: 80, margin: 0 });
       const qrBuf = Buffer.from(qrDataUrl.split(',')[1], 'base64');

@@ -155,7 +155,8 @@ router.get(
           includeCharts,
           passwordProtect,
           reportPassword,
-          signatureRequired
+          signatureRequired,
+          origin: req.headers.origin
         }
       );
       
