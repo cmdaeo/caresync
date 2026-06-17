@@ -4,7 +4,7 @@ A cross-platform healthcare management application combining a smart IoT medicat
 
 [![Node.js](https://img.shields.io/badge/Node.js-18%2B-green)](https://nodejs.org)
 [![React](https://img.shields.io/badge/React-18-blue)](https://reactjs.org)
-[![Supabase](https://img.shields.io/badge/Realtime-Supabase-green)](https://supabase.com)
+[![Supabase](https://img.shields.io/badge/Database-Supabase-green)](https://supabase.com)
 [![Vercel](https://img.shields.io/badge/Deployed-Vercel-black)](https://vercel.com)
 
 ---
