@@ -128,7 +128,7 @@ export const CaregiverPatientDetail = () => {
         
         <div className="flex gap-3">
           <button
-            onClick={() => window.alert('Reports API coming soon or requires specific backend endpoint.')}
+            onClick={() => navigate(`/app/caregiver/reports?patientId=${patientId}`)}
             className="inline-flex items-center gap-2 px-4 py-2 bg-brand-primary text-white font-semibold rounded-lg hover:bg-brand-primary/90 transition-colors shadow-sm"
           >
             <FileText size={18} />
@@ -170,11 +170,85 @@ export const CaregiverPatientDetail = () => {
         </h3>
 
         <style>{`
-          .fc-theme-standard .fc-scrollgrid { border: none !important; }
-          .fc-theme-standard td, .fc-theme-standard th { border-color: var(--border-subtle, #e5e7eb) !important; }
-          .fc .fc-toolbar-title { font-size: 1.25rem !important; font-weight: 700 !important; }
-          .fc .fc-button-primary { background-color: var(--brand-primary, #6366f1) !important; border: none !important; text-transform: capitalize !important; font-weight: 600 !important; }
-          .fc-day-today { background-color: rgba(99, 102, 241, 0.05) !important; }
+        /* Remove external heavy borders */
+        .fc-theme-standard .fc-scrollgrid { border: none !important; }
+        
+        /* Softer internal borders */
+        .fc-theme-standard td, .fc-theme-standard th { border-color: var(--border-subtle, #e5e7eb) !important; }
+
+        /* Modern Typography & Header */
+        .fc .fc-toolbar-title { font-size: 1.125rem !important; font-weight: 800 !important; color: var(--text-main, #111827); text-transform: capitalize; }
+
+        /* Modernize Navigation Buttons */
+        .fc .fc-button-primary {
+          background-color: var(--bg-page, #f9fafb) !important;
+          border: 1px solid var(--border-subtle, #e5e7eb) !important;
+          color: var(--text-main, #111827) !important;
+          text-transform: capitalize;
+          font-weight: 600;
+          font-size: 0.8rem !important;
+          padding: 0.35rem 0.75rem !important;
+          border-radius: 8px !important;
+          transition: all 0.2s ease;
+          box-shadow: 0 1px 2px rgba(0,0,0,0.02);
+        }
+        .fc .fc-button-primary:hover {
+          background-color: var(--bg-hover, #f3f4f6) !important;
+          border-color: var(--brand-primary, #6366f1) !important;
+        }
+        .fc .fc-button-primary:disabled { opacity: 0.4; }
+        
+        .fc-button-group { gap: 4px; }
+        .fc-button-group > .fc-button { border-radius: 8px !important; margin: 0 !important; }
+
+        /* Day Headers (Mon, Tue, Wed...) */
+        .fc-col-header-cell-cushion {
+          color: var(--text-muted, #6b7280) !important;
+          font-weight: 700;
+          font-size: 0.75rem;
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+          padding: 10px 0 !important;
+        }
+
+        /* Today Highlight */
+        .fc-day-today { background-color: transparent !important; }
+        .fc-day-today .fc-daygrid-day-number {
+          background-color: var(--brand-primary, #6366f1);
+          color: white !important;
+          border-radius: 6px;
+          padding: 2px 6px;
+        }
+
+        /* Day Numbers */
+        .fc-daygrid-day-number { color: var(--text-main, #111827); font-weight: 600; font-size: 0.8rem; padding: 4px 8px; margin: 4px; }
+
+        /* Event Pills (Compact) */
+        .fc-daygrid-event-harness { margin-bottom: 2px !important; }
+        .fc-event {
+          border-radius: 6px !important;
+          padding: 2px 6px !important;
+          font-size: 0.65rem !important;
+          font-weight: 700 !important;
+          border: none !important;
+          cursor: pointer !important;
+          transition: transform 0.15s ease, opacity 0.15s ease;
+        }
+        .fc-event:hover { transform: scale(1.02); opacity: 0.9; }
+
+        /* "+X more" link */
+        .fc-daygrid-more-link {
+          font-weight: 700 !important;
+          font-size: 0.7rem !important;
+          color: var(--brand-primary, #6366f1) !important;
+          background: rgba(99, 102, 241, 0.1) !important;
+          padding: 2px 6px;
+          border-radius: 4px;
+          display: inline-block;
+          margin-top: 2px;
+          transition: background 0.2s;
+        }
+        .fc-daygrid-more-link:hover { background: rgba(99, 102, 241, 0.2) !important; }
         `}</style>
         
         {patientInfo.permissions?.canViewMedications ? (
@@ -182,16 +256,23 @@ export const CaregiverPatientDetail = () => {
             plugins={[dayGridPlugin]}
             initialView="dayGridMonth"
             events={events}
-            height="auto"
+            contentHeight="auto"
+            aspectRatio={1.6}
+            fixedWeekCount={false}
+            dayMaxEvents={2}
             headerToolbar={{
-              left: 'prev,next today',
-              center: 'title',
-              right: 'dayGridMonth,dayGridWeek'
+              left: 'title',
+              center: '',
+              right: 'prev,next today'
             }}
             eventContent={(arg) => {
               return (
-                <div className="px-1.5 py-0.5 text-xs truncate rounded w-full font-medium" style={{ backgroundColor: arg.event.backgroundColor }}>
-                  {arg.event.title}
+                <div
+                  className="px-1.5 py-0.5 text-[10px] sm:text-xs truncate rounded w-full font-medium shadow-sm transition-all flex items-center gap-1.5"
+                  style={{ backgroundColor: arg.event.backgroundColor, color: arg.event.textColor || '#fff' }}
+                >
+                  <div className="w-1.5 h-1.5 rounded-full bg-white/40 shadow-inner" />
+                  <span className="truncate">{arg.event.title}</span>
                 </div>
               )
             }}

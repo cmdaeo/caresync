@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { client } from '../../../shared/api/client';
 import { FileBarChart, Download, Loader2, AlertCircle, CheckCircle2, Users } from 'lucide-react';
 
@@ -23,6 +24,9 @@ interface Patient {
 }
 
 export const CaregiverReportsPage = () => {
+  const [searchParams] = useSearchParams();
+  const preSelectedPatientId = searchParams.get('patientId');
+
   const [patients, setPatients] = useState<Patient[]>([]);
   const [loadingPatients, setLoadingPatients] = useState(true);
   
@@ -30,6 +34,7 @@ export const CaregiverReportsPage = () => {
   const [startDate, setStartDate] = useState(defaultStart);
   const [endDate, setEndDate] = useState(defaultEnd);
   const [includeCharts, setIncludeCharts] = useState(true);
+  const [reportPassword, setReportPassword] = useState('');
   
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -42,7 +47,9 @@ export const CaregiverReportsPage = () => {
         const pts = res.data?.data?.patients || res.data?.data || [];
         const activePts = Array.isArray(pts) ? pts.filter(p => p.status === 'Active' && p.permissions?.canViewAdherence) : [];
         setPatients(activePts);
-        if (activePts.length > 0) {
+        if (preSelectedPatientId && activePts.some(p => p.patientId === preSelectedPatientId)) {
+          setSelectedPatientId(preSelectedPatientId);
+        } else if (activePts.length > 0) {
           setSelectedPatientId(activePts[0].patientId);
         }
       } catch (err) {
@@ -71,6 +78,8 @@ export const CaregiverReportsPage = () => {
           startDate: new Date(startDate).toISOString(),
           endDate: new Date(endDate).toISOString(),
           includeCharts,
+          passwordProtect: !!reportPassword,
+          reportPassword: reportPassword || undefined,
           patientId: selectedPatientId,
         },
         responseType: 'blob',
@@ -196,7 +205,20 @@ export const CaregiverReportsPage = () => {
 
               <div className="pt-4 border-t border-border-subtle space-y-4">
                 <h3 className="text-sm font-semibold text-text-main mb-3 uppercase tracking-wider opacity-80">Report Options</h3>
-                <label className="flex items-center gap-3 cursor-pointer group w-fit">
+                
+                <div>
+                  <label className="block text-sm font-semibold text-text-main mb-1.5">Protect PDF with Password (Optional)</label>
+                  <input
+                    type="text"
+                    value={reportPassword}
+                    onChange={(e) => setReportPassword(e.target.value)}
+                    placeholder="Enter a password to encrypt the PDF"
+                    className="w-full px-4 py-2.5 bg-bg-main border border-border-subtle rounded-xl text-text-main focus:ring-2 focus:ring-brand-primary outline-none transition-all"
+                  />
+                  <p className="text-xs text-text-muted mt-1.5">If provided, anyone opening this PDF will need to enter this password.</p>
+                </div>
+
+                <label className="flex items-center gap-3 cursor-pointer group w-fit mt-4">
                   <input
                     type="checkbox"
                     checked={includeCharts}

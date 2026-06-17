@@ -7,11 +7,15 @@ import {
 import { Link } from 'react-router-dom';
 import {
   ArrowRight,
-  ChevronRight,
   CheckCircle,
   Lock,
   Unlock,
-  BookOpen
+  BookOpen,
+  PlayCircle,
+  Volume2,
+  VolumeX,
+  Maximize,
+  Minimize
 } from 'lucide-react';
 import logo from '../../../assets/caresync.svg';
 
@@ -133,14 +137,15 @@ function PageLoader({ onReady }: { onReady: () => void }) {
   const loadedCount = useRef(0);
 
   useEffect(() => {
-    const total = 4; // Now loading 4 models
-    const handleModelLoad = (_sourceId: any) => {
+    // 4 modelos 3D + 1 Vídeo
+    const total = 5; 
+    const handleAssetLoad = (_sourceId: any) => {
       loadedCount.current += 1;
       const pct = Math.round((loadedCount.current / total) * 100);
       setProgress(pct);
     };
 
-    (window as any).__onModelLoad = handleModelLoad;
+    (window as any).__onModelLoad = handleAssetLoad;
 
     return () => {
       delete (window as any).__onModelLoad;
@@ -186,10 +191,389 @@ function PageLoader({ onReady }: { onReady: () => void }) {
             clipPath="url(#reveal-clip)"/>
         </svg>
         <p className="jm text-[9px] text-white/50 tracking-widest">
-          {progress < 100 ? 'Loading...' : 'Ready'}
+          {progress < 100 ? 'Loading Assets...' : 'Ready'}
         </p>
       </motion.div>
     </motion.div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   CINEMATIC VIDEO SHOWCASE (Viewport-Optimized, Smart Recap, Fullscreen)
+═══════════════════════════════════════════════════════════════════════════ */
+
+const TRANSCRIPT = [
+  { start: 2.0, end: 8.0, text: "Medication management remains one of the most critical challenges in elderly care and dependent care." },
+  { start: 9.0, end: 14.0, text: "For many patients, especially older adults, people with chronic conditions, and individuals who rely on caregivers, taking the right medication at the right time is not always simple." },
+  { start: 25.0, end: 30.0, text: "An elderly patient arrives at the pharmacy accompanied by their caregiver." },
+  { start: 30.0, end: 35.0, text: "The caregiver presents the medical prescription, and the pharmacist configures the Care Box through the Care App, setting the medication schedule accurately and efficiently." },
+  { start: 40.0, end: 45.0, text: "Once the setup is complete, the caregiver and the patient take the Care Box home, ready to begin a safer and more organized medication routine." },
+  { start: 59.0, end: 64.0, text: "Later at home, the caregiver configures the patient's Care Band by placing it close to the Care Box." },
+  { start: 65.0, end: 71.0, text: "Once the synchronization is complete, the caregiver places the Care Band on the patient's wrist." },
+  { start: 71.0, end: 77.0, text: "After some time, the wrist band vibrates, and the Care Box emits an alert indicating that it is time to take the medication." },
+  { start: 80.0, end: 102.0, text: "The patient takes the pill on time, and then returns to their daily routine." },
+  { start: 102.0, end: 108.0, text: "Sometimes, the patient becomes distracted and forgets to take the medication on time." },
+  { start: 108.0, end: 113.0, text: "When this happens, the caregiver is notified that the medication was taken late, allowing them to stay informed and better monitor the patient's adherence routine." },
+  { start: 131.0, end: 137.0, text: "After a few days, the caregiver notices that the medication supply is running low and informs the patient." },
+  { start: 138.0, end: 143.0, text: "Together, they return to the pharmacy to refill the Care Box, ensuring that the treatment continues without interruption." },
+  { start: 176.0, end: 185.0, text: "CareSync. Your health on time." }
+];
+
+function CinematicVideoShowcase() {
+  const containerRef = useRef<HTMLElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const blurVideoRef = useRef<HTMLVideoElement>(null);
+  const glowVideoRef = useRef<HTMLVideoElement>(null);
+  const transcriptRef = useRef<HTMLDivElement>(null);
+  
+  const [isInView, setIsInView] = useState(false);
+  const [isActivated, setIsActivated] = useState(false); 
+  const [isPlaying, setIsPlaying] = useState(false);     
+  const [isMuted, setIsMuted] = useState(true);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
+  const { scrollYProgress } = useScroll({
+    target: containerRef,
+    offset: ["start end", "end start"]
+  });
+
+  const y = useTransform(scrollYProgress, [0, 1], ["-2%", "2%"]);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isFullscreen) setIsFullscreen(false);
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isFullscreen]);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => setIsInView(entry.isIntersecting));
+    }, { threshold: 0.1 });
+
+    if (containerRef.current) observer.observe(containerRef.current);
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    let reported = false;
+    const handleVideoReady = () => {
+      if (reported) return;
+      reported = true;
+      if (typeof (window as any).__onModelLoad === 'function') {
+        (window as any).__onModelLoad('video');
+      }
+    };
+
+    if (video.readyState >= 1) handleVideoReady();
+    else video.addEventListener('loadedmetadata', handleVideoReady, { once: true });
+
+    return () => video.removeEventListener('loadedmetadata', handleVideoReady);
+  }, []);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    const blurVideo = blurVideoRef.current;
+    const glowVideo = glowVideoRef.current;
+    if (!video || !blurVideo) return;
+
+    let recapInterval: NodeJS.Timeout;
+
+    if (isInView && !isActivated) {
+      clearInterval(recapInterval);
+      
+      video.playbackRate = 8.0;
+      blurVideo.playbackRate = 8.0;
+      if (glowVideo) glowVideo.playbackRate = 8.0;
+
+      video.muted = true;
+      blurVideo.muted = true;
+      if (glowVideo) glowVideo.muted = true;
+
+      video.play().catch(() => {});
+      blurVideo.play().catch(() => {});
+      if (glowVideo) glowVideo.play().catch(() => {});
+    } 
+    else if (isInView && isActivated && isPlaying) {
+      clearInterval(recapInterval);
+      video.playbackRate = 1.0;
+      blurVideo.playbackRate = 1.0;
+      if (glowVideo) glowVideo.playbackRate = 1.0;
+
+      video.muted = isMuted;
+      blurVideo.muted = true; 
+      if (glowVideo) glowVideo.muted = true; 
+
+      video.play().catch(() => {});
+      blurVideo.play().catch(() => {});
+      if (glowVideo) glowVideo.play().catch(() => {});
+    } 
+    else {
+      clearInterval(recapInterval);
+      video.pause();
+      blurVideo.pause();
+      if (glowVideo) glowVideo.pause();
+    }
+
+    return () => clearInterval(recapInterval);
+  }, [isInView, isActivated, isPlaying, isMuted]);
+
+  const handleTimeUpdate = () => {
+    if (videoRef.current && isPlaying && isActivated) {
+      setCurrentTime(videoRef.current.currentTime);
+    }
+  };
+
+  useEffect(() => {
+    const activeLyric = document.getElementById('active-lyric');
+    const container = transcriptRef.current;
+    
+    if (activeLyric && container) {
+      const containerCenter = container.clientHeight / 2;
+      const lyricCenter = activeLyric.offsetTop + (activeLyric.clientHeight / 2);
+      
+      container.scrollTo({
+        top: lyricCenter - containerCenter,
+        behavior: 'smooth'
+      });
+    }
+  }, [currentTime]);
+
+  const handleVideoClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!videoRef.current || !blurVideoRef.current) return;
+
+    if (!isActivated) {
+      setIsActivated(true);
+      setIsPlaying(true);
+      setIsMuted(false);
+      videoRef.current.currentTime = 0;
+      blurVideoRef.current.currentTime = 0;
+      if (glowVideoRef.current) glowVideoRef.current.currentTime = 0;
+      setCurrentTime(0);
+    } else {
+      setIsPlaying(!isPlaying);
+    }
+  };
+
+  const handleMuteClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!isActivated) {
+      setIsActivated(true);
+      setIsPlaying(true);
+      setIsMuted(false);
+      if (videoRef.current) videoRef.current.currentTime = 0;
+      if (blurVideoRef.current) blurVideoRef.current.currentTime = 0;
+      if (glowVideoRef.current) glowVideoRef.current.currentTime = 0;
+    } else {
+      setIsMuted(!isMuted);
+    }
+  };
+
+  const toggleFullscreen = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!isActivated && !isFullscreen) {
+      setIsActivated(true);
+      setIsPlaying(true);
+      setIsMuted(false);
+      if (videoRef.current) videoRef.current.currentTime = 0;
+      if (blurVideoRef.current) blurVideoRef.current.currentTime = 0;
+      if (glowVideoRef.current) glowVideoRef.current.currentTime = 0;
+    }
+    setIsFullscreen(!isFullscreen);
+  };
+
+  return (
+    <section 
+      id="sec-video" 
+      ref={containerRef}
+      // O ecrã ocupa exatamente 100vh para nunca obrigar o utilizador a fazer scroll cortado
+      className="relative min-h-dvh lg:h-dvh w-full bg-[#020617] border-t border-white/5 overflow-hidden flex items-center justify-center py-16 lg:py-0 cursor-default"
+    >
+      <div className="absolute inset-0 w-full h-full overflow-hidden pointer-events-none z-0">
+        <video
+          ref={blurVideoRef}
+          src="/video.mp4" 
+          muted
+          loop
+          playsInline
+          className="w-full h-full object-cover opacity-20 blur-[100px] scale-125"
+        />
+        <div className="absolute inset-0 bg-[#020617]/50 mix-blend-multiply" />
+        <div className="absolute inset-0 bg-gradient-to-t from-[#020617] via-transparent to-[#020617]" />
+      </div>
+
+      <div className="relative z-20 w-full max-w-[1400px] h-full mx-auto px-6 sm:px-12 flex flex-col lg:flex-row items-center justify-between gap-10 lg:gap-12 py-10 lg:py-0">
+        
+        {/* ─── ESQUERDA: TÍTULO ─── */}
+        <div className="w-full lg:w-[30%] flex flex-col items-center lg:items-start text-center lg:text-left order-1 lg:order-1">
+          <Reveal>
+            <h2 className="sy font-800 text-3xl sm:text-5xl lg:text-6xl text-white tracking-tight drop-shadow-lg mb-4">
+              System<br className="hidden lg:block"/> In Action
+            </h2>
+            <p className="text-white/60 font-mono text-xs sm:text-sm leading-relaxed max-w-xs">
+              Watch the full CareSync system in action.
+            </p>
+          </Reveal>
+        </div>
+
+        {/* ─── CENTRO: VÍDEO PRINCIPAL (H-[70VH] GANTE QUE NUNCA CORTA O ECRÃ) ─── */}
+        <div className="w-full lg:w-[40%] flex justify-center items-center order-2 lg:order-2 relative z-[100] h-[50vh] lg:h-[75vh]">
+          
+          {/* Ambilight Glow Video */}
+          <div className="absolute inset-0 flex justify-center items-center pointer-events-none z-0">
+            <video
+              ref={glowVideoRef}
+              src="/video.mp4"
+              muted
+              loop
+              playsInline
+              className={`h-full aspect-[9/16] rounded-[2rem] object-cover blur-[30px] opacity-60 transition-opacity duration-700 ${(!isPlaying || !isActivated) ? 'opacity-30' : ''}`}
+            />
+          </div>
+
+          <AnimatePresence>
+            {isFullscreen && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={() => setIsFullscreen(false)}
+                className="fixed inset-0 z-[99998] bg-[#020617]/95 backdrop-blur-2xl cursor-pointer"
+              />
+            )}
+          </AnimatePresence>
+
+          <motion.div 
+            layout
+            style={{ y: isFullscreen ? 0 : y }}
+            className={
+              isFullscreen 
+                ? "fixed inset-0 z-[99999] m-auto h-[90dvh] sm:h-[95dvh] max-w-[95vw] aspect-[9/16] rounded-2xl sm:rounded-[2rem] border border-white/20 shadow-[0_0_100px_rgba(0,0,0,0.8)] cursor-pointer group bg-black overflow-hidden flex-shrink-0"
+                : "relative h-full aspect-[9/16] rounded-2xl sm:rounded-[2rem] border border-white/20 shadow-[0_0_60px_rgba(0,0,0,0.5)] cursor-pointer group bg-black shrink-0 overflow-hidden"
+            }
+          >
+            <motion.div 
+              layout
+              onClick={handleVideoClick}
+              className={`relative w-full h-full flex justify-center cursor-pointer overflow-hidden ${
+                isFullscreen ? "rounded-2xl max-w-full aspect-[9/16] max-h-full mx-auto" : "rounded-[inherit]"
+              }`}
+              style={!isFullscreen ? {
+                WebkitMaskImage: 'radial-gradient(ellipse 95% 95% at 50% 50%, black 75%, transparent 100%)',
+                maskImage: 'radial-gradient(ellipse 95% 95% at 50% 50%, black 75%, transparent 100%)'
+              } : {}}
+            >
+              <video
+                ref={videoRef}
+                src="/video.mp4" 
+                preload="auto" 
+                onTimeUpdate={handleTimeUpdate}
+                className={`absolute inset-0 w-full h-full object-cover transition-all duration-700 ${(!isPlaying || !isActivated) ? 'blur-sm brightness-50 grayscale-[30%]' : 'blur-0 brightness-100 grayscale-0'}`}
+                muted={isMuted}
+                loop
+                playsInline
+              />
+
+              {!isFullscreen && (
+                <>
+                  <div className="absolute inset-0 shadow-[inset_0_0_50px_10px_rgba(2,6,23,0.8)] pointer-events-none rounded-[inherit]" />
+                  {/* Stronger blur near borders */}
+                  <div 
+                    className="absolute inset-0 pointer-events-none rounded-[inherit] backdrop-blur-xl bg-black/10 transition-opacity duration-700" 
+                    style={{ 
+                      maskImage: 'radial-gradient(ellipse at center, transparent 50%, black 100%)', 
+                      WebkitMaskImage: 'radial-gradient(ellipse at center, transparent 50%, black 100%)' 
+                    }} 
+                  />
+                </>
+              )}
+
+              <AnimatePresence>
+                {(!isActivated || !isPlaying) && (
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.9 }}
+                    transition={{ duration: 0.2 }}
+                    className="absolute inset-0 z-30 flex flex-col items-center justify-center pointer-events-none"
+                  >
+                    <div className="p-4 rounded-full bg-black/20 border border-white/10 backdrop-blur-xl group-hover:scale-110 transition-transform duration-300 drop-shadow-[0_0_20px_rgba(0,0,0,0.8)]">
+                      <PlayCircle size={isFullscreen ? 96 : 72} className="text-white/90" strokeWidth={1} />
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              <div className="absolute bottom-6 right-6 z-40 flex items-center gap-3">
+                <AnimatePresence>
+                  {isActivated && (
+                    <motion.button
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: 10 }}
+                      onClick={handleMuteClick}
+                      className="p-2.5 bg-[#020617]/50 hover:bg-[#020617]/80 border border-white/10 backdrop-blur-md rounded-full text-white/90 transition-all shadow-lg"
+                    >
+                      {isMuted ? <VolumeX size={16} /> : <Volume2 size={16} />}
+                    </motion.button>
+                  )}
+                </AnimatePresence>
+
+                <button
+                  onClick={toggleFullscreen}
+                  className={`p-2.5 bg-[#020617]/50 hover:bg-[#020617]/80 border border-white/10 backdrop-blur-md rounded-full text-white/90 transition-all shadow-lg ${
+                    isActivated ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+                  }`}
+                >
+                  {isFullscreen ? <Minimize size={16} /> : <Maximize size={16} />}
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        </div>
+
+        {/* ─── DIREITA: TRANSCRIPT ─── */}
+        <div className={`w-full lg:w-[30%] flex flex-col items-center lg:items-start text-center lg:text-left order-3 lg:order-3 ${isFullscreen ? 'fixed lg:right-[5vw] lg:top-1/2 lg:-translate-y-1/2 z-[99999] lg:w-[25vw] pointer-events-auto hidden lg:flex' : ''}`}>
+          <div 
+            ref={transcriptRef}
+            className={`w-full h-[30vh] lg:h-[60vh] pr-4 flex flex-col gap-4 relative ${(!isPlaying || !isActivated) ? 'overflow-y-auto tsc' : 'overflow-hidden'}`}
+            style={{ maskImage: 'linear-gradient(to bottom, transparent, black 15%, black 85%, transparent)' }}
+          >
+            <div className="h-[60px] lg:h-[120px] shrink-0" />
+            
+            {TRANSCRIPT.map((line, i) => {
+              const isActive = currentTime >= line.start && (i === TRANSCRIPT.length - 1 || currentTime < TRANSCRIPT[i + 1].start);
+              const isPast = i < TRANSCRIPT.length - 1 && currentTime >= TRANSCRIPT[i + 1].start;
+              
+              return (
+                <p 
+                  key={i} 
+                  id={isActive ? 'active-lyric' : `lyric-${i}`}
+                  className={`sy text-lg sm:text-xl font-700 leading-tight transition-all duration-300 ${
+                    isActive 
+                      ? 'text-white scale-100 opacity-100 drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]' 
+                      : isPast 
+                        ? 'text-white/40 scale-95 opacity-50' 
+                        : 'text-white/20 scale-95 opacity-30'
+                  }`}
+                >
+                  {line.text}
+                </p>
+              );
+            })}
+
+            <div className="h-[120px] lg:h-[200px] shrink-0" />
+          </div>
+        </div>
+
+      </div>
+    </section>
   );
 }
 
@@ -299,7 +683,6 @@ function PCBShowcase() {
     <>
       <section
         id="sec-careband"
-        // bg-[#020617] FORCES dark background on these specific 3D sections regardless of theme mode.
         className="relative h-dvh w-full bg-[#020617] overflow-hidden border-t border-white/5 flex items-center justify-center group"
         ref={containerRef}
       >
@@ -317,7 +700,6 @@ function PCBShowcase() {
           style={{ x: textX1, y: textY1 }}
           className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full text-center pointer-events-none select-none z-0 overflow-hidden"
         >
-          {/* Solid fill with very low opacity to act as backdrop without wireframe stroke */}
           <h2 className="sy font-800 text-[20vw] lg:text-[16vw] leading-none tracking-tighter whitespace-nowrap text-white opacity-[0.03]">
             CAREBAND
           </h2>
@@ -780,95 +1162,6 @@ export default function LandingPage() {
 
   const heroLines = ['Your', 'health', 'on time.'];
 
-  /* ═══════════════════════════════════════════════════════════════════════════
-     AUTO-TOUR (SEQUENTIAL CREATIVE TRANSITIONS WITH THEME AWARENESS)
-  ═══════════════════════════════════════════════════════════════════════════ */
-  const IDLE_TIMEOUT = 12000;
-  const TOUR_INTERVAL = 8000;
-  
-  // SEQUENTIAL ORDER: Hero -> Careband PCB -> Carebox PCB -> Carebox 3D -> Careband 3D
-  const TOUR_SECTIONS = ['sec-hero', 'sec-careband', 'sec-carebox', 'sec-aura-box', 'sec-aura-band'];
-  const TRANSITION_TYPES = ['shutter', 'sweep', 'slices'];
-  
-  const [isIdle, setIsIdle] = useState(false);
-  const lastInteraction = useRef(Date.now());
-  const currentTourIdx = useRef(0);
-  
-  const [transitionStage, setTransitionStage] = useState<'idle'|'in'|'out'>('idle');
-  const [activeTransition, setActiveTransition] = useState('shutter');
-  
-  // To adapt the background colors dynamically to match the section we are traveling TO
-  const [targetSection, setTargetSection] = useState('sec-hero');
-
-  // 1. Monitor user activity to reset idle timer
-  useEffect(() => {
-    const ping = () => {
-      lastInteraction.current = Date.now();
-      if (isIdle) setIsIdle(false);
-    };
-
-    const events = ['mousemove', 'mousedown', 'keydown', 'touchstart', 'wheel'];
-    events.forEach(e => window.addEventListener(e, ping, { passive: true }));
-
-    const checkTimer = setInterval(() => {
-      if (Date.now() - lastInteraction.current > IDLE_TIMEOUT) {
-        setIsIdle(true);
-      }
-    }, 1000);
-
-    return () => {
-      events.forEach(e => window.removeEventListener(e, ping));
-      clearInterval(checkTimer);
-    };
-  }, [isIdle]);
-
-  // 2. Execute Transition
-  const doTransition = useCallback((targetId: string) => {
-    // Record the destination to adapt the transition colors
-    setTargetSection(targetId);
-
-    // Pick a random creative transition style
-    const randomTrans = TRANSITION_TYPES[Math.floor(Math.random() * TRANSITION_TYPES.length)];
-    setActiveTransition(randomTrans);
-    
-    setTransitionStage('in');
-    setTimeout(() => {
-      const el = document.getElementById(targetId);
-      if (el && scrollRef.current) {
-        el.scrollIntoView({ behavior: 'auto', block: 'start' });
-      }
-      setTransitionStage('out');
-      
-      // Cleanup transition state
-      setTimeout(() => setTransitionStage('idle'), 600);
-    }, 600);
-  }, []);
-
-  // 3. Auto-tour Loop (Sequential)
-  useEffect(() => {
-    if (!isIdle || !appReady) return;
-
-    const interval = setInterval(() => {
-      // Calculate next index strictly sequentially
-      const nextIdx = (currentTourIdx.current + 1) % TOUR_SECTIONS.length;
-      currentTourIdx.current = nextIdx;
-      
-      doTransition(TOUR_SECTIONS[nextIdx]);
-    }, TOUR_INTERVAL);
-
-    return () => clearInterval(interval);
-  }, [isIdle, appReady, doTransition]);
-
-
-  /* ════════════════════════════════════════════════════════════════
-      DYNAMIC THEME VARIABLES FOR THE OVERLAY
-  ════════════════════════════════════════════════════════════════ */
-  const isTargetDark = targetSection !== 'sec-hero'; // Anything other than hero is currently forced #020617
-  const tBg = isTargetDark ? 'bg-[#020617]' : 'bg-bg-page';
-  const tText = isTargetDark ? 'text-white' : 'text-text-main';
-  const tMuted = isTargetDark ? 'text-white/50' : 'text-text-muted';
-  const tBorder = isTargetDark ? 'border-white/5' : 'border-border-focus';
-
   return (
     <>
       <CSS />
@@ -878,83 +1171,6 @@ export default function LandingPage() {
           <PageLoader onReady={handleReady} />
         )}
       </AnimatePresence>
-
-      {/* ════════════════════════════════════════════════════════════════
-          CREATIVE IDLE TRANSITIONS OVERLAYS
-      ════════════════════════════════════════════════════════════════ */}
-      {(transitionStage === 'in' || transitionStage === 'out') && (
-        <>
-          {/* 1. ORIGINAL CYBER SHUTTER */}
-          {activeTransition === 'shutter' && (
-            <div className="fixed inset-0 z-[99999] pointer-events-none flex flex-col scn">
-              <motion.div
-                initial={{ y: '-100%' }}
-                animate={{ y: transitionStage === 'in' ? '0%' : '-100%' }}
-                transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-                className={`flex-1 ${tBg} border-b ${tBorder} flex items-end justify-center pb-4`}
-              >
-                <span className="jm text-brand-primary text-[10px] tracking-[0.3em] uppercase bln">
-                  Auto-Tour
-                </span>
-              </motion.div>
-              <motion.div
-                initial={{ y: '100%' }}
-                animate={{ y: transitionStage === 'in' ? '0%' : '100%' }}
-                transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-                className={`flex-1 ${tBg} border-t ${tBorder} flex items-start justify-center pt-4`}
-              >
-                <span className={`jm ${tMuted} text-[9px] tracking-[0.2em] uppercase`}>
-                  Auto-Tour
-                </span>
-              </motion.div>
-            </div>
-          )}
-
-          {/* 2. SYSTEM SWEEP */}
-          {activeTransition === 'sweep' && (
-            <div className="fixed inset-0 z-[99999] pointer-events-none overflow-hidden">
-              <motion.div
-                initial={{ x: '-100%' }}
-                animate={{ x: transitionStage === 'in' ? '0%' : '100%' }}
-                transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-                className="absolute inset-0 w-full h-full bg-brand-primary"
-              />
-              <motion.div
-                initial={{ x: '-100%' }}
-                animate={{ x: transitionStage === 'in' ? '0%' : '100%' }}
-                transition={{ duration: 0.5, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}
-                className={`absolute inset-0 w-full h-full ${tBg} flex items-center justify-center scn`}
-              >
-                <span className={`sy text-3xl font-800 tracking-widest ${tText} uppercase animate-pulse drop-shadow-[0_0_8px_rgba(74,164,225,0.8)]`}>
-                  Auto-Tour
-                </span>
-              </motion.div>
-            </div>
-          )}
-
-          {/* 3. MATRIX SLICES */}
-          {activeTransition === 'slices' && (
-            <div className="fixed inset-0 z-[99999] pointer-events-none flex flex-col scn">
-              {[...Array(5)].map((_, i) => (
-                <motion.div
-                  key={i}
-                  initial={{ scaleY: 0 }}
-                  animate={{ scaleY: transitionStage === 'in' ? 1 : 0 }}
-                  transition={{ duration: 0.4, delay: i * 0.05, ease: [0.22, 1, 0.36, 1] }}
-                  style={{ transformOrigin: i % 2 === 0 ? 'top' : 'bottom' }}
-                  className={`flex-1 ${tBg} border-y border-brand-primary/20 flex items-center justify-center overflow-hidden`}
-                >
-                    {transitionStage === 'in' && i === 2 && (
-                       <span className="jm text-brand-primary text-xs uppercase tracking-[0.4em] bln">
-                         Auto-Tour
-                       </span>
-                    )}
-                </motion.div>
-              ))}
-            </div>
-          )}
-        </>
-      )}
 
       <div
         ref={scrollRef}
@@ -1068,6 +1284,11 @@ export default function LandingPage() {
             ))}
           </div>
         </div>
+
+        {/* ════════════════════════════════════════════════════════════════
+            VIDEO SHOWCASE
+        ════════════════════════════════════════════════════════════════ */}
+        <CinematicVideoShowcase />
 
         {/* ════════════════════════════════════════════════════════════════
             PCBA SHOWCASES

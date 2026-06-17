@@ -72,6 +72,7 @@ router.get(
     query('endDate', 'Invalid end date format').isISO8601(),
     query('includeCharts').optional().isBoolean().toBoolean(),
     query('passwordProtect').optional().isBoolean().toBoolean(),
+    query('reportPassword').optional().isString(),
     query('signatureRequired').optional().isBoolean().toBoolean()
   ],
   asyncHandler(async (req, res) => {
@@ -81,7 +82,7 @@ router.get(
     }
 
     try {
-      const { startDate, endDate, includeCharts, passwordProtect, signatureRequired, patientId } = req.query;
+      const { startDate, endDate, includeCharts, passwordProtect, reportPassword, signatureRequired, patientId } = req.query;
       let targetUserId = req.user.id;
 
       // If caregiver requests patient report, verify permissions
@@ -145,20 +146,19 @@ router.get(
       };
 
       // 4. Generate Enhanced PDF using the new service
-      const pdfOptions = {
-        includeCharts: includeCharts === true,
-        passwordProtect: passwordProtect === true,
-        signatureRequired: signatureRequired === true
-      };
-
       const pdfBuffer = await EnhancedPdfService.generateEnhancedReport(
-        user.toJSON(), 
-        adherenceData, 
-        startDate, 
+        user.toJSON ? user.toJSON() : user,
+        adherenceData,
+        startDate,
         endDate,
-        pdfOptions
+        {
+          includeCharts,
+          passwordProtect,
+          reportPassword,
+          signatureRequired
+        }
       );
-
+      
       // 5. Send PDF as response
       res.set({
         'Content-Type': 'application/pdf',
@@ -167,7 +167,7 @@ router.get(
       });
 
       res.send(pdfBuffer);
-      logger.info(`Successfully generated enhanced PDF report for user ${userId} with options: ${JSON.stringify(pdfOptions)}`);
+      logger.info(`Successfully generated enhanced PDF report for user ${targetUserId}`);
 
     } catch (error) {
       logger.error('Failed to generate enhanced PDF report', error);
@@ -205,11 +205,14 @@ router.get(
  *                 message:
  *                   type: string
  *                 document:
- *                   $ref: '#/components/schemas/DocumentMetadata'
+ *                   type: object
+ *                   properties:
+ *                     documentId: {type: string}
+ *                     documentType: {type: string}
+ *                     generationTimestamp: {type: string}
+ *                     expirationDate: {type: string}
  *       400:
  *         $ref: '#/components/responses/ValidationError'
- *       401:
- *         $ref: '#/components/responses/Unauthorized'
  *       404:
  *         $ref: '#/components/responses/NotFound'
  *       500:
@@ -218,7 +221,6 @@ router.get(
 router.get(
   '/verify',
   [
-    authMiddleware,
     query('docId', 'Invalid document ID').isUUID()
   ],
   asyncHandler(async (req, res) => {
@@ -230,9 +232,9 @@ router.get(
     try {
       const { docId } = req.query;
 
-      // IDOR fix: scope document lookup to the authenticated user
+      // Public verification - no auth check, but only returns non-PII metadata
       const document = await DocumentMetadata.findOne({
-        where: { documentId: docId, userId: req.user.id }
+        where: { documentId: docId }
       });
 
       if (!document) {
@@ -252,6 +254,10 @@ router.get(
         });
       }
 
+      document.accessCount += 1;
+      document.lastAccessed = new Date();
+      await document.save();
+
       res.json({
         success: true,
         valid: true,
@@ -259,8 +265,11 @@ router.get(
         document: {
           documentId: document.documentId,
           documentType: document.documentType,
+          documentHash: document.documentHash,
           generationTimestamp: document.generationTimestamp,
-          expirationDate: document.expirationDate
+          expirationDate: document.expirationDate,
+          passwordProtected: document.passwordProtected,
+          signatureRequired: document.signatureRequired
         }
       });
 

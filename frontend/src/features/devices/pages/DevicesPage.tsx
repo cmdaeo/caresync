@@ -13,12 +13,12 @@ import {
   Pill
 } from 'lucide-react';
 import { useCareBox } from '../../../hooks/useCareBox';
-import { useTheme } from '../../../context/ThemeContext'; // Importado para manter consistência, caso precises
+import { useTheme } from '../../../context/ThemeContext';
 
-const DIAS_SEMANA = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'];
+const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
 export function DevicesPage() {
-  const { theme: _ } = useTheme(); // Para garantir que reage ao contexto
+  const { theme: _ } = useTheme(); 
   const { 
     isConnected, 
     lastEvent, 
@@ -28,13 +28,11 @@ export function DevicesPage() {
     triggerMotor 
   } = useCareBox();
 
-  // Estado para o formulário de Medicação
   const [medName, setMedName] = useState('');
   const [medTime, setMedTime] = useState('08:00');
   const [medDays, setMedDays] = useState<boolean[]>([true, true, true, true, true, true, true]);
   const [isSending, setIsSending] = useState(false);
 
-  // Estado para o motor
   const [motorSteps, setMotorSteps] = useState<number>(512);
 
   const handleToggleDay = (index: number) => {
@@ -46,18 +44,18 @@ export function DevicesPage() {
   const handleSendConfig = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!medName.trim()) {
-      alert('Por favor, insere o nome do medicamento.');
+      alert('Please enter the medication name.');
       return;
     }
     
     setIsSending(true);
     try {
       await sendMedicationConfig(medName, medTime, medDays);
-      alert('✅ Comando enviado para a CareBox com sucesso!');
-      setMedName(''); // Limpa o formulário após envio
+      alert('✅ Command successfully sent to CareBox!');
+      setMedName(''); 
     } catch (error) {
       console.error(error);
-      alert('❌ Erro ao enviar. A caixa está ligada e dentro do alcance?');
+      alert('❌ Error sending. Is the CareBox powered on and within range?');
     } finally {
       setIsSending(false);
     }
@@ -67,12 +65,12 @@ export function DevicesPage() {
     try {
       await triggerMotor(motorSteps);
     } catch (error) {
-      alert('❌ Erro ao ativar o motor.');
+      alert('❌ Error activating motor.');
     }
   };
 
   const renderLastEvent = () => {
-    if (!lastEvent) return <p className="text-text-muted italic">A aguardar dados da CareBox...</p>;
+    if (!lastEvent) return <p className="text-text-muted italic">Waiting for CareBox data...</p>;
 
     const parts = lastEvent.split('|');
     const type = parts[0];
@@ -83,7 +81,7 @@ export function DevicesPage() {
           <div className="flex items-center text-emerald-500 bg-emerald-500/10 p-3 rounded-lg border border-emerald-500/20 w-full">
             <CheckCircle2 className="w-5 h-5 mr-3 flex-shrink-0" />
             <span className="text-sm">
-              <strong className="font-bold">{parts[1]}</strong> tomada {parts[2] === 'pontual' ? 'a horas' : `com ${parts[3]} de atraso`}.
+              <strong className="font-bold">{parts[1]}</strong> taken {parts[2] === 'pontual' ? 'on time' : `with a ${parts[3]} delay`}.
             </span>
           </div>
         );
@@ -91,21 +89,21 @@ export function DevicesPage() {
         return (
           <div className="flex items-center text-red-500 bg-red-500/10 p-3 rounded-lg border border-red-500/20 w-full">
             <AlertCircle className="w-5 h-5 mr-3 flex-shrink-0" />
-            <span className="text-sm">Alerta: A toma de <strong className="font-bold">{parts[1]}</strong> foi falhada/ignorada!</span>
+            <span className="text-sm">Alert: The intake of <strong className="font-bold">{parts[1]}</strong> was missed/ignored!</span>
           </div>
         );
       case 'RESTOCK':
         return (
           <div className="flex items-center text-amber-500 bg-amber-500/10 p-3 rounded-lg border border-amber-500/20 w-full">
             <Package className="w-5 h-5 mr-3 flex-shrink-0" />
-            <span className="text-sm">Gaveta vazia! Faltam apenas <strong className="font-bold">{parts[1]}</strong> tomas.</span>
+            <span className="text-sm">Empty compartment! Only <strong className="font-bold">{parts[1]}</strong> intakes remaining.</span>
           </div>
         );
       case 'RFID':
         return (
           <div className="flex items-center text-brand-primary bg-brand-primary/10 p-3 rounded-lg border border-brand-primary/20 w-full">
             <Activity className="w-5 h-5 mr-3 flex-shrink-0" />
-            <span className="text-sm">RFID Lido: {parts[1] === 'UNKNOWN' ? 'Desconhecido' : `Plano ${parts[1]}`}</span>
+            <span className="text-sm">RFID Scanned: {parts[1] === 'UNKNOWN' ? 'Unknown' : `Plan ${parts[1]}`}</span>
           </div>
         );
       default:
@@ -120,16 +118,16 @@ export function DevicesPage() {
   return (
     <div className="max-w-4xl mx-auto space-y-6 pb-20 pt-8 px-4 sm:px-0">
       
-      {/* HEADER: STATUS BLUETOOTH */}
+      {/* HEADER: BLUETOOTH STATUS */}
       <div className="bg-bg-card p-6 rounded-xl shadow-sm border border-border-subtle flex flex-col sm:flex-row justify-between items-center gap-4">
         <div>
           <h1 className="text-2xl font-bold text-text-main flex items-center gap-2">
             CareBox Control 
             <span className="text-[10px] font-bold uppercase tracking-wider text-brand-primary bg-brand-primary/10 border border-brand-primary/20 px-2.5 py-1 rounded-full">
-              BLE Módulo
+              BLE Module
             </span>
           </h1>
-          <p className="text-text-muted text-sm mt-1">Modo de Depuração e Configuração Manual</p>
+          <p className="text-text-muted text-sm mt-1">Debug Mode and Manual Configuration</p>
         </div>
 
         <button
@@ -141,7 +139,7 @@ export function DevicesPage() {
           }`}
         >
           {isConnected ? <BluetoothConnected className="w-5 h-5" /> : <Bluetooth className="w-5 h-5 animate-pulse" />}
-          {isConnected ? 'Desconectar da Caixa' : 'Procurar CareBox'}
+          {isConnected ? 'Disconnect from CareBox' : 'Scan for CareBox'}
         </button>
       </div>
 
@@ -150,35 +148,35 @@ export function DevicesPage() {
           <div className="bg-brand-primary/10 p-4 rounded-full mb-4 border border-brand-primary/20">
             <Bluetooth className="w-10 h-10 text-brand-primary" />
           </div>
-          <h3 className="text-xl font-bold text-text-main mb-2">À procura da CareBox...</h3>
+          <h3 className="text-xl font-bold text-text-main mb-2">Scanning for CareBox...</h3>
           <p className="text-text-muted max-w-md">
-            Liga o Bluetooth do teu dispositivo, liga a CareBox à corrente e clica no botão acima para iniciar o emparelhamento.
+            Turn on your device's Bluetooth, plug in the CareBox, and click the button above to pair.
           </p>
         </div>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           
-          {/* PAINEL ESQUERDO: ENVIO DE DADOS (WRITE) */}
+          {/* LEFT PANEL: DATA SENDING (WRITE) */}
           <div className="bg-bg-card p-6 rounded-xl shadow-sm border border-border-subtle flex flex-col">
             <h2 className="text-lg font-bold mb-5 flex items-center gap-2 text-text-main">
               <Pill className="w-5 h-5 text-brand-primary" />
-              Testar Configuração (Write)
+              Test Configuration (Write)
             </h2>
             
             <form onSubmit={handleSendConfig} className="space-y-4 flex-1">
               <div>
-                <label className="block text-sm font-semibold text-text-main mb-1.5">Nome do Medicamento</label>
+                <label className="block text-sm font-semibold text-text-main mb-1.5">Medication Name</label>
                 <input 
                   type="text" 
                   value={medName}
                   onChange={(e) => setMedName(e.target.value)}
-                  placeholder="Ex: Brufen 600mg"
+                  placeholder="E.g. Ibuprofen 600mg"
                   className="w-full p-3 bg-bg-page border border-border-subtle text-text-main rounded-xl focus:ring-2 focus:ring-brand-primary/50 focus:border-brand-primary outline-none transition-all placeholder:text-text-muted/50"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-text-main mb-1.5">Hora da Toma</label>
+                <label className="block text-sm font-semibold text-text-main mb-1.5">Intake Time</label>
                 <div className="relative">
                   <Clock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-text-muted w-5 h-5" />
                   <input 
@@ -191,11 +189,11 @@ export function DevicesPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-text-main mb-2">Dias da Semana</label>
+                <label className="block text-sm font-semibold text-text-main mb-2">Days of the Week</label>
                 <div className="flex justify-between gap-1">
-                  {DIAS_SEMANA.map((dia, index) => (
+                  {WEEKDAYS.map((day, index) => (
                     <button
-                      key={dia}
+                      key={day}
                       type="button"
                       onClick={() => handleToggleDay(index)}
                       className={`w-10 h-10 rounded-full text-xs font-bold transition-all border ${
@@ -204,7 +202,7 @@ export function DevicesPage() {
                           : 'bg-bg-page text-text-muted border-border-subtle hover:border-brand-primary/50 hover:text-brand-primary'
                       }`}
                     >
-                      {dia}
+                      {day}
                     </button>
                   ))}
                 </div>
@@ -217,23 +215,23 @@ export function DevicesPage() {
                   className="w-full flex items-center justify-center gap-2 bg-brand-primary hover:opacity-90 text-white py-4 rounded-xl font-bold transition-all disabled:opacity-50 active:scale-95 shadow-md shadow-brand-primary/20 border border-transparent"
                 >
                   <Send className={`w-5 h-5 ${isSending ? 'animate-pulse' : ''}`} />
-                  {isSending ? 'A enviar...' : 'Enviar para a Caixa'}
+                  {isSending ? 'Sending...' : 'Send to CareBox'}
                 </button>
               </div>
             </form>
           </div>
 
-          {/* PAINEL DIREITO: RECEÇÃO DE DADOS (NOTIFY) & MOTOR */}
+          {/* RIGHT PANEL: DATA RECEPTION (NOTIFY) & MOTOR */}
           <div className="space-y-6 flex flex-col">
             
-            {/* EVENTOS EM TEMPO REAL */}
+            {/* REAL-TIME EVENTS */}
             <div className="bg-bg-card p-6 rounded-xl shadow-sm border border-border-subtle flex-1">
               <h2 className="text-lg font-bold mb-3 flex items-center gap-2 text-text-main">
                 <Activity className="w-5 h-5 text-emerald-500 animate-pulse" />
-                Monitor de Eventos (Notify)
+                Event Monitor (Notify)
               </h2>
               <p className="text-xs text-text-muted mb-4 leading-relaxed">
-                Abre a gaveta da CareBox, usa o cartão RFID ou espera pela hora configurada para ver a caixa a comunicar com a App.
+                Open the CareBox drawer, use the RFID card, or wait for the scheduled time to see the box communicate with the App.
               </p>
               <div className="min-h-[80px] flex items-center justify-center bg-bg-page border border-border-subtle rounded-xl p-3">
                 {renderLastEvent()}
@@ -244,7 +242,7 @@ export function DevicesPage() {
             <div className="bg-bg-card p-6 rounded-xl shadow-sm border border-border-subtle">
               <h2 className="text-lg font-bold mb-4 flex items-center gap-2 text-text-main">
                 <Settings className="w-5 h-5 text-text-muted" />
-                Teste de Motor Stepper
+                Stepper Motor Test
               </h2>
               <div className="flex flex-col sm:flex-row gap-3">
                 <div className="flex-1">
@@ -252,7 +250,7 @@ export function DevicesPage() {
                     type="number" 
                     value={motorSteps}
                     onChange={(e) => setMotorSteps(Number(e.target.value))}
-                    placeholder="Passos (Ex: 512)"
+                    placeholder="Steps (E.g. 512)"
                     className="w-full p-3 bg-bg-page border border-border-subtle text-text-main rounded-xl focus:ring-2 focus:ring-brand-primary/50 focus:border-brand-primary outline-none transition-all placeholder:text-text-muted/50"
                   />
                 </div>
@@ -260,7 +258,7 @@ export function DevicesPage() {
                   onClick={handleTestMotor}
                   className="bg-bg-page border border-border-subtle text-text-main hover:border-brand-primary/50 hover:text-brand-primary px-6 py-3 rounded-xl font-bold transition-all active:scale-95"
                 >
-                  Rodar Gaveta
+                  Rotate Drawer
                 </button>
               </div>
             </div>

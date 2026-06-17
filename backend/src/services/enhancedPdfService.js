@@ -34,7 +34,7 @@ class EnhancedPdfService {
     return new Promise((resolve, reject) => {
       try {
         // ── Create document — NO bufferPages, NO autoFirstPage:false ──
-        const doc = new PDFDocument({
+        const docConfig = {
           size: 'A4',
           margins: { top: M, bottom: M, left: M, right: M },
           info: {
@@ -42,7 +42,20 @@ class EnhancedPdfService {
             Author: 'CareSync Healthcare Platform',
             Subject: `Adherence Report ${startDate} — ${endDate}`,
           },
-        });
+        };
+
+        // Apply Password Protection if requested
+        if (options.passwordProtect && options.reportPassword) {
+          docConfig.userPassword = options.reportPassword;
+          docConfig.ownerPassword = options.reportPassword;
+          // Disallow modifying/copying if password protected
+          docConfig.permissions = {
+            modifying: false,
+            copying: false,
+          };
+        }
+
+        const doc = new PDFDocument(docConfig);
 
         const documentId = crypto.randomUUID();
         const now = new Date();
@@ -103,7 +116,8 @@ class EnhancedPdfService {
 
     // ── QR Code (top-right) ──
     try {
-      const qrUrl = `${process.env.BASE_URL || 'https://caresync.com'}/api/verify?docId=${documentId}`;
+      const baseUrl = process.env.BASE_URL || 'http://localhost:5173';
+      const qrUrl = `${baseUrl}/verify?docId=${documentId}`;
       const qrDataUrl = await QRCode.toDataURL(qrUrl, { width: 80, margin: 0 });
       const qrBuf = Buffer.from(qrDataUrl.split(',')[1], 'base64');
       doc.image(qrBuf, pageW - M - 55, M, { width: 55 });

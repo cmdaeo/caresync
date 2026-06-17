@@ -24,6 +24,7 @@ export const ReportsPage = () => {
   const [startDate, setStartDate] = useState(defaultStart)
   const [endDate, setEndDate] = useState(defaultEnd)
   const [includeCharts, setIncludeCharts] = useState(true)
+  const [reportPassword, setReportPassword] = useState('')
   const [generating, setGenerating] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
@@ -40,6 +41,8 @@ export const ReportsPage = () => {
           startDate: new Date(startDate).toISOString(),
           endDate: new Date(endDate).toISOString(),
           includeCharts,
+          passwordProtect: !!reportPassword,
+          reportPassword: reportPassword || undefined,
         },
         responseType: 'blob',
       })
@@ -140,10 +143,22 @@ export const ReportsPage = () => {
         </div>
 
         {/* Options */}
-        <div className="space-y-3">
-          <p className="text-xs font-medium text-text-main ml-0.5">Options</p>
+        <div className="space-y-4">
+          <p className="text-xs font-medium text-text-main ml-0.5 uppercase tracking-wider opacity-80">Report Options</p>
 
-          <label className="flex items-center gap-3 cursor-pointer">
+          <div>
+            <label className={labelCls}>Protect PDF with Password (Optional)</label>
+            <input
+              type="text"
+              value={reportPassword}
+              onChange={(e) => setReportPassword(e.target.value)}
+              placeholder="Enter a password to encrypt the PDF"
+              className={inputCls}
+            />
+            <p className="text-xs text-text-muted mt-1.5 ml-0.5">If provided, anyone opening this PDF will need to enter this password.</p>
+          </div>
+
+          <label className="flex items-center gap-3 cursor-pointer mt-4">
             <input
               type="checkbox"
               checked={includeCharts}

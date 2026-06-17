@@ -41,7 +41,7 @@ const timelineData = [
       },
       {
         date: "15/10/2025",
-        text: "CareSync Logo Creation & SVG transform",
+        text: "CareSync logo creation & SVG transform",
         subsystems: ["Marketing"]
       },
       {

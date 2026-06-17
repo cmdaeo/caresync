@@ -50,6 +50,7 @@ import { MyCaregiversPage } from './features/caregivers/pages/MyCaregiversPage'
 import { CaregiverPatientsPage } from './features/caregivers/pages/CaregiverPatientsPage'
 import { CaregiverMedicationsPage } from './features/medications/pages/CaregiverMedicationsPage'
 import { CaregiverReportsPage } from './features/reports/pages/CaregiverReportsPage'
+import { VerifyPage } from './features/reports/pages/VerifyPage'
 
 // Helper: redirects /app to the user's role-appropriate dashboard
 import { useAuthStore } from './shared/store/authStore'
@@ -78,6 +79,7 @@ export function App() {
         <Route path="/privacy" element={<PrivacyPolicyPage />} />
         <Route path="/terms" element={<TermsOfServicePage />} />
         <Route path="/status" element={<StatusPage />} />
+        <Route path="/verify" element={<VerifyPage />} />
         
 
         {/* AUTH ROUTES (Wrapped in Theme-Aware Layout) */}
