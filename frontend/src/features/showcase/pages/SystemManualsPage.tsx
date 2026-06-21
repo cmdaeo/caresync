@@ -1,9 +1,9 @@
 // frontend/src/features/showcase/pages/SystemManualsPage.tsx
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  BookOpen, Smartphone, Watch, Server, Zap, Radio, BellRing, 
-  CheckCircle2, AlertTriangle, Clock, Terminal, Code2, Database, 
+import {
+  BookOpen, Smartphone, Watch, Server, Zap, Radio, BellRing,
+  CheckCircle2, AlertTriangle, Clock, Terminal, Code2, Database,
   Bluetooth, ServerCog, ShieldCheck, FolderTree, Cpu, Users, Wrench,
   Printer, Box, Download
 } from 'lucide-react';
@@ -43,7 +43,7 @@ const hardwareFiles = [
 const InfoCard = ({ prefix, number, title, icon: Icon, colorClass, bgClass, children }: any) => (
   <motion.div variants={fadeUp} className="relative p-6 rounded-2xl border border-border-subtle bg-bg-card shadow-sm ring-1 ring-black/[0.03] hover:shadow-md hover:-translate-y-1 transition-all duration-300 group overflow-hidden">
     <div className={`absolute top-0 right-0 w-32 h-32 ${bgClass} blur-3xl opacity-0 group-hover:opacity-30 transition-opacity duration-500 pointer-events-none rounded-full transform translate-x-1/2 -translate-y-1/2`} />
-    
+
     <div className="flex items-center gap-4 mb-5 relative z-10">
       <div className={`w-12 h-12 rounded-xl flex items-center justify-center border border-border-subtle group-hover:${bgClass} bg-bg-page transition-colors duration-300 ${colorClass}`}>
         <Icon size={24} />
@@ -53,7 +53,7 @@ const InfoCard = ({ prefix, number, title, icon: Icon, colorClass, bgClass, chil
         <h3 className="text-lg font-bold text-text-main leading-tight">{title}</h3>
       </div>
     </div>
-    
+
     <div className="relative z-10 space-y-3">
       {children}
     </div>
@@ -72,7 +72,7 @@ const DetailBullet = ({ children, colorClass = "bg-brand-primary" }: { children:
 ════════════════════════════════════════════════════════════════ */
 export const SystemManualsPage = () => {
   const [activeTab, setActiveTab] = useState<'user' | 'developer'>('user');
-  
+
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const mouseRef = useRef({ x: -1000, y: -1000 });
 
@@ -111,7 +111,7 @@ export const SystemManualsPage = () => {
       // Check Theme explicitly to adjust Matrix transparency
       const isDark = document.documentElement.classList.contains('dark');
       const isUser = activeTab === 'user';
-      
+
       const r = isUser ? 139 : 16;
       const g = isUser ? 92 : 185;
       const b = isUser ? 246 : 129;
@@ -127,9 +127,9 @@ export const SystemManualsPage = () => {
           // Magnetic Opacity (brighter near the mouse, faint further away)
           const maxDist = 450;
           const proximityGlow = Math.max(0, 1 - dist / maxDist) * 0.15;
-          
+
           // Matrix opacity: Light Mode = 30%, Dark Mode = 15% (Decreased by 15%)
-          const baseOpacity = isDark ? 0.02 : 0.1; 
+          const baseOpacity = isDark ? 0.02 : 0.1;
           const alpha = baseOpacity + proximityGlow;
 
           ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${alpha})`;
@@ -171,10 +171,10 @@ export const SystemManualsPage = () => {
 
   return (
     <div className="relative h-full w-full overflow-y-auto tsc bg-bg-page px-4 py-12 sm:px-8 lg:px-16 overflow-x-hidden">
-      
+
       {/* ════════ Z-0: MAGNETIC POLYGON MATRIX (CANVAS) ════════ */}
-      <canvas 
-        ref={canvasRef} 
+      <canvas
+        ref={canvasRef}
         className="fixed inset-0 z-0 pointer-events-none"
         style={{
           maskImage: 'radial-gradient(ellipse at center, black 0%, transparent 100%)',
@@ -184,9 +184,9 @@ export const SystemManualsPage = () => {
 
       {/* ════════ Z-2: Background Subtle Gradient ════════ */}
       <div className={`pointer-events-none fixed inset-0 z-[2] bg-gradient-to-b from-transparent to-black/[0.03] transition-colors duration-1000 ${activeTab === 'user' ? 'dark:to-brand-primary/[0.02]' : 'dark:to-emerald-500/[0.02]'}`} />
-      
+
       {/* ════════ Z-10: PAGE CONTENT ════════ */}
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         className="relative z-10 max-w-4xl mx-auto mb-10 text-center"
@@ -198,7 +198,7 @@ export const SystemManualsPage = () => {
           System Documentation
         </h1>
         <p className="text-sm sm:text-base text-text-muted max-w-2xl mx-auto leading-relaxed h-12">
-          {activeTab === 'user' 
+          {activeTab === 'user'
             ? "Official operational guidelines for the CareBox, CareBand, and CareApp ecosystem. Instructions for proper subsystem initialization."
             : "Technical specifications, communication protocols, and architectural blueprints required to maintain, replicate, or expand the CareSync ecosystem."}
         </p>
@@ -207,15 +207,15 @@ export const SystemManualsPage = () => {
       {/* Tab Switcher */}
       <div className="relative z-10 flex justify-center mb-16">
         <div className="bg-bg-card border border-border-subtle p-1.5 rounded-2xl inline-flex gap-2 shadow-sm ring-1 ring-black/[0.03]">
-          <button 
-            onClick={() => setActiveTab('user')} 
+          <button
+            onClick={() => setActiveTab('user')}
             className={`px-6 py-2.5 rounded-xl flex items-center gap-2.5 font-medium text-sm transition-all duration-300 ${activeTab === 'user' ? 'bg-brand-primary text-white shadow-md' : 'text-text-muted hover:text-text-main hover:bg-bg-page'}`}
           >
             <Users size={16} />
             User Manual
           </button>
-          <button 
-            onClick={() => setActiveTab('developer')} 
+          <button
+            onClick={() => setActiveTab('developer')}
             className={`px-6 py-2.5 rounded-xl flex items-center gap-2.5 font-medium text-sm transition-all duration-300 ${activeTab === 'developer' ? 'bg-emerald-600 text-white shadow-md' : 'text-text-muted hover:text-text-main hover:bg-bg-page'}`}
           >
             <Wrench size={16} />
@@ -226,17 +226,17 @@ export const SystemManualsPage = () => {
 
       <div className="relative z-10 max-w-5xl mx-auto">
         <AnimatePresence mode="wait">
-          
+
           {/* ════════ TAB: USER MANUAL ════════ */}
           {activeTab === 'user' && (
             <motion.div key="user-manual" variants={tabVariants} initial="hidden" animate="visible" exit="exit" className="space-y-16">
-              
+
               <section>
                 <div className="flex items-center gap-4 mb-6 pb-2 border-b border-border-subtle">
                   <Zap className="text-brand-primary" size={24} />
                   <h2 className="text-2xl font-bold text-text-main">Subsystem Initialization</h2>
                 </div>
-                
+
                 <motion.div variants={staggerContainer} initial="hidden" whileInView="show" viewport={{ once: true }} className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <InfoCard prefix="Step" number={1} title="Powering the CareBox" icon={Server} colorClass="text-brand-primary" bgClass="bg-brand-primary/10">
                     <DetailBullet>Connect the CareBox to an approved 5V DC power source.</DetailBullet>
@@ -265,7 +265,7 @@ export const SystemManualsPage = () => {
                   <BellRing className="text-brand-primary" size={24} />
                   <h2 className="text-2xl font-bold text-text-main">Scheduled Intake Operations</h2>
                 </div>
-                
+
                 <motion.div variants={staggerContainer} initial="hidden" whileInView="show" viewport={{ once: true }} className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <InfoCard prefix="Step" number={5} title="Alarm Activation" icon={BellRing} colorClass="text-brand-primary" bgClass="bg-brand-primary/10">
                     <DetailBullet>When an internal RTC countdown expires, the CareBox state machine transitions immediately to EST_ALERTA.</DetailBullet>
@@ -301,13 +301,13 @@ export const SystemManualsPage = () => {
           {/* ════════ TAB: DEVELOPER MANUAL ════════ */}
           {activeTab === 'developer' && (
             <motion.div key="dev-manual" variants={tabVariants} initial="hidden" animate="visible" exit="exit" className="space-y-16">
-              
+
               <section>
                 <div className="flex items-center gap-4 mb-6 pb-2 border-b border-border-subtle">
                   <FolderTree className="text-emerald-600" size={24} />
                   <h2 className="text-2xl font-bold text-text-main">System Architecture & Setup</h2>
                 </div>
-                
+
                 <motion.div variants={staggerContainer} initial="hidden" whileInView="show" viewport={{ once: true }} className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <InfoCard prefix="Section" number={1} title="Frontend Stack" icon={Code2} colorClass="text-emerald-600" bgClass="bg-emerald-500/10">
                     <DetailBullet colorClass="bg-emerald-500"><strong>Framework:</strong> React 18 with TypeScript and Vite for optimized builds.</DetailBullet>
@@ -340,7 +340,7 @@ export const SystemManualsPage = () => {
                   <Cpu className="text-emerald-600" size={24} />
                   <h2 className="text-2xl font-bold text-text-main">Protocols & Integration</h2>
                 </div>
-                
+
                 <motion.div variants={staggerContainer} initial="hidden" whileInView="show" viewport={{ once: true }} className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <InfoCard prefix="Section" number={5} title="Core REST API" icon={ServerCog} colorClass="text-emerald-600" bgClass="bg-emerald-500/10">
                     <DetailBullet colorClass="bg-emerald-500"><strong>/api/auth/*:</strong> Handles JWT issuance, TOTP verification, and session management.</DetailBullet>
@@ -372,7 +372,7 @@ export const SystemManualsPage = () => {
               <section className="mb-24">
                 <div className="flex items-center gap-4 mb-6 pb-2 border-b border-border-subtle">
                   <Printer className="text-emerald-600" size={24} />
-                  <h2 className="text-2xl font-bold text-text-main">Hardware Fabrication Files</h2>
+                  <h2 className="text-2xl font-bold text-text-main">Hardware and Firmware Files</h2>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -397,7 +397,7 @@ export const SystemManualsPage = () => {
                             <p className="text-xs text-text-muted mt-1">{file.desc}</p>
                           </div>
                         </div>
-                        
+
                         <div className="p-2 rounded-full text-text-muted group-hover:text-emerald-600 group-hover:bg-emerald-500/10 transition-colors">
                           <Download size={20} />
                         </div>
