@@ -4,7 +4,7 @@ const crypto = require('crypto');
 const { DocumentMetadata } = require('../models');
 
 // ──────────────────────────────────────────────────────────────
-//  Bullet-proof PDF Service — simple top-to-bottom layout.
+//  Bullet-proof PDF Service - simple top-to-bottom layout.
 //  No manual Y coordinates near page bottom, no pageAdded hooks,
 //  no switchToPage post-processing.  PDFKit handles all page
 //  breaks naturally through its flowing text engine.
@@ -33,14 +33,14 @@ class EnhancedPdfService {
 
     return new Promise((resolve, reject) => {
       try {
-        // ── Create document — NO bufferPages, NO autoFirstPage:false ──
+        // ── Create document - NO bufferPages, NO autoFirstPage:false ──
         const docConfig = {
           size: 'A4',
           margins: { top: M, bottom: M, left: M, right: M },
           info: {
             Title: 'CareSync Patient Report',
             Author: 'CareSync Healthcare Platform',
-            Subject: `Adherence Report ${startDate} — ${endDate}`,
+            Subject: `Adherence Report ${startDate} - ${endDate}`,
           },
         };
 
@@ -105,7 +105,7 @@ class EnhancedPdfService {
   }
 
   // ─────────────────────────────────────────────────────────
-  //  Main document builder — purely sequential, top-to-bottom
+  //  Main document builder - purely sequential, top-to-bottom
   // ─────────────────────────────────────────────────────────
   async _buildDocument(doc, userData, adherenceData, startDate, endDate, includeCharts, documentId, timestamp, originUrl) {
     const pageW = doc.page.width;
@@ -121,7 +121,7 @@ class EnhancedPdfService {
       const qrDataUrl = await QRCode.toDataURL(qrUrl, { width: 80, margin: 0 });
       const qrBuf = Buffer.from(qrDataUrl.split(',')[1], 'base64');
       doc.image(qrBuf, pageW - M - 55, M, { width: 55 });
-    } catch { /* QR is optional — continue without it */ }
+    } catch { /* QR is optional - continue without it */ }
 
     // ── Header ──
     doc.font(FONT.H).fontSize(22).fillColor(COLORS.PRIMARY)
@@ -209,7 +209,7 @@ class EnhancedPdfService {
       doc.moveDown(0.8);
     }
 
-    // ── Footer (simple, at end — NOT on every page) ──
+    // ── Footer (simple, at end - NOT on every page) ──
     doc.moveDown(1);
     doc.moveTo(M, doc.y).lineTo(pageW - M, doc.y).strokeColor(COLORS.BORDER).lineWidth(0.5).stroke();
     doc.moveDown(0.4);

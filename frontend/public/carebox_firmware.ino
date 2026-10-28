@@ -1,6 +1,6 @@
 /*
  * ============================================================================
- *  CARESYNC — FIRMWARE COMPLETO
+ *  CARESYNC - FIRMWARE COMPLETO
  *  Comunicação bidirecional App <-> Caixa + RFID/Pulseira
  * ============================================================================
  *
@@ -17,7 +17,7 @@
  *  - LiquidCrystal_I2C   (Frank de Brabander)
  *  - Ds1302              (Rafa Couto)
  *  - MFRC522             (GithubCommunity)
- *  - BTstackLib          (incluída no core Philhower — sem instalação)
+ *  - BTstackLib          (incluída no core Philhower - sem instalação)
  *
  *  HARDWARE / PINAGEM
  *  ──────────────────
@@ -25,13 +25,13 @@
  *  Buzzer    : GP0
  *  Motor     : IN1=GP9, IN2=GP8, IN3=GP7, IN4=GP6  (ULN2003)
  *  Encoder   : CLK=GP1, DT=GP2, SW=GP3
- *  Reed      : GP18  (INPUT_PULLUP — LOW = íman / gaveta fechada)
+ *  Reed      : GP18  (INPUT_PULLUP - LOW = íman / gaveta fechada)
  *  LCD I2C   : SDA=GP16, SCL=GP17  (endereço 0x27)
  *  RTC DS1302: CLK=GP10, DAT=GP11, RST=GP12
  *  RC522 SPI : SCK=GP22, MOSI=GP19, MISO=GP20, CS=GP21, RST=GP28
  *              VCC -> rail externo 3.3V (NUNCA 5V)
  *
- *  BLE — Características
+ *  BLE - Características
  *  ─────────────────────
  *  Service : a1b2c3d4-e5f6-7890-abcd-ef1234567890
  *  ...7891  Motor       READ+WRITE
@@ -333,7 +333,7 @@ void ledBreathAzul() { ledBreath(0, 0, 255, millis(), 3000UL); }
 void ledBreathVerde() { ledBreath(0, 255, 0, millis(), 2000UL); }
 
 // ═════════════════════════════════════════════════════════════════════════
-//  RGB — cores estáticas
+//  RGB - cores estáticas
 // ═════════════════════════════════════════════════════════════════════════
 void cor(int r, int g, int b) {
     analogWrite(LED_VERMELHO, r);
@@ -361,7 +361,7 @@ void apitarAlerta() {
 }
 
 // ═════════════════════════════════════════════════════════════════════════
-//  LCD — mensagens
+//  LCD - mensagens
 // ═════════════════════════════════════════════════════════════════════════
 void lcdMsg(const char* l0, const char* l1 = "") {
     lcd.clear();
@@ -464,7 +464,7 @@ void desligarMotor() {
 }
 
 // ═════════════════════════════════════════════════════════════════════════
-//  BLE — STATS
+//  BLE - STATS
 // ═════════════════════════════════════════════════════════════════════════
 void atualizarStatsPayload() {
     int stockRestante = ESPACOS_RODA - stats.tomasDesdeRestock;
@@ -476,7 +476,7 @@ void atualizarStatsPayload() {
 }
 
 // ═════════════════════════════════════════════════════════════════════════
-//  BLE — ENVIAR EVENTO
+//  BLE - ENVIAR EVENTO
 // ═════════════════════════════════════════════════════════════════════════
 void enviarEvento(const char* payload) {
     strncpy(lastEventoPayload, payload, sizeof(lastEventoPayload) - 1);
@@ -490,7 +490,7 @@ void enviarEvento(const char* payload) {
 }
 
 // ═════════════════════════════════════════════════════════════════════════
-//  BLE — ENVIAR RFID SYNC
+//  BLE - ENVIAR RFID SYNC
 // ═════════════════════════════════════════════════════════════════════════
 void enviarRfidSync(const char* payload) {
     strncpy(lastRfidSyncPayload, payload, sizeof(lastRfidSyncPayload) - 1);

@@ -64,7 +64,7 @@ async function issueFullTokens(user, res) {
  * /api/auth/2fa/setup:
  *   post:
  *     tags: [2FA]
- *     summary: Begin 2FA setup — generates secret + QR code
+ *     summary: Begin 2FA setup - generates secret + QR code
  *     security:
  *       - bearerAuth: []
  *     responses:

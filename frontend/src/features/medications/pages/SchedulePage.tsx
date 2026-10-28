@@ -40,7 +40,7 @@ const STATUS_CONFIG: Record<string, { colour: string; label: string; icon: strin
   early:     { colour: '#10b981', label: 'Taken Early', icon: '✓' }, // emerald-500
   late:      { colour: '#f59e0b', label: 'Taken Late',  icon: '⚠' }, // amber-500
   missed:    { colour: '#ef4444', label: 'Missed',      icon: '✗' }, // red-500
-  skipped:   { colour: '#9ca3af', label: 'Skipped',   icon: '—' }, // gray-400
+  skipped:   { colour: '#9ca3af', label: 'Skipped',   icon: '-' }, // gray-400
   scheduled: { colour: '#6366f1', label: 'Pending',   icon: '◦' }, // indigo-500
   overdue:   { colour: '#f97316', label: 'Overdue',   icon: '!' }, // orange-500
 }
@@ -77,9 +77,9 @@ function entryToEvent(entry: ScheduleEntry, dayDate: string): EventInput {
 }
 
 function formatTime(iso: string | null | undefined): string {
-  if (!iso) return '—'
+  if (!iso) return '-'
   const d = new Date(iso)
-  if (isNaN(d.getTime())) return '—'
+  if (isNaN(d.getTime())) return '-'
   return d.toLocaleTimeString('en', { hour: '2-digit', minute: '2-digit' })
 }
 

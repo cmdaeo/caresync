@@ -9,7 +9,7 @@ const {
 } = require("../middleware/validationMiddleware");
 const { body, query, param } = require("express-validator");
 
-// Multer — memory storage so we get a Buffer for the parser
+// Multer - memory storage so we get a Buffer for the parser
 const prescriptionUpload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 10 * 1024 * 1024 }, // 10 MB
@@ -44,7 +44,7 @@ const validateMedication = [
     .withMessage("timesPerDay must be between 1 and 24"),
   // Zero-quantity prescriptions are nonsensical and break the inventory
   // state machine. If the user has no stock, the medication shouldn't
-  // exist yet — they should add it after they pick up the refill.
+  // exist yet - they should add it after they pick up the refill.
   body("totalQuantity")
     .optional({ nullable: true })
     .isInt({ min: 1 })
@@ -55,7 +55,7 @@ const validateMedication = [
     .isISO8601()
     .withMessage("Invalid endDate"),
   body("isPRN").optional().isBoolean().withMessage("isPRN must be boolean"),
-  // Mandatory endDate enforcement when not PRN — prevents the
+  // Mandatory endDate enforcement when not PRN - prevents the
   // "infinite calendar pollution" edge case.
   body().custom((body) => {
     const isPRN = body.isPRN === true || body.isPRN === "true";
@@ -89,7 +89,7 @@ const validateAdherenceRecord = [
   // Time-traveling dose guard. Even though the frontend SchedulePage
   // disables the "Mark Taken" button for future slots, a malicious or
   // buggy client can still POST directly. The backend MUST be the source
-  // of truth here — patient safety depends on it.
+  // of truth here - patient safety depends on it.
   body().custom((body) => {
     const now = Date.now();
     if (body.scheduledTime) {

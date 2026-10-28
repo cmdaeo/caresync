@@ -2,7 +2,7 @@
 //
 // Upload wizard with react-pdf Canvas + Text Layer highlight verification.
 // Extracted terms are color-coded on the document. Focusing a form field
-// pulses the corresponding highlight in the PDF — like a high-end AI
+// pulses the corresponding highlight in the PDF - like a high-end AI
 // extraction tool.
 
 import { useState, useRef, useCallback, useMemo, useEffect } from 'react'
@@ -41,7 +41,7 @@ import {
   AlertTriangle,
 } from 'lucide-react'
 
-// PDF.js worker — Vite resolves new URL(…, import.meta.url) to a same-origin asset
+// PDF.js worker - Vite resolves new URL(…, import.meta.url) to a same-origin asset
 pdfjs.GlobalWorkerOptions.workerSrc = new URL(
   'pdfjs-dist/build/pdf.worker.min.mjs',
   import.meta.url,
@@ -103,7 +103,7 @@ interface ActiveHighlight {
 
 /* Portuguese stop words + common noise to exclude from highlighting.
    These appear in boilerplate headers/footers of SNS prescriptions and
-   in parsed duration/frequency strings — NOT medication-specific data. */
+   in parsed duration/frequency strings - NOT medication-specific data. */
 const PT_STOP_WORDS = new Set([
   // Portuguese articles / prepositions / conjunctions
   'com', 'para', 'por', 'dia', 'dias', 'das', 'dos', 'nos', 'nas', 'uma', 'uns',
@@ -122,7 +122,7 @@ const PT_STOP_WORDS = new Set([
   'guia', 'documento', 'farmácia', 'farmacia', 'código', 'codigo',
   'validade', 'encargos', 'preços', 'precos', 'válido', 'valido',
   'blister', 'unidade', 'unidades', 'embalagem',
-  // English (from mapped values — don't appear in Portuguese PDFs)
+  // English (from mapped values - don't appear in Portuguese PDFs)
   'the', 'and', 'for', 'with', 'from', 'take',
   'every', 'hours', 'daily', 'weekly', 'times', 'once', 'twice',
   'needed', 'capsule', 'tablet', 'tablets', 'capsules',
@@ -174,14 +174,14 @@ const HIGHLIGHT_CSS = `
   transition: opacity 0.3s ease, background 0.3s ease, box-shadow 0.3s ease;
 }
 
-/* Field-specific colors — passive state */
+/* Field-specific colors - passive state */
 .pdf-hl-name     { background: rgba(96, 165, 250, 0.35) !important; }
 .pdf-hl-dosage   { background: rgba(52, 211, 153, 0.35) !important; }
 .pdf-hl-form     { background: rgba(168, 85, 247, 0.35) !important; }
 .pdf-hl-frequency{ background: rgba(251, 191, 36, 0.35) !important; }
 .pdf-hl-duration { background: rgba(244, 114, 182, 0.35) !important; }
 
-/* Active highlight — bright + pulsing glow */
+/* Active highlight - bright + pulsing glow */
 .pdf-hl-active {
   animation: hl-glow 1.5s ease-in-out infinite;
 }
@@ -263,7 +263,7 @@ export function PrescriptionUploadWizard({ onCancel }: { onCancel: () => void })
   const zoomFit = () => setScale(1.0)
 
   /* ---------------------------------------------------------------- */
-  /*  Tokenized Highlighting — defeats PDF text-layer fragmentation    */
+  /*  Tokenized Highlighting - defeats PDF text-layer fragmentation    */
   /* ---------------------------------------------------------------- */
 
   // Step 1: Extract every non-empty string from raw + mapped, split into
@@ -310,7 +310,7 @@ export function PrescriptionUploadWizard({ onCancel }: { onCancel: () => void })
     parseResult.medications.forEach((med, idx) => {
       const r = med.raw
       const m = med.mapped
-      // Raw Portuguese — these strings appear LITERALLY in the PDF text layer.
+      // Raw Portuguese - these strings appear LITERALLY in the PDF text layer.
       // Only tokenize raw values; mapped English values don't appear in PT PDFs.
       tokenize(r.drug_name, idx, 'name')
       tokenize(r.dose_str, idx, 'dosage')
@@ -362,14 +362,14 @@ export function PrescriptionUploadWizard({ onCancel }: { onCancel: () => void })
     const pattern = uniqueWords.map(escapeRegex).join('|')
     let regex: RegExp | null = null
     try {
-      // Case-insensitive, global — matches individual word tokens inside any text span
+      // Case-insensitive, global - matches individual word tokens inside any text span
       regex = new RegExp(`(${pattern})`, 'gi')
-    } catch { /* malformed pattern — degrade gracefully */ }
+    } catch { /* malformed pattern - degrade gracefully */ }
 
     return { tokenRegex: regex, tokenLookup: lookup }
   }, [highlightTokens])
 
-  // Step 3: Post-render DOM walking — concatenate ALL text layer spans into
+  // Step 3: Post-render DOM walking - concatenate ALL text layer spans into
   //         one string, match tokens against the full text, then apply CSS
   //         classes back to the overlapping DOM spans. This correctly handles
   //         words split across multiple <span> elements by PDF.js.
@@ -471,13 +471,13 @@ export function PrescriptionUploadWizard({ onCancel }: { onCancel: () => void })
   }, [updateActiveClasses])
 
   // Stable refs so the MutationObserver callback always calls the LATEST
-  // versions of applyHighlights / updateActiveClasses — avoids stale closures.
+  // versions of applyHighlights / updateActiveClasses - avoids stale closures.
   const applyHighlightsRef = useRef(applyHighlights)
   const updateActiveClassesRef = useRef(updateActiveClasses)
   useEffect(() => { applyHighlightsRef.current = applyHighlights }, [applyHighlights])
   useEffect(() => { updateActiveClassesRef.current = updateActiveClasses }, [updateActiveClasses])
 
-  // MutationObserver ref — watches for text layer to be populated with spans
+  // MutationObserver ref - watches for text layer to be populated with spans
   const observerRef = useRef<MutationObserver | null>(null)
 
   // After each page render: use MutationObserver to reliably detect when
@@ -1283,7 +1283,7 @@ function MedicationReviewCard({
         </div>
       )}
 
-      {/* Editable fields — onFocus highlights the corresponding term in the PDF */}
+      {/* Editable fields - onFocus highlights the corresponding term in the PDF */}
       <div className="px-4 py-3 space-y-3">
         {/* Row 1: Name */}
         <div>
@@ -1493,7 +1493,7 @@ function RawField({ label, value }: { label: string; value: string }) {
   return (
     <div>
       <span className="text-text-muted">{label}:</span>{' '}
-      <span className="text-text-main font-medium">{value || '—'}</span>
+      <span className="text-text-main font-medium">{value || '-'}</span>
     </div>
   )
 }

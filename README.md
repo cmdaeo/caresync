@@ -1,122 +1,127 @@
 # CareSync
 
-A cross-platform healthcare management application combining a smart IoT medication dispenser (CareBand/CareBox) with a web and mobile interface for patients, caregivers, and healthcare providers.
+A full-stack digital health platform built as a capstone project at the University of Aveiro (2026). Integrates a web dashboard, an Android app, an IoT medication dispenser (CareBox) and a wearable (CareBand).
 
-[![Node.js](https://img.shields.io/badge/Node.js-18%2B-green)](https://nodejs.org)
-[![React](https://img.shields.io/badge/React-18-blue)](https://reactjs.org)
-[![Supabase](https://img.shields.io/badge/Database-Supabase-green)](https://supabase.com)
-[![Vercel](https://img.shields.io/badge/Deployed-Vercel-black)](https://vercel.com)
+**Live demo:** [caresync-pink.vercel.app](https://caresync-pink.vercel.app/). The interactive dashboard is paused because the Supabase free tier backing it was idle and suspended by the provider. The landing page and the video walkthrough remain available. The full source, including the test suite, is in this repository.
 
----
+## What it does
 
-## Overview
+- Patients track medications, schedules and adherence.
+- Caregivers get a scoped view of the patients they are assigned to, with granular permission controls.
+- A BLE-connected dispenser (CareBox) records doses physically and syncs with the API.
+- A live presentation engine drives public demos, including QR-code review submission from the audience at the `students@deti 2026` showcase at University of Aveiro.
 
-CareSync manages medication adherence through a unified software platform and connected IoT hardware. The system supports three primary roles (Patient, Caregiver, Doctor) and focuses on secure data handling, prescription parsing, and real-time synchronization.
+## Stack
 
-This repository serves as both the functional application and a technical showcase of the architecture. Due to hosting constraints (Vercel and Supabase free tiers), several technical workarounds were implemented to maintain performance and stay within quota limits.
+| Layer | Stack |
+|---|---|
+| Web frontend | React 18, TypeScript, Tailwind CSS, Vite |
+| Mobile | Capacitor (Android), BLE integration with CareBox |
+| Backend | Node.js, Express, Sequelize, PostgreSQL (Supabase) |
+| Realtime | Supabase Realtime, Server-Sent Events |
+| Auth | JWT (access + refresh), TOTP 2FA, HMAC-SHA256 CSRF |
+| Encryption | AES-256-GCM for audit-log payloads; AES-256-CBC via `sequelize-encrypted` for PII and medication columns |
+| Testing | Jest, Supertest |
 
-## Core Features & Technical Implementation
-
-### 1. Presentation Synchronization Engine
-A real-time presentation engine used for live demonstrations across multiple devices.
-
-**Implementation details & constraints:**
-- **Batched Syncing:** To stay within Supabase and Vercel free-tier limits, true 0ms synchronization is not used. DOM events (`scroll`, `click`, `input`, pointer movement) are intercepted and queued into a Map. The queue is flushed every 150ms and sent as a single `batch_sync` payload via Supabase WebSockets.
-- **Hybrid Architecture:** High-frequency ephemeral events (like scrolling and pointer movements) bypass the Vercel backend entirely, establishing a direct frontend-to-frontend WebSocket connection via Supabase. Persistent state changes (e.g., changing the current slide) are `POST`ed to the Vercel backend so late-joining clients receive the correct initial state.
-- **Media Sync:** Native `<video>` and `<audio>` events (`play`, `pause`, `volumechange`, `ratechange`) are intercepted and synced.
-- **File Upload Simulation:** Browsers restrict scripts from programmatically modifying `<input type="file">`. To simulate file uploads during a presentation, the application intercepts the upload event, broadcasts a `FILE_UPLOAD_SIMULATION` payload, and renders a custom CSS overlay on the audience's screen. Once the backend parses the PDF, the extracted data payload is broadcasted, updating the audience's React state to match the presenter's.
-
-### 2. Adherence PDF Generation
-Generates verifiable medication adherence reports.
-
-**Implementation details:**
-- **Server-Side Generation:** Uses `pdfkit` and `@napi-rs/canvas` on the Node.js backend.
-- **Security & Validation:** PDFs are encrypted with AES-128 RC4 password protection. Document permissions are set to restrict copying and modification natively.
-- **Verification QR Code:** A SHA-256 cryptographic hash of the PDF buffer is stored in the `DocumentMetadata` table. A QR code is generated using `qrcode` and embedded in the PDF. Scanning the QR code points to a verification endpoint that extracts `req.headers.origin` to ensure the validation URL matches the exact deployment environment.
-
-### 3. Caregiver Portal & Role Isolation
-Manages patient-caregiver relationships and data access.
-
-**Implementation details:**
-- **Permissions:** Uses a granular JSONB permission model (`canViewMedications`, `canManageMedications`, `canReceiveAlerts`) stored in the `CaregiverPatient` mapping table.
-- **Data Isolation:** The backend uses a dual-sequelize architecture. Personally Identifiable Information (PII) is isolated and encrypted at rest using AES field-level encryption (`sequelize-encrypted`), separated from general medical adherence data.
-
-### 4. 3D Hardware Showcase & Video Sync
-Showcases the physical hardware models and UI features.
-
-**Implementation details:**
-- **3D Rendering:** Uses Google's `<model-viewer>` for WebGL-based interactions with CareBox and CareBand PCB CAD models (`.glb` files).
-- **Video Ambilight Effect:** Renders three identical `<video>` tags layered with CSS `blur` and `mask-image` properties to create an ambient light effect based on the video's current frame. 
-- **Cache Workaround:** To prevent Chromium-based browsers from throwing `net::ERR_CACHE_OPERATION_NOT_SUPPORTED` when three video tags request the same chunked file simultaneously, cache-busting query strings (`?cache=main`, `?cache=blur`) are dynamically appended to isolate the browser's media cache.
-- **Time-lapsing:** Fast-forwarding the video is handled by modifying the native `playbackRate` rather than manipulating `currentTime`, which prevents irregular frame skipping.
-
-### 5. Prescription Parsing Pipeline
-Extracts posology data from uploaded medical prescriptions.
-
-**Implementation details:**
-- **OCR:** Buffers the PDF upload and processes text via `pdf-parse` on the Node.js backend.
-- **Parsing Engines:** Implements a custom Regex extraction engine tailored for Portuguese SNS (Serviço Nacional de Saúde) prescription layouts to avoid unnecessary LLM API costs. An AI fallback engine is available for non-standard layouts.
-
----
-
-## Architecture
-
-The project is a monorepo. The backend is deployed as a serverless function, and the frontend is a Vite SPA.
+## Repository layout
 
 ```text
 caresync/
-├── backend/          # Express.js REST API (Node.js)
-│   └── src/
-│       ├── config/   # DB connection, rate limiter
-│       ├── controllers/
-│       ├── models/   # Sequelize ORM
-│       ├── routes/
-│       ├── services/ # PDF, Auth, Prescription Parsing
-│       └── utils/
-├── frontend/         # React + TypeScript SPA (Vite)
-│   ├── android/      # Capacitor Android build
-│   └── src/
-│       ├── features/ # Feature modules
-│       └── shared/   # Zustand stores, Supabase client
-└── supabase-schema.sql
+  backend/           Express REST API
+    src/
+      config/        database connection, rate limiter
+      controllers/
+      middleware/    auth, csrf, error handler, request logger
+      models/        Sequelize models
+      routes/
+      services/      PDF generation, prescription parsing, audit log
+      utils/
+    tests/           114 tests across 12 suites
+    scripts/         scanIDOR.js, generateApiDocs.js
+  frontend/          React + TypeScript SPA (Vite)
+    android/         Capacitor Android build
+    src/
+      features/
+      shared/
+  supabase-schema.sql
 ```
 
-**Database:** PostgreSQL hosted on Supabase (EU West region).
+## Notable engineering
 
----
+A few decisions worth calling out, all verifiable in the code:
 
-## Security Overview
+**Batched realtime sync.** DOM events are queued into a Map and flushed as a single `batch_sync` payload every 150 ms through Supabase WebSockets. High-frequency ephemeral events bypass the backend; persistent state changes are `POST`ed so late-joining clients receive the correct initial state.
 
-- **Transport:** HTTPS enforced, HSTS headers via `helmet`.
-- **CSRF:** Double-submit cookie pattern on HTTP routes. WebSocket connections rely on Supabase channel authentication.
-- **Encryption:** AES encryption for PII fields via `sequelize-encrypted`.
-- **Authentication:** JWT (Access/Refresh tokens) + TOTP 2FA (Google Authenticator compatible).
-- **IoT Verification:** Device registration requires a signed PEM public key.
+**Presentation engine, not a video call.** The live demo synchronizes slides, scroll position, pointer and 3D model state across audience devices. It also intercepts `<video>` and `<audio>` events (`play`, `pause`, `volumechange`, `ratechange`) and replays them on the audience side. File uploads are simulated by broadcasting a payload and rendering a CSS overlay on the audience screen until the backend parses the PDF.
 
----
+**QR-code reviews.** At the `students@deti 2026` public showcase, the landing page exposes a QR code that any visitor can scan to submit a short review (clinical, patient or caregiver view). Submissions are moderated before being published on the showcase page. This turned a static demo into a piece of interactive evidence that the platform handles unauthenticated input safely.
 
-## Local Development
+**Prescription parser.** Buffers the PDF upload, extracts text with `pdf-parse`, and applies a deterministic regex engine tailored to Portuguese SNS (Serviço Nacional de Saúde) prescription layouts. Falls back to an LLM (Groq Llama-3.3-70b, with Ollama/Qwen 2.5 as a local fallback) only when the fast path finds nothing. Each parsed medication is editable line-by-line by the user before being saved.
+
+**Verifiable PDF reports.** Server-side generated with `pdfkit`. Each report carries a SHA-256 hash stored in a `DocumentMetadata` table and a QR code pointing to a public `/verify` endpoint that returns only non-clinical metadata. The QR embeds the deployment origin at generation time so the verification URL matches the environment it was issued from.
+
+## Testing
+
+The backend ships with 114 automated tests across 12 Jest + Supertest suites, running in about 10 seconds.
+
+```bash
+cd backend
+npm install
+npm test
+```
+
+Coverage areas: cryptographic primitives (AES-256-GCM tamper detection), CSRF token HMAC, JWT + RBAC, error handling, medication state-machine guards, prescription review ownership checks.
+
+The suite surfaced two pre-production security defects during development:
+
+- **AES-CBC ciphertext malleability.** A tampered IV silently produced corrupted plaintext with no error. Audit-log payloads were migrated to AES-256-GCM (AEAD) with a backward-compatible CBC read path for legacy ciphertexts. Covered by 8 tests in `tests/encryption.test.js`.
+- **BOLA/IDOR on `PUT /api/prescriptions/:id/review`.** Prescription ownership was enforced only when a `patientId` was supplied by the caller; without it, any authenticated provider could review any prescription by UUID. The endpoint is now scoped: the authenticated provider must be assigned to the patient via `CaregiverPatient` with `canManageMedications`, or be an admin. Covered by 5 tests in `tests/prescriptionReview.test.js`.
+
+A static scanner (`npm run scan:idor` in `backend/`) flags common BOLA/IDOR patterns across all route and controller files. It runs clean on the current tree.
+
+## Security notes
+
+- All mutating endpoints require a CSRF token issued by `GET /api/csrf-token`. The token is HMAC-SHA256 signed.
+- Refresh tokens are `HttpOnly`, `Secure`, `SameSite=Strict` cookies. Access tokens are short-lived JWTs with `tokenVersion`-based revocation on password change.
+- Audit-log payloads are AES-256-GCM encrypted at rest.
+- PII and medication columns use AES-256-CBC via `sequelize-encrypted`.
+- Role-based access control on every route (patient, caregiver, healthcare provider, admin).
+- GDPR-aligned consent logging, right to erasure (`DELETE /api/auth/account`), and data minimization.
+
+## Known limitations
+
+- `sequelize-encrypted` (used for PII and medication columns) and `speakeasy` (used for TOTP 2FA) are no longer actively maintained upstream. Both are pinned and tested, but a production deployment should replace them.
+- PII and medication columns are encrypted with AES-256-CBC, not GCM. Migration is tracked but not completed.
+- The PDF encryption cipher used by `pdfkit` depends on the version installed; the current config uses a password-protected PDF without a specific cipher guarantee in this README.
+- The repository previously contained a `logins.txt` file with test credentials for the demo Supabase instance. The file has been removed and the demo instance has been retired; the test accounts no longer exist.
+
+## Local development
 
 ### Prerequisites
-- Node.js >= 18
-- PostgreSQL (or Supabase local development)
+
+- Node.js 20+
+- PostgreSQL 14+ (local instance or Supabase project)
 
 ### Backend
+
 ```bash
 cd backend
 cp .env.example .env
+# Fill DATABASE_URL, JWT_SECRET, JWT_REFRESH_SECRET, MASTER_KEY, CSRF_SECRET
 npm install
 npm run dev
 ```
 
 ### Frontend
+
 ```bash
 cd frontend
 npm install
 npm run dev
 ```
 
-### Mobile Build (Capacitor)
+### Android build (Capacitor)
+
 ```bash
 cd frontend
 npm run build
@@ -125,7 +130,6 @@ cd android
 ./gradlew assembleDebug
 ```
 
----
-
 ## License
+
 MIT

@@ -85,7 +85,7 @@ const hardwareFiles = [
   {
     id: 5,
     name: "CareBox Firmware",
-    desc: "Arduino Source (.ino) — RP2040 / Pico W",
+    desc: "Arduino Source (.ino) - RP2040 / Pico W",
     path: "/carebox_firmware.ino",
     icon: Terminal,
   },
@@ -731,12 +731,10 @@ export const SystemManualsPage = () => {
                     bgClass="bg-emerald-500/10"
                   >
                     <DetailBullet colorClass="bg-emerald-500">
-                      API hardened according to OWASP ASVS v5.0.0 Level 3
-                      specifications.
+                      API built with OWASP ASVS fundamentals: parameterized queries, RBAC on every route, HMAC-signed CSRF, encrypted audit logs.
                     </DetailBullet>
                     <DetailBullet colorClass="bg-emerald-500">
-                      Features 4-tier rate limiting to prevent brute-force
-                      attacks.
+                      Rate limiting per route: 200/15min global, 10/15min auth, 5/15min 2FA, 20/h reports.
                     </DetailBullet>
                     <DetailBullet colorClass="bg-emerald-500">
                       Automated recursive log scrubbers redact PHI/PII before

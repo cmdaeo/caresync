@@ -1,252 +1,218 @@
 # CareSync Backend API
 
-**CareSync Healthcare Ecosystem** — Node.js/Express REST API com conformidade HIPAA/GDPR (CNPD-58/2019), dual-database architecture (PII + Medical), e documentação automática Swagger/OpenAPI 3.0.
+Node.js/Express REST API for the CareSync digital health platform. Designed around GDPR-aligned data handling for a Portuguese context (CNPD-58/2019 audit logging patterns), with a clear separation between identity data and clinical data at the model level.
 
----
+## Stack
 
-## Stack Técnica
-
-| Componente | Versão | Função |
+| Component | Version | Purpose |
 |---|---|---|
-| Express | 5.2.1 | Framework HTTP |
+| Express | 5.2.1 | HTTP framework |
 | Sequelize | 6.37.8 | ORM (PostgreSQL) |
-| Supabase PostgreSQL | — | Dual DB: PII + Medical |
-| JWT + bcryptjs | 9.0.3 / 3.0.3 | Auth & hashing |
-| swagger-jsdoc / swagger-ui-express | 6.2.8 / 5.0.1 | API docs |
-| socket.io | 4.8.3 | Real-time notifications |
-| Winston | 3.19.0 | Logging estruturado |
-| Redis | 5.12.1 | Rate limiting avançado |
-| speakeasy | 2.0.0 | 2FA TOTP |
+| Supabase PostgreSQL | - | Managed Postgres instance |
+| jsonwebtoken + bcryptjs | 9.0.3 / 3.0.3 | Auth and password hashing (10 rounds) |
+| swagger-jsdoc / swagger-ui-express | 6.2.8 / 5.0.1 | API documentation |
+| Winston | 3.19.0 | Structured logging with PII scrubbing |
+| speakeasy | 2.0.0 | TOTP 2FA |
 | helmet | 8.1.0 | Security headers |
-| pdfkit / pdf-parse | 0.18.0 / 2.4.5 | Geração/parsing de PDFs |
+| pdfkit / pdf-parse | 0.18.0 / 2.4.5 | PDF generation and parsing |
+| Jest / Supertest | 29.7.0 / 7.0.0 | Test suite |
 
----
+Optional: Redis (rate limiting), Socket.IO (serverless environments disable it).
 
-## Estrutura de Diretórios
+## Architecture
+
+The application runs against a single PostgreSQL instance (Supabase). Identity and clinical data are separated at the model layer: `User`, `CaregiverPatient`, `AuditLog`, `ConsentLog`, `Notification` on the identity side; `Medication`, `Prescription`, `Adherence`, `Device`, `DeviceAccessPermission`, `DeviceInvitation`, `DocumentMetadata` on the clinical side. Cross-model hydration goes through `utils/crossDbHelper.js` using UUID references, not JOINs.
+
+This is a logical separation, not a physical one. An earlier iteration of this README described a "dual-database" architecture; that was aspirational documentation, not the implementation.
+
+## Directory layout
+
+```text
 backend/
-├── logs/
-├── scripts/
-│ └── generateApiDocs.js # Script CLI para gerar api-docs.json público
-├── src/
-│ ├── config/
-│ │ ├── database.js # Dual Sequelize: sequelizePii + sequelizeMedical
-│ │ └── rateLimiter.js
-│ ├── controllers/
-│ │ ├── authController.js
-│ │ ├── caregiverController.js
-│ │ ├── deviceController.js
-│ │ ├── medicationController.js
-│ │ ├── notificationController.js
-│ │ ├── prescriptionController.js
-│ │ └── userController.js
-│ ├── middleware/
-│ │ ├── auth.js # JWT authMiddleware + requireRole
-│ │ ├── csrf.js # csrf-csrf tokens
-│ │ ├── errorHandler.js # asyncHandler + AppError/AuthenticationError
-│ │ ├── rateLimiter.js
-│ │ ├── requestLogger.js # generateRequestId + logRequest
-│ │ └── validationMiddleware.js
-│ ├── models/
-│ │ ├── index.js # Associações Sequelize + exports
-│ │ ├── User.js # PII DB — toJSON() strips sensitive fields
-│ │ ├── CaregiverPatient.js # PII DB
-│ │ ├── AuditLog.js # PII DB — paranoid:false, encripted payloads
-│ │ ├── ConsentLog.js # PII DB
-│ │ ├── Notification.js # PII DB
-│ │ ├── Medication.js # Medical DB — isPRN flag, inventory guards
-│ │ ├── Prescription.js # Medical DB — campos encriptados (sequelize-encrypted)
-│ │ ├── Adherence.js # Medical DB — composite unique index
-│ │ ├── Device.js # Medical DB
-│ │ ├── DeviceAccessPermission.js
-│ │ ├── DeviceInvitation.js
-│ │ └── DocumentMetadata.js # Medical DB — paranoid:false
-│ ├── routes/
-│ │ ├── api-docs.js # POST /api/api-docs/generate (dev only)
-│ │ ├── auth.js
-│ │ ├── caregivers.js
-│ │ ├── consent.js
-│ │ ├── devices.js
-│ │ ├── medications.js
-│ │ ├── notifications.js
-│ │ ├── patients.js
-│ │ ├── prescriptions.js
-│ │ ├── reports.js
-│ │ ├── twoFactor.js
-│ │ └── users.js
-│ ├── services/
-│ │ ├── apiDocGenerator.js # Swagger + privacy metadata → api-docs.json
-│ │ ├── auditLogService.js # CNPD-58/2019 encrypted audit trail
-│ │ ├── authService.js
-│ │ ├── caregiverService.js
-│ │ ├── deviceService.js
-│ │ ├── enhancedPdfService.js
-│ │ ├── medicationService.js
-│ │ ├── notificationService.js
-│ │ ├── pdfService.js
-│ │ ├── pemParserService.js
-│ │ └── prescriptionParser.js
-│ ├── utils/
-│ │ ├── ApiResponse.js # Wrapper de respostas uniformes
-│ │ ├── crossDbHelper.js # Queries cross-database (PII ↔ Medical)
-│ │ ├── encryption.js # AES-256 encrypt/decrypt
-│ │ ├── jwtUtils.js # generateToken + generateRefreshToken
-│ │ ├── logger.js # Winston logger configurado
-│ │ └── sampleDataGenerator.js # Seed de dados em dev
-│ ├── app.js # Express app + middleware pipeline
-│ ├── index.js # Ponto de entrada do servidor
-│ └── swagger.js # Configuração swagger-jsdoc
-└── .env.example
+  scripts/
+    generateApiDocs.js    Swagger to api-docs.json for the frontend
+    scanIDOR.js           Static BOLA/IDOR pattern scanner
+  src/
+    config/
+      database.js         Single Sequelize instance, exported twice
+      rateLimiter.js
+    controllers/
+    middleware/
+      auth.js             JWT authMiddleware, requireRole, requirePatientAccess
+      csrf.js             HMAC-SHA256 CSRF tokens
+      errorHandler.js     asyncHandler, AppError hierarchy
+      requestLogger.js    Request IDs and PII scrubbing
+      validationMiddleware.js
+    models/
+    routes/
+    services/
+      apiDocGenerator.js
+      auditLogService.js
+      authService.js
+      caregiverService.js
+      deviceService.js
+      enhancedPdfService.js
+      medicationService.js
+      notificationService.js
+      pdfService.js
+      pemParserService.js
+      prescriptionParser.js
+    utils/
+      ApiResponse.js
+      crossDbHelper.js
+      encryption.js       AES-256-GCM helpers for audit-log payloads
+      jwtUtils.js
+      logger.js
+    app.js
+    swagger.js
+  tests/                  114 tests across 12 suites
+  .env.example
+```
 
-text
+## Configuration
 
----
+### 1. Install dependencies
 
-## Configuração
-
-### 1. Instalar dependências
 ```bash
 npm install
 ```
 
-### 2. Configurar variáveis de ambiente
+### 2. Configure environment
+
 ```bash
 cp .env.example .env
-# Editar .env com as credenciais reais
 ```
 
-Variáveis obrigatórias:
+Required variables:
+
 ```env
 DATABASE_URL=postgresql://postgres.<ref>:<pass>@aws-1-eu-west-1.pooler.supabase.com:5432/postgres
-JWT_SECRET=                  # 32 bytes hex
-JWT_REFRESH_SECRET=          # 32 bytes hex
-ENCRYPTION_KEY=              # 24 bytes base64
-MASTER_KEY=                  # 24 bytes base64
-CSRF_SECRET=                 # 16 bytes hex
-SESSION_SECRET=              # 16 bytes hex
+JWT_SECRET=                  # 32+ bytes hex
+JWT_REFRESH_SECRET=          # 32+ bytes hex
+ENCRYPTION_KEY=              # used by sequelize-encrypted
+MASTER_KEY=                  # used by utils/encryption.js
+CSRF_SECRET=                 # 16+ bytes hex
+SESSION_SECRET=              # 16+ bytes hex
 PORT=5000
 NODE_ENV=development
 CLIENT_URL=http://localhost:5173
+VITE_SUPABASE_URL=           # required for presentation routes to initialize
+VITE_SUPABASE_ANON_KEY=
 ```
 
-Gerar segredos:
+Generate secrets:
+
 ```bash
-node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"    # JWT secrets
-node -e "console.log(require('crypto').randomBytes(24).toString('base64'))" # Encryption keys
-node -e "console.log(require('crypto').randomBytes(16).toString('hex'))"    # CSRF/Session
+node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+node -e "console.log(require('crypto').randomBytes(24).toString('base64'))"
+node -e "console.log(require('crypto').randomBytes(16).toString('hex'))"
 ```
 
-### 3. Iniciar servidor
+### 3. Start the server
+
 ```bash
-npm run dev   # Desenvolvimento (nodemon)
-npm start     # Produção
+npm run dev   # Development (nodemon)
+npm start     # Production
 ```
 
----
+## Testing
 
-## Arquitetura Dual-Database
+114 automated tests across 12 suites, running in about 10 seconds.
 
-O CareSync separa dados por sensibilidade:
+```bash
+npm test                 # run the full suite
+npm run test:coverage    # with coverage report
+```
 
-| Base de dados | Modelos | Propósito |
+Coverage areas:
+
+| Suite | Domain |
+|---|---|
+| `encryption.test.js` | AES-256-GCM round-trip, tamper detection, CBC backward compatibility |
+| `csrf.test.js` | HMAC token generation, signature, expiry, middleware enforcement |
+| `authMiddleware.test.js` | JWT bearer verification, role guard, patient access guard |
+| `authService.test.js` | Login, register, refresh, password change, account deletion |
+| `medicationService.test.js` | PRN rules, immutability guards, adherence state machine, calendar cap |
+| `prescriptionReview.test.js` | BOLA/IDOR guard on `PUT /api/prescriptions/:id/review` |
+| `jwtUtils.test.js` | Device signature verification, claim validation |
+| `validationMiddleware.test.js` | Request body validation |
+| `errorHandler.test.js` | Error class to HTTP status mapping |
+| `requestLogger.test.js` | PII scrubbing (headers, body, JWT, emails) |
+| `apiResponse.test.js` | Uniform response envelope |
+| `integration.test.js` | Public endpoints against a live Express app |
+
+Two pre-production defects were found by the suite and fixed:
+
+- **CBC malleability in audit-log encryption.** Tampered IVs previously produced corrupted plaintext silently. Migrated to AES-256-GCM with authentication tags. Legacy CBC ciphertexts still decrypt for backward compatibility. Eight tests.
+- **BOLA/IDOR in prescription review.** The endpoint accepted an optional `patientId` from the client and skipped the ownership check if it was absent. Now scoped to the authenticated provider via `CaregiverPatient` with `canManageMedications`; admins bypass. Five tests in `tests/prescriptionReview.test.js`.
+
+### Static BOLA/IDOR scanner
+
+```bash
+npm run scan:idor
+```
+
+Walks all route and controller files, flags patterns that often indicate missing ownership checks, and understands two common defenses: an inline `userId: req.user.id` (or `Op.or` including it) in the same query, and `requirePatientAccess` / `requireRole(['admin'])` in the route declaration. Current tree is clean.
+
+## Endpoints
+
+The authoritative list is served by Swagger at `GET /api-docs`. Summary:
+
+| Prefix | Auth | Description |
 |---|---|---|
-| **PII DB** (`sequelizePii`) | User, CaregiverPatient, AuditLog, ConsentLog, Notification | Dados de identidade e governança |
-| **Medical DB** (`sequelizeMedical`) | Medication, Prescription, Adherence, Device, DeviceAccessPermission, DeviceInvitation, DocumentMetadata | Dados clínicos sensíveis |
+| `GET /health`, `GET /api/health` | No | Health check |
+| `GET /api/csrf-token` | No | Issue a CSRF token |
+| `POST /api/auth/register`, `/login`, `/forgot-password`, `/reset-password`, `/refresh` | No | Auth lifecycle |
+| `GET /api/auth/me`, `PUT /api/auth/profile`, `PUT /api/auth/password`, `PUT /api/auth/role`, `POST /api/auth/logout`, `DELETE /api/auth/account` | Yes | Authenticated user actions |
+| `/api/auth/2fa/*` | Yes | TOTP 2FA setup, confirm, verify, recovery, disable, status |
+| `GET /api/users/:id`, `PATCH /api/users/:id/status` | Yes | Self or admin only |
+| `GET /api/medications`, `/schedule`, `/adherence`, `/adherence/stats`, `POST /api/medications`, `/adherence`, `/pem-scan`, `/parse-prescription` | Yes | Medication CRUD, adherence, parsing |
+| `GET /api/caregivers`, `/pending`, `POST /api/caregivers/invite`, `POST /api/caregivers/:id/accept`, `/decline`, `DELETE /api/caregivers/:id` | Yes | Caregiver relationships |
+| `GET /api/patients`, `/pending`, `POST /api/patients/invite` | Yes | Patient list for caregivers |
+| `/api/devices` | Yes | Device registration, sync, invitations |
+| `GET /api/notifications`, `/unread-count`, `PUT /api/notifications/:id/read`, `/read-all`, `/preferences`, `POST /api/notifications/register-token`, `/test` | Yes | Notifications |
+| `GET /api/reports/report/pdf` | Yes | Generate PDF adherence report |
+| `GET /api/reports/verify` | No | Verify a PDF report hash |
+| `GET /api/prescriptions`, `/schedule`, `/:id`, `/needing-review`, `/stats`, `POST /api/prescriptions`, `/upload`, `PUT /api/prescriptions/:id`, `/:id/review`, `DELETE /api/prescriptions/:id` | Yes | Prescription lifecycle |
+| `GET /api/consent`, `/history`, `POST /api/consent` | Yes | GDPR consent management |
+| `GET /api/presentation/stream`, `POST /api/presentation/slide`, `/sync` | Bearer or presenter token | Real-time presentation engine |
+| `GET /api/reviews`, `POST /api/reviews` | No | Public QR-code reviews |
 
-As relações cross-database são resolvidas via `crossDbHelper.js` — sem JOINs entre bases, apenas por UUID.
+## Security
 
----
+- **CSRF**: HMAC-SHA256 signed tokens (custom implementation, not `csrf-csrf`). All mutating endpoints require the token from `GET /api/csrf-token`. Tests bypass via `CSRF_TEST_BYPASS=1` set in `tests/setup.js`.
+- **Rate limiting**: global 200 requests per 15 minutes; stricter on `/api/auth/login`, `/register`, `/forgot-password`, `/reset-password`, and `/api/auth/2fa/*`. Redis is optional.
+- **Passwords**: bcrypt, 10 rounds.
+- **JWT**: access token (7d) in the response body; refresh token (30d) in an `HttpOnly`, `Secure`, `SameSite=Strict` cookie. Revocation via `tokenVersion` bump.
+- **Encryption at rest**:
+  - Audit-log payloads: AES-256-GCM (AEAD, authentication tag).
+  - PII and medication columns: AES-256-CBC via `sequelize-encrypted`.
+- **Audit logging**: append-only table with encrypted `oldValues` / `newValues` payloads.
+- **Headers**: Helmet with a CSP tuned for Vercel and Capacitor.
+- **2FA**: TOTP via `speakeasy`, QR code rendered client-side.
+- **IoT**: device registration requires a signed JWT verified against the device's declared claims.
 
-## Endpoints Disponíveis
+## Known limitations
 
-| Prefixo | Ficheiro | Auth | Descrição |
-|---|---|---|---|
-| `GET /health` | app.js | ❌ | Health check |
-| `GET /api/csrf-token` | app.js | ❌ | Obter token CSRF |
-| `POST /api/auth/register` | routes/auth.js | ❌ | Registo de utilizador |
-| `POST /api/auth/login` | routes/auth.js | ❌ | Login (suporta 2FA) |
-| `GET /api/auth/me` | routes/auth.js | ✅ | Perfil autenticado |
-| `PUT /api/auth/profile` | routes/auth.js | ✅ | Atualizar perfil |
-| `POST /api/auth/change-password` | routes/auth.js | ✅ | Alterar password |
-| `POST /api/auth/refresh-token` | routes/auth.js | ❌ | Renovar JWT |
-| `POST /api/auth/logout` | routes/auth.js | ✅ | Terminar sessão |
-| `DELETE /api/auth/account` | routes/auth.js | ✅ | Apagar conta (GDPR) |
-| `GET /api/users/:id` | routes/users.js | ✅ | Obter utilizador |
-| `PATCH /api/users/:id/status` | routes/users.js | ✅ Admin | Atualizar estado |
-| `GET /api/medications` | routes/medications.js | ✅ | Listar medicamentos |
-| `POST /api/medications` | routes/medications.js | ✅ | Criar medicamento |
-| `POST /api/medications/adherence` | routes/medications.js | ✅ | Registar adesão |
-| `GET /api/caregivers` | routes/caregivers.js | ✅ | Cuidadores do utilizador |
-| `POST /api/caregivers/invite` | routes/caregivers.js | ✅ | Convidar cuidador |
-| `GET /api/caregivers/pending` | routes/caregivers.js | ✅ | Convites pendentes |
-| `GET /api/devices` | routes/devices.js | ✅ | Listar dispositivos |
-| `POST /api/devices/register` | routes/devices.js | ✅ | Registar dispositivo |
-| `GET /api/patients` | routes/patients.js | ✅ | Pacientes do cuidador |
-| `GET /api/notifications` | routes/notifications.js | ✅ | Notificações |
-| `GET /api/reports/adherence` | routes/reports.js | ✅ | Relatório de adesão |
-| `GET /api/prescriptions` | routes/prescriptions.js | ✅ | Prescrições |
-| `POST /api/2fa/setup` | routes/twoFactor.js | ✅ | Configurar 2FA |
-| `POST /api/2fa/verify` | routes/twoFactor.js | ✅ | Verificar código 2FA |
-| `GET /api/consent` | routes/consent.js | ✅ | Logs de consentimento |
-| `POST /api/api-docs/generate` | routes/api-docs.js | ❌ Dev | Gerar docs públicas |
+- `sequelize-encrypted` and `speakeasy` are not actively maintained upstream. Both are pinned, tested and adequate for this project, but a production deployment should replace them.
+- PII and medication columns are encrypted with AES-256-CBC, not GCM. Migration is tracked but not completed.
+- The PDF report password protection relies on `pdfkit`'s encryption options; the exact cipher depends on the pdfkit version and is not asserted by this README.
+- Socket.IO is disabled in serverless environments (Vercel, AWS Lambda). Real-time features on those targets go through Supabase Realtime instead.
+- The demo Supabase instance backing the public landing page has been suspended by the provider (free tier idleness). The landing page is still live; the interactive dashboard is not.
 
-A documentação Swagger interativa está disponível em: `GET /api-docs`
-
----
-
-## Gerar Documentação de API Pública
-
-O script `generateApiDocs.js` lê as anotações JSDoc Swagger de todas as routes e gera um ficheiro `frontend/public/api-docs.json` enriquecido com metadados de privacidade (RGPD/HIPAA).
+## Scripts
 
 ```bash
-npm run generate-docs
+npm run dev           # Development server (nodemon)
+npm start             # Production
+npm test              # Run the suite
+npm run test:coverage # With coverage
+npm run scan:idor     # Static BOLA/IDOR scanner
+npm run generate-docs # Regenerate api-docs.json for the frontend
+npm run migrate       # Sequelize migrations
+npm run seed          # Sample data (development only)
 ```
 
-Ou via HTTP em desenvolvimento:
-```bash
-curl -X POST http://localhost:5000/api/api-docs/generate
-```
+## License
 
-O ficheiro gerado inclui por cada endpoint:
-- Método HTTP, path, descrição, tags
-- Se requer autenticação
-- Rate limit específico
-- `dataCollected` — dados recolhidos
-- `dataShared` — com quem são partilhados
-- `retention` — política de retenção
-- `hipaaCompliant`, `gdprCompliant` — flags de conformidade
-- Exemplos de request/response gerados automaticamente
-
----
-
-## Segurança
-
-- **CSRF**: tokens via `csrf-csrf`, injetados em cookie `HttpOnly`
-- **Rate limiting**: global (200 req/15min) + por-rota configurável via Redis
-- **Passwords**: bcrypt com 12 rounds
-- **JWT**: access token (7d) + refresh token (30d) em cookie HttpOnly
-- **Dados sensíveis**: encriptados em repouso com AES-256 via `sequelize-encrypted`
-- **Audit trail**: todas as ações são logadas encriptadas conforme CNPD-58/2019
-- **Headers**: Helmet com CSP configurada para Vercel + Capacitor
-- **2FA**: TOTP via speakeasy + QR code
-
----
-
-## Conformidade
-
-| Norma | Estado | Mecanismo |
-|---|---|---|
-| HIPAA | ✅ | Audit logs encriptados, dados médicos separados |
-| GDPR/RGPD | ✅ | `DELETE /api/auth/account` apaga todos os dados + anonimização |
-| CNPD-58/2019 | ✅ | `justification` obrigatório em AuditLog, retenção definida |
-
----
-
-## Scripts Disponíveis
-
-```bash
-npm run dev           # Servidor de desenvolvimento (nodemon)
-npm start             # Produção
-npm run generate-docs # Gerar api-docs.json para o frontend
-npm run migrate       # Executar migrações Sequelize
-npm run seed          # Popular base de dados com dados de exemplo
-```
+MIT

@@ -33,7 +33,7 @@ export const EditMedicationPage = () => {
   const [loadError, setLoadError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  // Adherence-history flag — drives the immutability warning banner.
+  // Adherence-history flag - drives the immutability warning banner.
   const [hasHistory, setHasHistory] = useState(false)
 
   /* Fetch existing medication */
@@ -70,7 +70,7 @@ export const EditMedicationPage = () => {
           const records = aRes.data?.data ?? []
           setHasHistory(Array.isArray(records) && records.length > 0)
         } catch {
-          // Non-fatal — if we can't tell, just don't show the banner.
+          // Non-fatal - if we can't tell, just don't show the banner.
         }
       } catch (err: any) {
         setLoadError(err.response?.data?.message ?? 'Medication not found')

@@ -1,5 +1,5 @@
 // src/features/dashboard/pages/SecuritySettings.tsx
-// Expanded Settings page — Profile, Appearance, Security, 2FA, Danger Zone.
+// Expanded Settings page - Profile, Appearance, Security, 2FA, Danger Zone.
 import React, { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
@@ -308,7 +308,7 @@ export const SecuritySettings = () => {
             </div>
           </div>
 
-          {/* Email — read-only (backend doesn't support email change via profile) */}
+          {/* Email - read-only (backend doesn't support email change via profile) */}
           <div>
             <label className={labelCls}>Email</label>
             <input
@@ -644,7 +644,7 @@ export const SecuritySettings = () => {
       </div>
 
       {/* ============================================================ */}
-      {/*  5. Danger Zone — Change Role                                 */}
+      {/*  5. Danger Zone - Change Role                                 */}
       {/* ============================================================ */}
       <div className="bg-bg-card border border-red-500/30 rounded-2xl shadow-sm overflow-hidden">
         <div className="p-5 sm:p-6 border-b border-red-500/20 bg-red-500/5">

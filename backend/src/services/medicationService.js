@@ -18,16 +18,16 @@ const {
 // HEALTHTECH SAFETY CONSTANTS
 // ──────────────────────────────────────────────────────────────────────
 //
-// FUTURE_DOSE_GRACE_MINUTES — how far in advance a dose can be marked as
+// FUTURE_DOSE_GRACE_MINUTES - how far in advance a dose can be marked as
 //   taken. Must match the value in routes/medications.js. The backend
 //   enforces this in TWO places (validator + service) so even if the
 //   route is wired up incorrectly, the service-layer guard still holds.
 //
-// MAX_CALENDAR_WINDOW_DAYS — hard cap on the size of a calendar query.
+// MAX_CALENDAR_WINDOW_DAYS - hard cap on the size of a calendar query.
 //   Defends against malicious / buggy clients requesting absurd ranges
 //   (e.g. "next 50 years") which would consume CPU and pollute responses.
 //
-// EDIT_LOCKOUT_FIELDS — fields that callers may NEVER set via the
+// EDIT_LOCKOUT_FIELDS - fields that callers may NEVER set via the
 //   updateMedication path. remainingQuantity is owned by the adherence
 //   state machine and must not be writeable from a generic PUT, otherwise
 //   a user could grant themselves unlimited stock.
@@ -243,7 +243,7 @@ class MedicationService {
       ...rest,
       isPRN,
       // PRN medications can omit endDate. Scheduled medications must have
-      // one — already enforced above, but pass through cleanly.
+      // one - already enforced above, but pass through cleanly.
       endDate: isPRN ? (medData.endDate ?? null) : medData.endDate,
       userId: targetUserId,
       remainingQuantity:
@@ -329,7 +329,7 @@ class MedicationService {
       const firstRecord = new Date(earliestAdherence.scheduledTime).getTime();
       if (Number.isFinite(newStart) && newStart > firstRecord) {
         throw new ValidationError(
-          "Cannot move startDate after existing adherence records — would orphan history. Create a new medication entry instead.",
+          "Cannot move startDate after existing adherence records - would orphan history. Create a new medication entry instead.",
         );
       }
     }
@@ -344,7 +344,7 @@ class MedicationService {
     }
 
     if (adherenceCount > 0) {
-      // Loud audit-trail entry — useful when investigating later.
+      // Loud audit-trail entry - useful when investigating later.
       logger.warn("Medication with adherence history is being edited", {
         medicationId: id,
         userId: user.id,
@@ -368,7 +368,7 @@ class MedicationService {
       throw new AuthorizationError("Access denied");
     }
 
-    // GDPR Art. 17 — hard delete with cascade to adherence records
+    // GDPR Art. 17 - hard delete with cascade to adherence records
     await Adherence.destroy({ where: { medicationId: medication.id } });
     await medication.destroy();
     return { success: true, message: "Medication permanently deleted" };
@@ -457,7 +457,7 @@ class MedicationService {
       }
     }
 
-    // ─── 2. IDOR check (outside the transaction — read-only) ───
+    // ─── 2. IDOR check (outside the transaction - read-only) ───
     const med = await Medication.findOne({
       where: { id: medicationId, userId: user.id },
     });
@@ -473,7 +473,7 @@ class MedicationService {
     //       composite UNIQUE index added in models/Adherence.js),
     //   (b) the inventory decrement / restore via an atomic
     //       UPDATE ... WHERE remainingQuantity > 0 (which the DB
-    //       executes as a single statement — no read/modify/write
+    //       executes as a single statement - no read/modify/write
     //       window for a parallel request to slip into).
     //
     // If anything inside throws, both effects are rolled back. This
@@ -514,7 +514,7 @@ class MedicationService {
             transaction: t,
           });
           created = false;
-          if (!intake) throw e; // truly unexpected — bubble up
+          if (!intake) throw e; // truly unexpected - bubble up
         } else {
           throw e;
         }
@@ -548,7 +548,7 @@ class MedicationService {
       // Inventory tracking is OPTIONAL: medications without a
       // totalQuantity (e.g. PRN-style with unknown stock) skip the
       // decrement entirely. We detect this from the medication's own
-      // remainingQuantity field — null means "untracked".
+      // remainingQuantity field - null means "untracked".
       const isInventoryTracked = med.remainingQuantity != null;
 
       if (isInventoryTracked && isTransitioningToTaken) {
@@ -612,7 +612,7 @@ class MedicationService {
       rangeStart = new Date(now.getTime() - 7 * 86400000);
       rangeEnd = now;
     } else {
-      // 'month' (default) — last 30 days
+      // 'month' (default) - last 30 days
       rangeStart = new Date(now.getTime() - 30 * 86400000);
       rangeEnd = now;
     }
@@ -729,7 +729,7 @@ class MedicationService {
     adherenceRecords.forEach((record) => {
       const dt = new Date(record.scheduledTime);
       const date = this._toLocalDateStr(dt);
-      const hour = dt.getHours(); // LOCAL hours — matches _getScheduledHour()
+      const hour = dt.getHours(); // LOCAL hours - matches _getScheduledHour()
       const key = `${record.medicationId}_${date}_${hour}`;
       if (!adherenceMap[key]) adherenceMap[key] = [];
       adherenceMap[key].push(record);
@@ -746,7 +746,7 @@ class MedicationService {
     });
 
     for (const med of medications) {
-      // PRN medications never generate scheduled slots — they show up
+      // PRN medications never generate scheduled slots - they show up
       // only via real adherence rows (Step 4 below). This is the
       // primary defence against infinite calendar pollution: even if
       // a legacy row exists with isPRN=true and endDate=null, we
@@ -804,7 +804,7 @@ class MedicationService {
                 });
               });
             } else {
-              // No adherence yet for this slot — generate placeholder
+              // No adherence yet for this slot - generate placeholder
               const scheduledTime = new Date(current);
               scheduledTime.setHours(hour, 0, 0, 0);
 
@@ -828,7 +828,7 @@ class MedicationService {
       }
     }
 
-    // 4. Include orphan adherence records — ad-hoc doses (e.g. "Take Now",
+    // 4. Include orphan adherence records - ad-hoc doses (e.g. "Take Now",
     //    PRN intakes) that don't match any virtual slot. Without this step
     //    they would be invisible to the dashboard cards and chart.
     for (const [key, records] of Object.entries(adherenceMap)) {
@@ -878,7 +878,7 @@ class MedicationService {
       case "as needed":
       case "as_needed":
       case "prn":
-        // PRN medications are taken on-demand — they cannot generate
+        // PRN medications are taken on-demand - they cannot generate
         // scheduled time slots and therefore cannot be "missed".
         return false;
       case "daily":
@@ -901,13 +901,13 @@ class MedicationService {
       case "twice_daily":
         return true; // timesPerDay handles the number of entries
       default:
-        // Unknown frequency — default to daily
+        // Unknown frequency - default to daily
         return true;
     }
   }
 
   /**
-   * Spread `timesPerDay` doses evenly across waking hours (08:00–20:00).
+   * Spread `timesPerDay` doses evenly across waking hours (08:00-20:00).
    */
   _getScheduledHour(index, timesPerDay) {
     if (timesPerDay <= 1) return 8;

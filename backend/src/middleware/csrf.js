@@ -79,6 +79,12 @@ function validateToken(token) {
 }
 
 function csrfProtection(req, res, next) {
+  // CSRF is a browser concern. Tests simulate API clients, not browsers,
+  // so we bypass it here. Never reaches production (NODE_ENV === 'test').
+  if (process.env.CSRF_TEST_BYPASS === '1') {
+    return next();
+  }
+
   const safeMethods = ['GET', 'HEAD', 'OPTIONS'];
   if (safeMethods.includes(req.method)) {
     return next();

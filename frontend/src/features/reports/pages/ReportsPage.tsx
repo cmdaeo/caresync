@@ -1,5 +1,5 @@
 // src/features/reports/pages/ReportsPage.tsx
-// PDF adherence report generator — calls GET /reports/report/pdf and triggers download.
+// PDF adherence report generator - calls GET /reports/report/pdf and triggers download.
 import { useState } from 'react'
 import { client } from '../../../shared/api/client'
 import { FileBarChart, Download, Loader2, AlertCircle, CheckCircle2 } from 'lucide-react'

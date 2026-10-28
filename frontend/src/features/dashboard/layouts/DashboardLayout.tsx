@@ -28,7 +28,7 @@ interface NavItem {
   label: string
   to: string
   icon: React.ReactNode
-  disabled?: boolean          // future features — rendered but greyed-out
+  disabled?: boolean          // future features - rendered but greyed-out
 }
 
 const patientNav: NavItem[] = [
@@ -205,7 +205,7 @@ export const DashboardLayout = () => {
           </div>
         </header>
 
-        {/* Page content — scrollable */}
+        {/* Page content - scrollable */}
         <main className="flex-1 overflow-y-auto p-4 sm:p-6 themed-scrollbar">
           <Outlet />
         </main>

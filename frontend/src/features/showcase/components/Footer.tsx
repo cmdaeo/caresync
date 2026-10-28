@@ -47,7 +47,7 @@ export const Footer = () => {
           <span className="font-medium tracking-wide">© {new Date().getFullYear()} CareSync</span>
         </div>
 
-        {/* CENTER: Footer links – ALWAYS centered */}
+        {/* CENTER: Footer links - ALWAYS centered */}
         <div className="flex items-center justify-center gap-6 text-text-muted font-medium">
           {legalLinks.map((item) => (
             <Link 

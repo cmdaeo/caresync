@@ -79,7 +79,7 @@ Prescription.belongsTo(Medication, { foreignKey: { name: 'medicationId', unique:
 // Medication ↔ Adherence
 // CRITICAL FIX: belongsTo() defaults to unique:true on the FK column during
 // sync({ alter: true }), which injects a STANDALONE unique constraint
-// on medicationId — separate from the composite unique index defined in
+// on medicationId - separate from the composite unique index defined in
 // Adherence.js. Explicitly setting unique:false tells Sequelize the FK is NOT a 1:1 column.
 Medication.hasMany(Adherence, { foreignKey: { name: 'medicationId', unique: false }, as: 'adherence' });
 Adherence.belongsTo(Medication, { foreignKey: { name: 'medicationId', unique: false } });
@@ -93,7 +93,7 @@ Device.hasMany(DeviceInvitation, { foreignKey: 'deviceId', as: 'invitations' });
 DeviceInvitation.belongsTo(Device, { foreignKey: 'deviceId' });
 
 // ──────────────────────────────────────────────
-// CROSS-DB associations — INTENTIONALLY OMITTED
+// CROSS-DB associations - INTENTIONALLY OMITTED
 // The userId fields in medical models are plain UUID strings.
 // Joins must be done at the application layer (see utils/crossDbHelper.js).
 //

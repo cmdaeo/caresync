@@ -172,7 +172,7 @@ export function App() {
             }
           />
 
-          {/* Medications — patient-only CRUD */}
+          {/* Medications - patient-only CRUD */}
           <Route
             path="medications"
             element={
@@ -206,7 +206,7 @@ export function App() {
             }
           />
 
-          {/* Schedule — patient-only */}
+          {/* Schedule - patient-only */}
           <Route
             path="schedule"
             element={
@@ -216,7 +216,7 @@ export function App() {
             }
           />
 
-          {/* Devices — patient-only */}
+          {/* Devices - patient-only */}
           <Route
             path="devices"
             element={
@@ -226,7 +226,7 @@ export function App() {
             }
           />
 
-          {/* Reports — patient-only */}
+          {/* Reports - patient-only */}
           <Route
             path="reports"
             element={
@@ -236,7 +236,7 @@ export function App() {
             }
           />
 
-          {/* Settings — accessible to all authenticated roles */}
+          {/* Settings - accessible to all authenticated roles */}
           <Route path="settings" element={<SecuritySettings />} />
         </Route>
 

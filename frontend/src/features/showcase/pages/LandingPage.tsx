@@ -110,9 +110,9 @@ function OscWave() {
   return (
     <svg viewBox="0 0 500 50" preserveAspectRatio="none" className="w-full h-full">
       <path className="oa" stroke="rgba(74,164,225,1)" strokeWidth="1.5" fill="none" strokeDasharray="300 400"
-        d="M0,25L15,25L22,8L30,42L38,8L46,42L53,25L80,25L87,13L95,37L103,13L111,37L118,25L145,25L152,4L160,46L168,4L176,46L183,25L210,25L217,16L225,34L233,16L241,34L248,25L275,25L282,9L290,41L298,9L306,41L313,25L340,25L347,12L355,38L363,12L371,38L378,25L405,25L412,5L420,45L428,5L436,45L443,25L470,25L477,14L485,36L493,14L500,25"/>
+        d="M0,25L15,25L22,8L30,42L38,8L46,42L53,25L80,25L87,13L95,37L103,13L111,37L118,25L145,25L152,4L160,46L168,4L176,46L183,25L210,25L217,16L225,34L233,16L241,34L248,25L275,25L282,9L290,41L298,9L306,41L313,25L340,25L347,12L355,38L363,12L371,38L378,25L405,25L412,5L420,45L428,5L436,45L443,25L470,25L477,14L485,36L493,14L500,25" />
       <path className="ob" stroke="rgba(74,164,225,1)" strokeWidth="1" fill="none" strokeDasharray="300 400"
-        d="M0,25C62,25 62,8 125,8C188,8 188,42 250,42C312,42 312,8 375,8C438,8 438,42 500,42"/>
+        d="M0,25C62,25 62,8 125,8C188,8 188,42 250,42C312,42 312,8 375,8C438,8 438,42 500,42" />
     </svg>
   );
 }
@@ -138,7 +138,7 @@ function PageLoader({ onReady }: { onReady: () => void }) {
 
   useEffect(() => {
     // 4 modelos 3D + 1 Vídeo
-    const total = 5; 
+    const total = 5;
     const handleAssetLoad = (_sourceId: any) => {
       loadedCount.current += 1;
       const pct = Math.round((loadedCount.current / total) * 100);
@@ -169,26 +169,26 @@ function PageLoader({ onReady }: { onReady: () => void }) {
         <svg viewBox="0 0 64 64" width="64" height="64" xmlns="http://www.w3.org/2000/svg">
           <defs>
             <clipPath id="reveal-clip">
-              <motion.rect 
-                x="0" 
+              <motion.rect
+                x="0"
                 initial={{ y: 64 }}
-                animate={{ y: clipY }} 
+                animate={{ y: clipY }}
                 transition={{ type: "tween", ease: "easeOut", duration: 0.25 }}
                 onAnimationComplete={() => {
                   if (progress >= 100) {
                     onReady();
                   }
                 }}
-                width="64" 
-                height="64" 
+                width="64"
+                height="64"
               />
             </clipPath>
           </defs>
-          <image href={logo} x="0" y="0" width="64" height="64" 
-          style={{ filter: 'brightness(0) invert(1)' }} opacity="0.2" />
+          <image href={logo} x="0" y="0" width="64" height="64"
+            style={{ filter: 'brightness(0) invert(1)' }} opacity="0.2" />
           <image href={logo} x="0" y="0" width="64" height="64"
             style={{ filter: 'brightness(0) invert(1)' }}
-            clipPath="url(#reveal-clip)"/>
+            clipPath="url(#reveal-clip)" />
         </svg>
         <p className="jm text-[9px] text-white/50 tracking-widest">
           {progress < 100 ? 'Loading Assets...' : 'Ready'}
@@ -225,10 +225,10 @@ function CinematicVideoShowcase() {
   const blurVideoRef = useRef<HTMLVideoElement>(null);
   const glowVideoRef = useRef<HTMLVideoElement>(null);
   const transcriptRef = useRef<HTMLDivElement>(null);
-  
+
   const [isInView, setIsInView] = useState(false);
-  const [isActivated, setIsActivated] = useState(false); 
-  const [isPlaying, setIsPlaying] = useState(false);     
+  const [isActivated, setIsActivated] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(false);
   const [isMuted, setIsMuted] = useState(true);
   const [currentTime, setCurrentTime] = useState(0);
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -286,7 +286,7 @@ function CinematicVideoShowcase() {
 
     if (isInView && !isActivated) {
       clearInterval(recapInterval);
-      
+
       video.playbackRate = 8.0;
       blurVideo.playbackRate = 8.0;
       if (glowVideo) glowVideo.playbackRate = 8.0;
@@ -295,10 +295,10 @@ function CinematicVideoShowcase() {
       blurVideo.muted = true;
       if (glowVideo) glowVideo.muted = true;
 
-      video.play().catch(() => {});
-      blurVideo.play().catch(() => {});
-      if (glowVideo) glowVideo.play().catch(() => {});
-    } 
+      video.play().catch(() => { });
+      blurVideo.play().catch(() => { });
+      if (glowVideo) glowVideo.play().catch(() => { });
+    }
     else if (isInView && isActivated && isPlaying) {
       clearInterval(recapInterval);
       video.playbackRate = 1.0;
@@ -306,13 +306,13 @@ function CinematicVideoShowcase() {
       if (glowVideo) glowVideo.playbackRate = 1.0;
 
       video.muted = isMuted;
-      blurVideo.muted = true; 
-      if (glowVideo) glowVideo.muted = true; 
+      blurVideo.muted = true;
+      if (glowVideo) glowVideo.muted = true;
 
-      video.play().catch(() => {});
-      blurVideo.play().catch(() => {});
-      if (glowVideo) glowVideo.play().catch(() => {});
-    } 
+      video.play().catch(() => { });
+      blurVideo.play().catch(() => { });
+      if (glowVideo) glowVideo.play().catch(() => { });
+    }
     else {
       clearInterval(recapInterval);
       video.pause();
@@ -332,11 +332,11 @@ function CinematicVideoShowcase() {
   useEffect(() => {
     const activeLyric = document.getElementById('active-lyric');
     const container = transcriptRef.current;
-    
+
     if (activeLyric && container) {
       const containerCenter = container.clientHeight / 2;
       const lyricCenter = activeLyric.offsetTop + (activeLyric.clientHeight / 2);
-      
+
       container.scrollTo({
         top: lyricCenter - containerCenter,
         behavior: 'smooth'
@@ -389,8 +389,8 @@ function CinematicVideoShowcase() {
   };
 
   return (
-    <section 
-      id="sec-video" 
+    <section
+      id="sec-video"
       ref={containerRef}
       // O ecrã ocupa exatamente 100vh para nunca obrigar o utilizador a fazer scroll cortado
       className="relative min-h-dvh lg:h-dvh w-full bg-[#020617] border-t border-white/5 overflow-hidden flex items-center justify-center py-16 lg:py-0 cursor-default"
@@ -398,7 +398,7 @@ function CinematicVideoShowcase() {
       <div className="absolute inset-0 w-full h-full overflow-hidden pointer-events-none z-0">
         <video
           ref={blurVideoRef}
-          src="/video.mp4?cache=blur" 
+          src="/video.mp4?cache=blur"
           muted
           loop
           playsInline
@@ -409,12 +409,12 @@ function CinematicVideoShowcase() {
       </div>
 
       <div className="relative z-20 w-full max-w-[1400px] h-full mx-auto px-6 sm:px-12 flex flex-col lg:flex-row items-center justify-between gap-10 lg:gap-12 py-10 lg:py-0">
-        
+
         {/* ─── ESQUERDA: TÍTULO ─── */}
         <div className="w-full lg:w-[30%] flex flex-col items-center lg:items-start text-center lg:text-left order-1 lg:order-1">
           <Reveal>
             <h2 className="sy font-800 text-3xl sm:text-5xl lg:text-6xl text-white tracking-tight drop-shadow-lg mb-4">
-              System<br className="hidden lg:block"/> In Action
+              System<br className="hidden lg:block" /> In Action
             </h2>
             <p className="text-white/60 font-mono text-xs sm:text-sm leading-relaxed max-w-xs">
               Watch the full CareSync system in action.
@@ -424,7 +424,7 @@ function CinematicVideoShowcase() {
 
         {/* ─── CENTRO: VÍDEO PRINCIPAL (H-[70VH] GANTE QUE NUNCA CORTA O ECRÃ) ─── */}
         <div className="w-full lg:w-[40%] flex justify-center items-center order-2 lg:order-2 relative z-[100] h-[50vh] lg:h-[75vh]">
-          
+
           {/* Ambilight Glow Video */}
           <div className="absolute inset-0 flex justify-center items-center pointer-events-none z-0">
             <video
@@ -449,21 +449,20 @@ function CinematicVideoShowcase() {
             )}
           </AnimatePresence>
 
-          <motion.div 
+          <motion.div
             layout
             style={{ y: isFullscreen ? 0 : y }}
             className={
-              isFullscreen 
+              isFullscreen
                 ? "fixed inset-0 z-[99999] m-auto h-[90dvh] sm:h-[95dvh] max-w-[95vw] aspect-[9/16] rounded-2xl sm:rounded-[2rem] border border-white/20 shadow-[0_0_100px_rgba(0,0,0,0.8)] cursor-pointer group bg-black overflow-hidden flex-shrink-0"
                 : "relative h-full aspect-[9/16] rounded-2xl sm:rounded-[2rem] border border-white/20 shadow-[0_0_60px_rgba(0,0,0,0.5)] cursor-pointer group bg-black shrink-0 overflow-hidden"
             }
           >
-            <motion.div 
+            <motion.div
               layout
               onClick={handleVideoClick}
-              className={`relative w-full h-full flex justify-center cursor-pointer overflow-hidden ${
-                isFullscreen ? "rounded-2xl max-w-full aspect-[9/16] max-h-full mx-auto" : "rounded-[inherit]"
-              }`}
+              className={`relative w-full h-full flex justify-center cursor-pointer overflow-hidden ${isFullscreen ? "rounded-2xl max-w-full aspect-[9/16] max-h-full mx-auto" : "rounded-[inherit]"
+                }`}
               style={!isFullscreen ? {
                 WebkitMaskImage: 'radial-gradient(ellipse 95% 95% at 50% 50%, black 75%, transparent 100%)',
                 maskImage: 'radial-gradient(ellipse 95% 95% at 50% 50%, black 75%, transparent 100%)'
@@ -471,8 +470,8 @@ function CinematicVideoShowcase() {
             >
               <video
                 ref={videoRef}
-                src="/video.mp4?cache=main" 
-                preload="auto" 
+                src="/video.mp4?cache=main"
+                preload="auto"
                 onTimeUpdate={handleTimeUpdate}
                 className={`absolute inset-0 w-full h-full object-cover transition-all duration-700 ${(!isPlaying || !isActivated) ? 'blur-sm brightness-50 grayscale-[30%]' : 'blur-0 brightness-100 grayscale-0'}`}
                 muted={isMuted}
@@ -484,12 +483,12 @@ function CinematicVideoShowcase() {
                 <>
                   <div className="absolute inset-0 shadow-[inset_0_0_50px_10px_rgba(2,6,23,0.8)] pointer-events-none rounded-[inherit]" />
                   {/* Stronger blur near borders */}
-                  <div 
-                    className="absolute inset-0 pointer-events-none rounded-[inherit] backdrop-blur-xl bg-black/10 transition-opacity duration-700" 
-                    style={{ 
-                      maskImage: 'radial-gradient(ellipse at center, transparent 50%, black 100%)', 
-                      WebkitMaskImage: 'radial-gradient(ellipse at center, transparent 50%, black 100%)' 
-                    }} 
+                  <div
+                    className="absolute inset-0 pointer-events-none rounded-[inherit] backdrop-blur-xl bg-black/10 transition-opacity duration-700"
+                    style={{
+                      maskImage: 'radial-gradient(ellipse at center, transparent 50%, black 100%)',
+                      WebkitMaskImage: 'radial-gradient(ellipse at center, transparent 50%, black 100%)'
+                    }}
                   />
                 </>
               )}
@@ -527,9 +526,8 @@ function CinematicVideoShowcase() {
 
                 <button
                   onClick={toggleFullscreen}
-                  className={`p-2.5 bg-[#020617]/50 hover:bg-[#020617]/80 border border-white/10 backdrop-blur-md rounded-full text-white/90 transition-all shadow-lg ${
-                    isActivated ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
-                  }`}
+                  className={`p-2.5 bg-[#020617]/50 hover:bg-[#020617]/80 border border-white/10 backdrop-blur-md rounded-full text-white/90 transition-all shadow-lg ${isActivated ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+                    }`}
                 >
                   {isFullscreen ? <Minimize size={16} /> : <Maximize size={16} />}
                 </button>
@@ -540,28 +538,27 @@ function CinematicVideoShowcase() {
 
         {/* ─── DIREITA: TRANSCRIPT ─── */}
         <div className={`w-full lg:w-[30%] flex flex-col items-center lg:items-start text-center lg:text-left order-3 lg:order-3 ${isFullscreen ? 'fixed lg:right-[5vw] lg:top-1/2 lg:-translate-y-1/2 z-[99999] lg:w-[25vw] pointer-events-auto hidden lg:flex' : ''}`}>
-          <div 
+          <div
             ref={transcriptRef}
             className={`w-full h-[30vh] lg:h-[60vh] pr-4 flex flex-col gap-4 relative ${(!isPlaying || !isActivated) ? 'overflow-y-auto tsc' : 'overflow-hidden'}`}
             style={{ maskImage: 'linear-gradient(to bottom, transparent, black 15%, black 85%, transparent)' }}
           >
             <div className="h-[60px] lg:h-[120px] shrink-0" />
-            
+
             {TRANSCRIPT.map((line, i) => {
               const isActive = currentTime >= line.start && (i === TRANSCRIPT.length - 1 || currentTime < TRANSCRIPT[i + 1].start);
               const isPast = i < TRANSCRIPT.length - 1 && currentTime >= TRANSCRIPT[i + 1].start;
-              
+
               return (
-                <p 
-                  key={i} 
+                <p
+                  key={i}
                   id={isActive ? 'active-lyric' : `lyric-${i}`}
-                  className={`sy text-lg sm:text-xl font-700 leading-tight transition-all duration-300 ${
-                    isActive 
-                      ? 'text-white scale-100 opacity-100 drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]' 
-                      : isPast 
-                        ? 'text-white/40 scale-95 opacity-50' 
+                  className={`sy text-lg sm:text-xl font-700 leading-tight transition-all duration-300 ${isActive
+                      ? 'text-white scale-100 opacity-100 drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]'
+                      : isPast
+                        ? 'text-white/40 scale-95 opacity-50'
                         : 'text-white/20 scale-95 opacity-30'
-                  }`}
+                    }`}
                 >
                   {line.text}
                 </p>
@@ -707,7 +704,7 @@ function PCBShowcase() {
 
         <div className="w-full h-full max-w-[1400px] mx-auto relative z-10 flex flex-col items-center justify-center px-6 sm:px-12">
           <div className="absolute inset-0 lg:left-auto lg:right-[-5%] w-full lg:w-[75%] h-full flex items-center justify-center z-10 pointer-events-auto">
-            <button 
+            <button
               onClick={() => setBandInteractive(!bandInteractive)}
               className="absolute top-[20%] right-6 lg:top-1/4 lg:right-1/4 z-50 flex items-center gap-2 px-4 py-2 rounded-full bg-brand-primary/10 border border-brand-primary/30 text-brand-primary hover:bg-brand-primary/20 hover:scale-105 transition-all backdrop-blur-md cursor-pointer font-mono text-[10px] uppercase tracking-widest"
             >
@@ -778,7 +775,7 @@ function PCBShowcase() {
 
         <div className="w-full h-full max-w-[1400px] mx-auto relative z-10 flex flex-col items-center justify-center px-6 sm:px-12">
           <div className="absolute inset-0 lg:right-auto lg:left-[-5%] w-full lg:w-[75%] h-full flex items-center justify-center z-10 pointer-events-auto">
-            <button 
+            <button
               onClick={() => setBoxInteractive(!boxInteractive)}
               className="absolute top-[20%] left-6 lg:top-1/4 lg:left-1/4 z-50 flex items-center gap-2 px-4 py-2 rounded-full bg-[#c084fc]/10 border border-[#c084fc]/30 text-[#c084fc] hover:bg-[#c084fc]/20 hover:scale-105 transition-all backdrop-blur-md cursor-pointer font-mono text-[10px] uppercase tracking-widest"
             >
@@ -864,7 +861,7 @@ function PCBAuraShowcase() {
     const handleLoad = () => {
       if (reported) return;
       reported = true;
-      
+
       if (typeof (window as any).__onModelLoad === 'function') {
         (window as any).__onModelLoad('assembly_box');
       }
@@ -896,7 +893,7 @@ function PCBAuraShowcase() {
 
   return (
     <div id="sec-aura-box" className="relative h-dvh w-full bg-[#020617] border-t border-white/5">
-      <button 
+      <button
         onClick={() => setAuraInteractive(!auraInteractive)}
         className="absolute top-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 text-white/70 hover:bg-white/10 hover:text-white hover:scale-105 transition-all backdrop-blur-md cursor-pointer font-mono text-[10px] uppercase tracking-widest"
       >
@@ -924,7 +921,7 @@ function PCBAuraShowcase() {
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[70vw] h-[70vw] bg-[#c084fc]/5 rounded-full blur-[120px] pointer-events-none z-0" />
 
       <div className="absolute inset-0 z-20 pointer-events-none max-w-[1400px] mx-auto px-6 sm:px-12 py-[10dvh] h-full w-full">
-        
+
         <div className="absolute top-[8dvh] left-6 sm:left-12 max-w-[340px] sm:max-w-[380px] pointer-events-auto">
           <Reveal>
             <h3 className="sy font-800 text-2xl sm:text-3xl text-white mb-4 flex items-center gap-3">
@@ -950,10 +947,10 @@ function PCBAuraShowcase() {
             </h3>
             <div className="flex flex-col gap-2 border-r-2 border-[#c084fc]/20 pr-4 items-end">
               <div className="text-white/70 text-xs font-mono flex items-center justify-end gap-2">
-                0.05mm Clearance <span className="text-white/40 text-right inline-block w-20">:Tolerances</span> 
+                0.05mm Clearance <span className="text-white/40 text-right inline-block w-20">:Tolerances</span>
               </div>
               <div className="text-white/70 text-xs font-mono flex items-center justify-end gap-2">
-                Modular Grid <span className="text-white/40 text-right inline-block w-20">:Structure</span> 
+                Modular Grid <span className="text-white/40 text-right inline-block w-20">:Structure</span>
               </div>
             </div>
           </Reveal>
@@ -1014,7 +1011,7 @@ function CarebandAuraShowcase() {
     const handleLoad = () => {
       if (reported) return;
       reported = true;
-      
+
       if (typeof (window as any).__onModelLoad === 'function') {
         (window as any).__onModelLoad('assembly_band');
       }
@@ -1046,7 +1043,7 @@ function CarebandAuraShowcase() {
 
   return (
     <div id="sec-aura-band" className="relative h-dvh w-full bg-[#020617] border-t border-white/5">
-      <button 
+      <button
         onClick={() => setAuraInteractive(!auraInteractive)}
         className="absolute top-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 text-white/70 hover:bg-white/10 hover:text-white hover:scale-105 transition-all backdrop-blur-md cursor-pointer font-mono text-[10px] uppercase tracking-widest"
       >
@@ -1074,7 +1071,7 @@ function CarebandAuraShowcase() {
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[70vw] h-[70vw] bg-brand-primary/5 rounded-full blur-[120px] pointer-events-none z-0" />
 
       <div className="absolute inset-0 z-20 pointer-events-none max-w-[1400px] mx-auto px-6 sm:px-12 py-[10dvh] h-full w-full">
-        
+
         <div className="absolute top-[8dvh] left-6 sm:left-12 max-w-[340px] sm:max-w-[380px] pointer-events-auto">
           <Reveal>
             <h3 className="sy font-800 text-2xl sm:text-3xl text-white mb-4 flex items-center gap-3">
@@ -1100,10 +1097,10 @@ function CarebandAuraShowcase() {
             </h3>
             <div className="flex flex-col gap-2 border-r-2 border-brand-primary/20 pr-4 items-end">
               <div className="text-white/70 text-xs font-mono flex items-center justify-end gap-2">
-                Eccentric Mass <span className="text-white/40 text-right inline-block w-20">:Actuator</span> 
+                Eccentric Mass <span className="text-white/40 text-right inline-block w-20">:Actuator</span>
               </div>
               <div className="text-white/70 text-xs font-mono flex items-center justify-end gap-2">
-                Vibration Alert <span className="text-white/40 text-right inline-block w-20">:Feedback</span> 
+                Vibration Alert <span className="text-white/40 text-right inline-block w-20">:Feedback</span>
               </div>
             </div>
           </Reveal>
@@ -1141,13 +1138,13 @@ export default function LandingPage() {
 
   const { scrollYProgress: hp } = useScroll({ container: scrollRef as React.RefObject<HTMLElement> });
   const heroOp = useTransform(hp, [0, .18], [1, 0]);
-  const heroY  = useTransform(hp, [0, .25], ['0%', '8%']);
+  const heroY = useTransform(hp, [0, .25], ['0%', '8%']);
 
   const mx = useMotionValue(0), my = useMotionValue(0);
   const smx = useSpring(mx, { stiffness: 50, damping: 22 });
   const smy = useSpring(my, { stiffness: 50, damping: 22 });
   const glow = useMotionValue('');
-  
+
   useEffect(() => {
     const u = smx.on('change', () =>
       glow.set(`radial-gradient(480px at ${smx.get()}px ${smy.get()}px, rgba(74,164,225,.08), transparent 75%)`));
@@ -1190,13 +1187,13 @@ export default function LandingPage() {
           <motion.div style={{ y: heroY, opacity: heroOp }}
             className="relative z-10 w-full px-5 sm:px-8 max-w-2xl mx-auto text-center nb"
           >
-            <motion.p 
-              initial={{ opacity: 0 }} 
-              animate={{ 
+            <motion.p
+              initial={{ opacity: 0 }}
+              animate={{
                 opacity: 1,
                 color: ["var(--color-text-muted)", "var(--color-brand-primary)", "var(--color-text-muted)"]
-              }} 
-              transition={{ 
+              }}
+              transition={{
                 opacity: { delay: 0.1 },
                 color: { duration: 3, repeat: Infinity, ease: "easeInOut" }
               }}
@@ -1243,13 +1240,13 @@ export default function LandingPage() {
                 <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
               </Link>
               <Link to="/showcase/manual"
-            className="btn-manual group flex items-center justify-center gap-2 px-6 py-3 rounded-lg
+                className="btn-manual group flex items-center justify-center gap-2 px-6 py-3 rounded-lg
               font-700 text-sm text-text-main bg-bg-card border border-border-subtle
               hover:bg-brand-primary/5 transition-all w-full sm:w-auto backdrop-blur-sm"
-          >
-            <BookOpen size={16} className="text-brand-primary group-hover:scale-110 transition-transform" />
-            User Manual
-          </Link>
+              >
+                <BookOpen size={16} className="text-brand-primary group-hover:scale-110 transition-transform" />
+                User Manual
+              </Link>
             </motion.div>
           </motion.div>
 
@@ -1274,12 +1271,12 @@ export default function LandingPage() {
           <div className="flex tkr select-none">
             {[0, 1].map(k => (
               <div key={k} className="flex shrink-0 items-center gap-5 pr-5">
-                {['SQLite', 'React', 'C/C++', 'PCB Layout', 'Signal Processing', 'TypeScript', '3D Printing',
-                  'Node.js', 'RTOS', 'BLE', 'AI', 'Schematics', 'Embedded C', 'KiCad'].map(s => (
-                  <span key={s} className="whitespace-nowrap jm text-[9px] text-text-muted flex items-center gap-1.5">
-                    <span className="w-1 h-1 rounded-sm bg-brand-primary/40 rotate-45 shrink-0" />{s}
-                  </span>
-                ))}
+                {['PostgreSQL', 'React', 'C/C++', 'PCB Layout', 'Signal Processing', 'TypeScript', '3D Printing',
+                  'Node.js', 'Rust', 'BLE', 'LLM', 'Schematics', 'Embedded C', 'KiCad'].map(s => (
+                    <span key={s} className="whitespace-nowrap jm text-[9px] text-text-muted flex items-center gap-1.5">
+                      <span className="w-1 h-1 rounded-sm bg-brand-primary/40 rotate-45 shrink-0" />{s}
+                    </span>
+                  ))}
               </div>
             ))}
           </div>
@@ -1301,47 +1298,50 @@ export default function LandingPage() {
             DEMO BANNER
         ════════════════════════════════════════════════════════════════ */}
         <section className="py-8 sm:py-10 px-4 sm:px-6 md:px-10 border-t border-border-subtle">
-          <Reveal>
-            <div className="rounded-2xl border border-brand-primary/25 bg-brand-primary/6 p-5 sm:p-8
-              flex flex-col md:flex-row items-start md:items-center justify-between gap-5 relative overflow-hidden"
-            >
-              <div className="absolute right-0 top-0 bottom-0 w-24 sm:w-40 opacity-[.06] pointer-events-none">
-                <OscWave />
-              </div>
-              <div className="relative z-10">
-                <div className="chp relative overflow-hidden bg-green-500/14 text-green-400 mb-3 border-0">
-                  <span className="relative z-10">Live Demo</span>
-                  <div 
-                    className="absolute inset-0 rounded-[inherit] pointer-events-none p-px"
-                    style={{
-                      WebkitMask: "linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)",
-                      WebkitMaskComposite: "xor",
-                      maskComposite: "exclude",
-                    }}
-                  >
-                    <div className="absolute inset-0 bg-green-500/30" />
-                    <motion.div
-                      className="absolute inset-[-1000%] bg-[conic-gradient(from_0deg_at_50%_50%,transparent_0%,#4ade80_15%,transparent_30%)]"
-                      animate={{ rotate: 360 }}
-                      transition={{ ease: "linear", duration: 3, repeat: Infinity }}
-                    />
-                  </div>
-                </div>
+  <Reveal>
+    <div className="rounded-2xl border border-amber-500/25 bg-amber-500/6 p-5 sm:p-8
+      flex flex-col md:flex-row items-start md:items-center justify-between gap-5 relative overflow-hidden"
+    >
+      <div className="absolute right-0 top-0 bottom-0 w-24 sm:w-40 opacity-[.06] pointer-events-none">
+        <OscWave />
+      </div>
+      <div className="relative z-10 max-w-lg">
+        <div className="chp relative overflow-hidden bg-amber-500/14 text-amber-400 mb-3 border-0">
+          <span className="relative z-10">Demo Paused</span>
+        </div>
 
-                <h3 className="sy font-800 text-xl sm:text-2xl mb-1.5">See it in action.</h3>
-                <p className="text-text-muted text-xs sm:text-sm max-w-sm leading-relaxed">Register, and start using the full potential of CareSync</p>
-              </div>
-              <Link to="/app"
-                className="shm relative z-10 shrink-0 flex items-center justify-center gap-2 px-6 py-3 rounded-xl
-                  bg-brand-primary text-white font-700 text-sm
-                  shadow-lg shadow-brand-primary/30 hover:bg-brand-light transition-all group w-full md:w-auto"
-              >
-                Launch Dashboard
-                <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
-              </Link>
-            </div>
-          </Reveal>
-        </section>
+        <h3 className="sy font-800 text-xl sm:text-2xl mb-1.5">Why the dashboard is offline.</h3>
+        <p className="text-text-muted text-xs sm:text-sm leading-relaxed">
+          The interactive dashboard is paused because the free-tier Supabase instance backing
+          this project was idle and has been suspended by the provider. The full source,
+          the automated test suite, and the documentation remain available on GitHub.
+        </p>
+      </div>
+      <div className="relative z-10 shrink-0 flex flex-col gap-2 w-full md:w-auto">
+        <a
+          href="https://github.com/cmdaeo/caresync"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="shm flex items-center justify-center gap-2 px-6 py-3 rounded-xl
+            bg-bg-card border border-border-subtle text-text-main font-700 text-sm
+            hover:bg-bg-hover transition-all group"
+        >
+          View source
+          <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
+        </a>
+        <Link
+          to="/status"
+          className="flex items-center justify-center gap-2 px-6 py-3 rounded-xl
+            bg-amber-500 text-white font-700 text-sm
+            shadow-lg shadow-amber-500/30 hover:bg-amber-600 transition-all group"
+        >
+          System status
+          <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
+        </Link>
+      </div>
+    </div>
+  </Reveal>
+</section>
 
       </div>
     </>

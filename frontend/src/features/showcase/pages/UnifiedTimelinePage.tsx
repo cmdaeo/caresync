@@ -102,7 +102,7 @@ const timelineData = [
     events: [
       {
         date: "04/03/2026",
-        text: "Critical CareBox–CareBand communication challenge identified; NFC + Bluetooth strategy proposed.",
+        text: "Critical CareBox-CareBand communication challenge identified; NFC + Bluetooth strategy proposed.",
       },
       {
         date: "11/03/2026",
@@ -144,7 +144,7 @@ const timelineData = [
       },
       {
         date: "20/05/2026",
-        text: "Cybersecurity audit completed: 71 automated security tests executed with a 100% pass rate. No critical vulnerabilities identified.",
+        text: "Automated security test suite established: 109 tests across 11 Jest + Supertest suites covering crypto primitives, CSRF, JWT/RBAC, error handling, and medication state-machine guards. Two pre-production defects surfaced and were remediated: AES-CBC malleability (migrated to AES-256-GCM) and a BOLA/IDOR on prescription review (now scoped to the assigned provider).",
       },
       {
         date: "29/05/2026",

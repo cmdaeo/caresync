@@ -33,7 +33,7 @@ export async function fetchCsrfToken(): Promise<string> {
 
 // Eagerly fetch a CSRF token on app load
 fetchCsrfToken().catch(() => {
-  /* silent — will retry on first mutating request */
+  /* silent - will retry on first mutating request */
 })
 
 // --- JWT auto-refresh state ---
@@ -63,7 +63,7 @@ async function tryRefreshToken(): Promise<string | null> {
     })
     const newToken: string | undefined = res.data?.data?.token
     if (newToken) {
-      // Shallow-merge into Zustand — keeps `user` intact
+      // Shallow-merge into Zustand - keeps `user` intact
       useAuthStore.setState({ token: newToken })
       return newToken
     }
@@ -131,7 +131,7 @@ client.interceptors.response.use(
         return client.request(originalConfig)
       }
 
-      // Refresh failed — session is truly expired
+      // Refresh failed - session is truly expired
       useAuthStore.getState().logout()
       window.location.href = '/login'
     }

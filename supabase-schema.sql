@@ -1,5 +1,5 @@
 -- ============================================================
--- CareSync — Supabase PostgreSQL Schema
+-- CareSync - Supabase PostgreSQL Schema
 -- Run this in the Supabase SQL Editor to create all tables.
 -- ============================================================
 
@@ -257,7 +257,7 @@ CREATE TABLE IF NOT EXISTS audit_logs (
 );
 
 -- ──────────────────────────────────────────────
--- Consent Logs (PII) — append-only, no updatedAt
+-- Consent Logs (PII) - append-only, no updatedAt
 -- ──────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS consent_logs (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),

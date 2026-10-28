@@ -46,7 +46,7 @@ class AuthController {
         ip: req.ip, userAgent: req.headers['user-agent']
       });
 
-      // 2FA required — return partial auth state with temp token
+      // 2FA required - return partial auth state with temp token
       if (result.requiresTwoFactor) {
         return res.json(ApiResponse.success({
           requiresTwoFactor: true,
@@ -144,7 +144,7 @@ class AuthController {
   }
 
   /**
-   * Forgot Password — no auth required
+   * Forgot Password - no auth required
    * Always returns 200 regardless of whether the email exists.
    */
   async forgotPassword(req, res) {
@@ -152,7 +152,7 @@ class AuthController {
       const { email } = req.body;
       await authService.forgotPassword(email);
 
-      // Always return the same message — never reveal if the email exists
+      // Always return the same message - never reveal if the email exists
       res.json(ApiResponse.success(
         null,
         'If that email is registered, you will receive a reset link shortly.'
@@ -164,7 +164,7 @@ class AuthController {
   }
 
   /**
-   * Reset Password — no auth required (uses the token from the email link)
+   * Reset Password - no auth required (uses the token from the email link)
    */
   async resetPassword(req, res) {
     try {

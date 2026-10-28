@@ -118,7 +118,7 @@ export const MyMedicationsPage = () => {
             >
               {/* Left: compartment badge */}
               <div className="shrink-0 hidden sm:flex w-10 h-10 rounded-full bg-brand-primary/10 items-center justify-center text-brand-primary font-bold text-sm">
-                {med.compartment ?? '–'}
+                {med.compartment ?? '-'}
               </div>
 
               {/* Center: details */}

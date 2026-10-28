@@ -76,7 +76,7 @@ module.exports = (sequelize) => {
     // ──────────────────────────────────────────────────────────────────
     // PRN ("Pro Re Nata" / As-Needed / SOS) flag.
     //
-    // When true, the medication has no scheduled doses — the patient
+    // When true, the medication has no scheduled doses - the patient
     // takes it ad-hoc via "Take Now". The scheduling state machine MUST
     // skip these medications when generating calendar slots, otherwise
     // they would either pollute the calendar (if endDate is missing)

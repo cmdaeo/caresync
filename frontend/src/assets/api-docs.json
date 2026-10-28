@@ -104,7 +104,7 @@
     {
       "method": "POST",
       "path": "/api/auth/2fa/setup",
-      "description": "Begin 2FA setup — generates secret + QR code",
+      "description": "Begin 2FA setup - generates secret + QR code",
       "tags": [
         "2FA"
       ],

@@ -155,7 +155,7 @@ export const PrivacyPolicyPage = () => {
   const navigate = useNavigate()
 
   useEffect(() => {
-    document.title = 'Privacy Policy — CareSync'
+    document.title = 'Privacy Policy - CareSync'
   }, [])
 
   return (
@@ -173,14 +173,14 @@ export const PrivacyPolicyPage = () => {
             />
             <span className="hidden sm:inline">Back</span>
           </button>
-          
+
           <div className="h-5 w-px bg-border-subtle shrink-0" />
-          
+
           <div className="flex items-center gap-2 min-w-0">
             <Shield size={18} className="text-brand-primary shrink-0" />
             <h1 className="text-sm font-bold text-text-main truncate">Privacy Policy</h1>
           </div>
-          
+
           <div className="ml-auto flex items-center gap-3 shrink-0">
             <Link
               to="/terms"
@@ -220,7 +220,7 @@ export const PrivacyPolicyPage = () => {
           <p className="text-sm text-text-muted max-w-2xl mx-auto leading-relaxed">
             CareSync is committed to protecting your personal data. This Privacy Policy explains how we collect,
             use, store, and safeguard your information in compliance with the General Data Protection Regulation
-            (GDPR) — Regulation (EU) 2016/679.
+            (GDPR) - Regulation (EU) 2016/679.
           </p>
           <div className="flex items-center justify-center gap-4 mt-6 text-xs text-text-muted">
             <span className="flex items-center gap-1.5">
@@ -280,7 +280,7 @@ export const PrivacyPolicyPage = () => {
               For the purposes of the GDPR, the data controller is:
             </p>
             <div className="p-4 rounded-lg bg-bg-hover/50 border border-border-subtle/30 space-y-1.5 text-sm">
-              <p className="font-semibold text-text-main">CareSync — Universidade de Aveiro</p>
+              <p className="font-semibold text-text-main">CareSync - Universidade de Aveiro</p>
               <p>Campus Universitário de Santiago, 3810-193 Aveiro, Portugal</p>
               <p>
                 Email:{' '}
@@ -312,7 +312,7 @@ export const PrivacyPolicyPage = () => {
               ]}
             />
 
-            <SubHeading>Health & Medication Data (Special Category — Art. 9)</SubHeading>
+            <SubHeading>Health & Medication Data (Special Category - Art. 9)</SubHeading>
             <BulletList
               items={[
                 'Medication names, active substances, dosages, and pharmaceutical forms',
@@ -343,7 +343,7 @@ export const PrivacyPolicyPage = () => {
             <SubHeading>Authentication & Security Data</SubHeading>
             <BulletList
               items={[
-                'Hashed passwords (bcrypt with salt — we never store plaintext passwords)',
+                'Hashed passwords (bcrypt with salt - we never store plaintext passwords)',
                 'Session tokens (JWT), refresh tokens, and login timestamps',
                 'IP addresses associated with authentication events',
               ]}
@@ -367,22 +367,22 @@ export const PrivacyPolicyPage = () => {
             </p>
             <div className="space-y-3 mt-4">
               <LegalBadge article="Art. 6(1)(b)">
-                <strong className="text-text-main">Contract Performance</strong> — Processing necessary to
+                <strong className="text-text-main">Contract Performance</strong> - Processing necessary to
                 deliver the core CareSync service: managing your medication schedules, enabling caregiver
                 communication, processing IoT device interactions, and maintaining your account.
               </LegalBadge>
               <LegalBadge article="Art. 6(1)(a)">
-                <strong className="text-text-main">Consent</strong> — For optional processing such as
+                <strong className="text-text-main">Consent</strong> - For optional processing such as
                 analytics data collection, personalized recommendations, marketing communications, and
                 non-essential notifications. You may withdraw consent at any time.
               </LegalBadge>
               <LegalBadge article="Art. 6(1)(f)">
-                <strong className="text-text-main">Legitimate Interests</strong> — For security monitoring,
+                <strong className="text-text-main">Legitimate Interests</strong> - For security monitoring,
                 fraud prevention, debugging, service improvement, and ensuring the reliability and safety of
                 the platform. We have conducted balancing tests to ensure your rights are not overridden.
               </LegalBadge>
               <LegalBadge article="Art. 9(2)(a)">
-                <strong className="text-text-main">Explicit Consent for Health Data</strong> — Health and
+                <strong className="text-text-main">Explicit Consent for Health Data</strong> - Health and
                 medication data constitute special category data under the GDPR. We process this data only
                 with your explicit, informed consent obtained during registration. This consent is
                 granular, specific, and can be revoked at any time.
@@ -538,18 +538,18 @@ export const PrivacyPolicyPage = () => {
                 },
                 {
                   icon: KeyRound,
-                  title: 'Row Level Security (RLS)',
-                  desc: 'Database-level access policies ensuring users can only access data they are authorized to view.',
+                  title: 'Route-Level Authorization',
+                  desc: 'RBAC middleware plus explicit ownership scoping on every route (caregiver assignment check, admin bypass, patient self-access).',
                 },
                 {
                   icon: Fingerprint,
                   title: 'JWT Authentication',
-                  desc: 'Stateless, token-based authentication with short-lived access tokens (15min) and rotating refresh tokens.',
+                  desc: 'Stateless auth with 7-day access tokens and 30-day rotating refresh tokens stored in HttpOnly cookies.',
                 },
                 {
                   icon: Lock,
                   title: 'AES-256 Encryption',
-                  desc: 'Field-level encryption for all sensitive health data at rest, with keys managed via secure environment isolation.',
+                  desc: 'AES-256-CBC (sequelize-encrypted) for PII and medication columns; AES-256-GCM for audit-log payloads. Keys via env isolation.',
                 },
               ].map((item, i) => (
                 <div
@@ -703,9 +703,9 @@ export const PrivacyPolicyPage = () => {
             </p>
             <div className="p-4 rounded-lg bg-bg-hover/50 border border-border-subtle/30 space-y-1.5 text-sm mt-2">
               <p className="font-semibold text-text-main">
-                CNPD — Comissão Nacional de Proteção de Dados
+                CNPD - Comissão Nacional de Proteção de Dados
               </p>
-              <p className="text-xs text-text-muted">Av. D. Carlos I, 134 — 1.º, 1200-651 Lisboa, Portugal</p>
+              <p className="text-xs text-text-muted">Av. D. Carlos I, 134 - 1.º, 1200-651 Lisboa, Portugal</p>
               <a
                 href="https://www.cnpd.pt"
                 target="_blank"
@@ -908,7 +908,7 @@ export const PrivacyPolicyPage = () => {
                 Mailing Address
               </p>
               <p className="text-xs text-text-muted">
-                CareSync — Universidade de Aveiro
+                CareSync - Universidade de Aveiro
                 <br />
                 Departamento de Eletrónica, Telecomunicações e Informática (DETI)
                 <br />

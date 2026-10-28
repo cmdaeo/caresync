@@ -368,7 +368,7 @@ class AuthService {
   async forgotPassword(email) {
     const user = await User.findOne({ where: { email } });
 
-    // Always return true even if user not found — this prevents attackers from
+    // Always return true even if user not found - this prevents attackers from
     // probing which emails are registered in the system.
     if (!user || !user.isActive) {
       logger.info(`Password reset requested for unknown/inactive email: ${email}`);

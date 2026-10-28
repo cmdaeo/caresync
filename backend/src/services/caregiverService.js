@@ -190,7 +190,7 @@ class CaregiverService {
       throw new NotFoundError('Invitation not found');
     }
 
-    // GDPR Art. 17 — hard delete the declined relationship
+    // GDPR Art. 17 - hard delete the declined relationship
     await relationship.destroy();
 
     logger.info(`Caregiver ${user.email} declined and deleted invitation ${id}`);
@@ -369,7 +369,7 @@ class CaregiverService {
       throw new NotFoundError('Relationship not found');
     }
 
-    // GDPR Art. 17 — hard delete the caregiver-patient link
+    // GDPR Art. 17 - hard delete the caregiver-patient link
     await link.destroy();
 
     return { success: true };

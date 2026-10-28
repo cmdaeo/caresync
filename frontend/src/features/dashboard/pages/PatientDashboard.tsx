@@ -1,5 +1,5 @@
 // src/features/dashboard/pages/PatientDashboard.tsx
-// Real-data dashboard — consumes medication + adherence APIs, renders Recharts.
+// Real-data dashboard - consumes medication + adherence APIs, renders Recharts.
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { client } from '../../../shared/api/client'
@@ -36,7 +36,7 @@ interface MedSummary {
   dosageUnit: string
   compartment: number | null
   frequency: string
-  // Inventory fields — surfaced so the "Take Now" button can disable
+  // Inventory fields - surfaced so the "Take Now" button can disable
   // itself when stock is exhausted (Edge Case 2 frontend guard).
   remainingQuantity: number | null
   totalQuantity: number | null
@@ -72,7 +72,7 @@ export const PatientDashboard = () => {
   // DOUBLE-CLICK RACE CONDITION GUARD (frontend layer)
   //
   // The `disabled={takingNow === med.id}` state-based guard does NOT
-  // survive a *truly* fast double-click — React batches state updates
+  // survive a *truly* fast double-click - React batches state updates
   // and the second click can reach handleTakeNow() before `takingNow`
   // has been committed. A ref is synchronous: setting it before the
   // network call closes the gap immediately, so the second click
@@ -186,9 +186,9 @@ export const PatientDashboard = () => {
        3. Stale stock display: re-fetches the dashboard after each
           successful dose so the next click sees the new count. */
   const handleTakeNow = async (med: MedSummary) => {
-    // Race-condition lock — synchronous, beats React batching.
+    // Race-condition lock - synchronous, beats React batching.
     if (inFlightTakeRef.current.has(med.id)) return
-    // Inventory guard — never POST a dose for a depleted medication.
+    // Inventory guard - never POST a dose for a depleted medication.
     if (med.remainingQuantity != null && med.remainingQuantity <= 0) return
 
     inFlightTakeRef.current.add(med.id)
@@ -203,7 +203,7 @@ export const PatientDashboard = () => {
       })
       await fetchDashboard()
     } catch {
-      // silent — user can retry. Backend already rolled back on error.
+      // silent - user can retry. Backend already rolled back on error.
     } finally {
       inFlightTakeRef.current.delete(med.id)
       setTakingNow(null)
@@ -236,19 +236,19 @@ export const PatientDashboard = () => {
           icon={<TrendingUp size={18} />}
           iconBg="bg-green-500/10 text-green-500"
           label="Adherence Rate"
-          value={stats && stats.total > 0 ? `${stats.rate}%` : '–'}
+          value={stats && stats.total > 0 ? `${stats.rate}%` : '-'}
         />
         <MetricCard
           icon={<CheckCircle2 size={18} />}
           iconBg="bg-emerald-500/10 text-emerald-500"
           label="Doses Taken"
-          value={stats && stats.total > 0 ? stats.taken : '–'}
+          value={stats && stats.total > 0 ? stats.taken : '-'}
         />
         <MetricCard
           icon={<XCircle size={18} />}
           iconBg="bg-red-500/10 text-red-500"
           label="Doses Missed"
-          value={stats && stats.total > 0 ? stats.missed : '–'}
+          value={stats && stats.total > 0 ? stats.missed : '-'}
         />
       </div>
 
@@ -307,7 +307,7 @@ export const PatientDashboard = () => {
                     {isDepleted ? (
                       <span
                         className="ml-2 inline-flex items-center gap-1 px-2.5 py-1.5 bg-red-500/10 text-red-600 dark:text-red-400 text-xs font-bold rounded-lg shrink-0 cursor-not-allowed"
-                        title="Inventory depleted — refill before recording the next dose"
+                        title="Inventory depleted - refill before recording the next dose"
                       >
                         <AlertTriangle size={12} />
                         Depleted

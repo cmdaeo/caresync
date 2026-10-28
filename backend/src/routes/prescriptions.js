@@ -845,7 +845,7 @@ router.delete(
       });
     }
 
-    // GDPR Art. 17 — hard delete the prescription
+    // GDPR Art. 17 - hard delete the prescription
     await prescription.destroy();
 
     logger.info(`Prescription deleted: ${prescription.prescriptionNumber} by user ${req.user.email}`);
@@ -937,18 +937,36 @@ router.put(
       });
     }
 
-    // IDOR fix: require patientId and validate ownership (not just findByPk)
-    const patientId = req.body.patientId || req.query.patientId;
-    const whereClause = { id: req.params.id, isActive: true };
-    if (patientId) whereClause.userId = patientId;
-
-    const prescription = await Prescription.findOne({ where: whereClause });
+    // Look up the prescription by ID only. Ownership is checked below.
+    const prescription = await Prescription.findOne({
+      where: { id: req.params.id, isActive: true },
+    });
 
     if (!prescription) {
       return res.status(404).json({
         success: false,
-        message: 'Prescription not found'
+        message: 'Prescription not found',
       });
+    }
+
+    if (req.user.role !== 'admin') {
+      const assignment = await CaregiverPatient.findOne({
+        where: {
+          caregiverId: req.user.id,
+          patientId: prescription.userId,
+          isActive: true,
+          isVerified: true,
+        },
+      });
+
+      const canReview = assignment && (assignment.permissions?.canManageMedications ?? false);
+
+      if (!canReview) {
+        return res.status(403).json({
+          success: false,
+          message: 'Access denied to this patient prescription',
+        });
+      }
     }
 
     const { reviewNotes, medications, status } = req.body;

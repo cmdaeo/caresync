@@ -112,21 +112,21 @@ export const SecurityDeepDivePage = () => {
           
           <motion.div variants={staggerContainer} initial="hidden" whileInView="show" viewport={{ once: true }} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             <SecurityCard color="red" title="Identity & Access" icon={Fingerprint} desc="Stateless auth & session control">
-              <FeatureItem icon={Lock} title="JWT Strategy" desc="Short-lived access tokens (15m) paired with rotating refresh tokens (7d)." detail="Stored in httpOnly cookies to prevent XSS" />
-              <FeatureItem icon={Fingerprint} title="Bcrypt Hashing" desc="Passwords are salted (12 rounds) & securely hashed before storage." detail="Work factor tuned to ~300ms calc time" />
+              <FeatureItem icon={Lock} title="JWT Strategy" desc="Access tokens (7d) paired with rotating refresh tokens (30d). Refresh stored in an HttpOnly, Secure, SameSite=Strict cookie." detail="Revocation via tokenVersion bump" />
+              <FeatureItem icon={Fingerprint} title="Bcrypt Hashing" desc="Passwords are salted and hashed (10 rounds) before storage." detail="bcryptjs, per-user salts" />
               <FeatureItem icon={Server} title="RBAC Middleware" desc="Granular role-based access control with a deny-by-default architecture." detail="Strict endpoint isolation" />
             </SecurityCard>
 
             <SecurityCard color="red" title="Network Defense" icon={Shield} desc="Transport security & traffic analysis">
-              <FeatureItem icon={Lock} title="TLS 1.3 Encryption" desc="Enforced HTTPS with modern cipher suites. Downgrade attacks explicitly blocked." detail="Forward secrecy enabled" />
-              <FeatureItem icon={Zap} title="Redis Rate Limiting" desc="Sliding window request limiter tracking per IP and authenticated User ID." detail="Global: 100/min | Auth: 5/min" />
+              <FeatureItem icon={Lock} title="TLS Encryption" desc="HTTPS enforced end-to-end (Vercel edge, Supabase). HSTS via Helmet on the API." detail="TLS 1.2+ per host default" />
+              <FeatureItem icon={Zap} title="Rate Limiting" desc="express-rate-limit with per-IP tracking on every route, plus stricter buckets on auth and reports." detail="Global 200/15min | Auth 10/15min | 2FA 5/15min | Reports 20/h" />
               <FeatureItem icon={Globe} title="CORS & Headers" desc="Strict origin whitelist combined with Helmet.js security headers (HSTS, NoSniff)." detail="Wildcards (*) disabled in prod" />
             </SecurityCard>
 
             <SecurityCard color="red" title="Data Integrity" icon={Database} desc="Injection prevention & sanitization">
-              <FeatureItem icon={Database} title="No SQL Injection" desc="100% Parameterized queries executed strictly via the Sequelize ORM layer." detail="Raw SQL forbidden in codebase" />
+              <FeatureItem icon={Database} title="No SQL Injection" desc="All user-facing queries go through Sequelize with parameter binding." detail="Raw SQL confined to migrations" />
               <FeatureItem icon={Terminal} title="Input Validation" desc="Express-validator rules reject invalid requests with 400 + detailed field errors." detail="Strict sanitization pipelines" />
-              <FeatureItem icon={FileKey} title="AES-256 Encryption" desc="Field-level encryption implemented for highly sensitive clinical PHI data." detail="Isolated Key Management" />
+              <FeatureItem icon={FileKey} title="AES-256 Encryption" desc="AES-256-CBC (via sequelize-encrypted) for PII and medication columns; AES-256-GCM (AEAD) for audit-log payloads." detail="Keys via env isolation, GCM migration in progress for columns" />
             </SecurityCard>
           </motion.div>
         </section>
@@ -144,8 +144,8 @@ export const SecurityDeepDivePage = () => {
           <motion.div variants={staggerContainer} initial="hidden" whileInView="show" viewport={{ once: true }} className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <SecurityCard color="emerald" title="Regulatory Compliance" icon={Globe} desc="Adherence to international standards">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <FeatureItem icon={Shield} title="HIPAA Ready" desc="Architecture designed specifically for PHI handling & protection." detail="BAA ready deployment" />
-                <FeatureItem icon={CheckCircle2} title="GDPR Compliant" desc="Supports Right to be Forgotten & automated data portability exports." detail="Automated delete workflows" />
+                <FeatureItem icon={Shield} title="EU Data Residency" desc="Application data stored in EU-based Postgres (Supabase, Frankfurt)." detail="GDPR-aligned, not HIPAA-certified" />
+                <FeatureItem icon={CheckCircle2} title="GDPR Aligned" desc="Right to erasure (account deletion purges all records) and consent logging per action." detail="Portability export: planned" />
                 <FeatureItem icon={Cookie} title="Privacy First" desc="Zero third-party tracking cookies. No external ad-network data sharing." detail="Privacy-preserving analytics only" />
                 <FeatureItem icon={Database} title="Data Residency" desc="Region-locked database instances to comply with sovereign data laws." detail="EU / US deployment zones" />
               </div>
@@ -155,7 +155,7 @@ export const SecurityDeepDivePage = () => {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <FeatureItem icon={FileText} title="Immutable Audit Logs" desc="Write-once logging mechanisms for all sensitive read/write actions." detail="Records Who, What, When, Where" />
                 <FeatureItem icon={Server} title="Retention Policies" desc="Automated pruning of stale telemetry and temporary data (90-day cycle)." detail="Configurable per-tenant" />
-                <FeatureItem icon={AlertTriangle} title="Breach Detection" desc="Automated anomaly alerting for irregular access patterns or failed logins." detail="Heuristic login analysis" />
+                <FeatureItem icon={AlertTriangle} title="Audit Trail" desc="Append-only audit log records every authenticated action with encrypted old/new payloads." detail="CNPD-58/2019 pattern" />
               </div>
             </SecurityCard>
           </motion.div>

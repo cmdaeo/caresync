@@ -138,7 +138,7 @@ class DeviceService {
   }
 
   /**
-   * Remove device (GDPR Art. 17 — hard delete with cascade)
+   * Remove device (GDPR Art. 17 - hard delete with cascade)
    */
   async deleteDevice(user, id) {
     const device = await Device.findOne({
@@ -355,7 +355,7 @@ class DeviceService {
       throw new AuthenticationError('You do not have permission to remove caregivers');
     }
 
-    // GDPR Art. 17 — hard delete the permission
+    // GDPR Art. 17 - hard delete the permission
     await permission.destroy();
 
     logger.info(`Caregiver ${caregiverId} removed from device ${deviceId} by user ${user.email}`);

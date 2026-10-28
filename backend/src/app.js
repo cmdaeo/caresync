@@ -153,7 +153,7 @@ app.use(async (req, res, next) => {
       await sPii.authenticate();
       logger.info('Database connection established.');
 
-      // Sync database schema — both sequelizePii and sequelizeMedical
+      // Sync database schema - both sequelizePii and sequelizeMedical
       // point to the same PostgreSQL instance, so we only sync once.
       try {
         logger.info('Checking database schema...');
@@ -224,14 +224,31 @@ app.get('/api/csrf-token', (req, res) => {
 });
 
 // Health check endpoints (cached at the edge to save requests on free tiers)
-const healthCheck = (req, res) => {
-  res.set('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=120');
-  res.status(200).json({
-    status: 'OK',
-    timestamp: new Date().toISOString(),
-    uptime: process.uptime(),
-    requestId: req.requestId
-  });
+const healthCheck = async (req, res) => {
+  try {
+    const db = require('./config/database');
+    await db.sequelizePii.authenticate();
+    res.set('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=120');
+    res.status(200).json({
+      status: 'ok',
+      db: 'up',
+      timestamp: new Date().toISOString(),
+      uptime: process.uptime(),
+      requestId: req.requestId,
+    });
+  } catch (err) {
+    logger.error('Health check: database unreachable', {
+      requestId: req.requestId,
+      error: err.message,
+    });
+    res.set('Cache-Control', 'no-store');
+    res.status(503).json({
+      status: 'degraded',
+      db: 'down',
+      timestamp: new Date().toISOString(),
+      requestId: req.requestId,
+    });
+  }
 };
 app.get('/health', healthCheck);
 app.get('/api/health', healthCheck);
@@ -408,7 +425,7 @@ async function syncDatabase(instance, label) {
     logger.info(`${label} database synchronized successfully (ALTER).`);
   } catch (syncError) {
     // On Supabase/production, never force-sync (it drops all data).
-    // Just log the error — tables should be created via the SQL schema.
+    // Just log the error - tables should be created via the SQL schema.
     logger.warn(`${label} ALTER sync failed: ${syncError.message}`);
     logger.warn(`Tables should be created via supabase-schema.sql if they don't exist.`);
   }

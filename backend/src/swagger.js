@@ -79,7 +79,7 @@ Healthcare medication management REST API.
             currentQuantity: { type: 'integer' },
             startDate: { type: 'string', format: 'date' },
             endDate: { type: 'string', format: 'date', nullable: true },
-            isPRN: { type: 'boolean', description: 'Pro Re Nata — as needed' },
+            isPRN: { type: 'boolean', description: 'Pro Re Nata - as needed' },
             instructions: { type: 'string', nullable: true },
             notes: { type: 'string', nullable: true },
             isActive: { type: 'boolean' },

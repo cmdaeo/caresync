@@ -119,7 +119,7 @@ export const TermsOfServicePage = () => {
   const navigate = useNavigate()
 
   useEffect(() => {
-    document.title = 'Terms of Service — CareSync'
+    document.title = 'Terms of Service - CareSync'
   }, [])
 
   return (
@@ -191,8 +191,8 @@ export const TermsOfServicePage = () => {
           {/* ---- 1. Acceptance of Terms ---- */}
           <SectionCard number={1} title="Acceptance of Terms" icon={FileText}>
             <p>
-              By creating an account, accessing, or using any part of the CareSync platform — including the web
-              dashboard, mobile application, CareBox device, or CareBand wearable — you acknowledge that you have
+              By creating an account, accessing, or using any part of the CareSync platform - including the web
+              dashboard, mobile application, CareBox device, or CareBand wearable - you acknowledge that you have
               read, understood, and agree to be bound by these Terms of Service and our{' '}
               <Link to="/privacy" className="text-brand-primary hover:underline font-medium">
                 Privacy Policy
@@ -218,14 +218,14 @@ export const TermsOfServicePage = () => {
               <li className="flex items-start gap-2.5">
                 <span className="shrink-0 mt-1.5 w-1.5 h-1.5 rounded-full bg-brand-primary" />
                 <span>
-                  <strong className="text-text-main">Web Dashboard</strong> — A browser-based application for
+                  <strong className="text-text-main">Web Dashboard</strong> - A browser-based application for
                   medication management, health data visualization, caregiver oversight, and device configuration.
                 </span>
               </li>
               <li className="flex items-start gap-2.5">
                 <span className="shrink-0 mt-1.5 w-1.5 h-1.5 rounded-full bg-brand-primary" />
                 <span>
-                  <strong className="text-text-main">Mobile Application</strong> — Native Android and iOS
+                  <strong className="text-text-main">Mobile Application</strong> - Native Android and iOS
                   applications for patients and caregivers, providing medication reminders, health tracking, and
                   real-time notifications.
                 </span>
@@ -233,7 +233,7 @@ export const TermsOfServicePage = () => {
               <li className="flex items-start gap-2.5">
                 <span className="shrink-0 mt-1.5 w-1.5 h-1.5 rounded-full bg-brand-primary" />
                 <span>
-                  <strong className="text-text-main">CareBox</strong> — An IoT-enabled medication dispensing device
+                  <strong className="text-text-main">CareBox</strong> - An IoT-enabled medication dispensing device
                   that integrates with the CareSync platform to facilitate scheduled medication dispensing, adherence
                   tracking, and real-time status monitoring.
                 </span>
@@ -241,7 +241,7 @@ export const TermsOfServicePage = () => {
               <li className="flex items-start gap-2.5">
                 <span className="shrink-0 mt-1.5 w-1.5 h-1.5 rounded-full bg-brand-primary" />
                 <span>
-                  <strong className="text-text-main">CareBand</strong> — A wearable BLE (Bluetooth Low Energy)
+                  <strong className="text-text-main">CareBand</strong> - A wearable BLE (Bluetooth Low Energy)
                   notification device that delivers haptic and visual medication reminders directly to the user.
                 </span>
               </li>
@@ -701,8 +701,8 @@ export const TermsOfServicePage = () => {
                 <span className="shrink-0 mt-1.5 w-1.5 h-1.5 rounded-full bg-brand-primary" />
                 <span>
                   For <strong className="text-text-main">material changes</strong> that significantly affect your
-                  use of the platform — such as removal of core features, changes to data handling practices, or
-                  introduction of fees — CareSync will provide advance notice through the application, email, or
+                  use of the platform - such as removal of core features, changes to data handling practices, or
+                  introduction of fees - CareSync will provide advance notice through the application, email, or
                   both.
                 </span>
               </li>
@@ -787,7 +787,7 @@ export const TermsOfServicePage = () => {
                     Organization
                   </p>
                   <p className="text-text-main font-medium">
-                    CareSync — Universidade de Aveiro
+                    CareSync - Universidade de Aveiro
                   </p>
                 </div>
               </div>
@@ -817,7 +817,7 @@ export const TermsOfServicePage = () => {
         <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
             <p className="text-xs text-text-muted">
-              © {new Date().getFullYear()} CareSync — Universidade de Aveiro. All rights reserved.
+              © {new Date().getFullYear()} CareSync - Universidade de Aveiro. All rights reserved.
             </p>
             <div className="flex items-center gap-4">
               <Link

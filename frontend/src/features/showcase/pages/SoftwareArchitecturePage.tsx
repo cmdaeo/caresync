@@ -196,8 +196,8 @@ export const SoftwareArchitecturePage = () => {
             <TechCard 
               color="blue" title="Core Architecture" icon={Code2}
               items={[
-                { label: 'Vite 7', description: 'Instant server start with lightning-fast HMR.', detail: 'Cold start in <500ms' },
-                { label: 'React 19', description: 'Latest concurrency features and server components.', detail: '15% smaller bundle' },
+                { label: 'Vite 8', description: 'Instant server start with lightning-fast HMR.', detail: 'Rolldown-based build' },
+{ label: 'React 19', description: 'Concurrency features and Suspense boundaries in production.', detail: 'Server components not used' },
                 { label: 'Zustand', description: 'Minimal boilerplate and transient state updates.', detail: 'Just 1.1kB gzipped' },
               ]} 
             />
@@ -233,8 +233,8 @@ export const SoftwareArchitecturePage = () => {
             <TechCard 
               color="green" title="Core Services" icon={Server}
               items={[
-                { label: 'Express 4.18', description: 'Battle-tested middleware architecture.', detail: 'Highly extensible' },
-                { label: 'Socket.IO 4.7', description: 'Real-time patient vitals and sync events.', detail: 'WebSockets + Polling' },
+                { label: 'Express 5.2', description: 'Middleware pipeline with async error handling.', detail: 'Async/await first' },
+                { label: 'Supabase Realtime', description: 'WebSocket broadcast for the live presentation engine and event sync.', detail: 'Socket.IO disabled in serverless' },
                 { label: 'Winston', description: 'Structured JSON logging for observability.', detail: 'Daily log rotation' },
               ]} 
             />
@@ -243,7 +243,7 @@ export const SoftwareArchitecturePage = () => {
               items={[
                 { label: 'Sequelize ORM', description: 'Type-safe queries and migration management.', detail: 'Postgres Dialect' },
                 { label: 'PostgreSQL', description: 'Supabase-hosted database for scalable persistence.', detail: 'Managed Cloud SQL' },
-                { label: 'Redis', description: 'High-performance cache for sessions & rate limits.', detail: 'Sub-millisecond latency' },
+                { label: 'Rate Limiting', description: 'express-rate-limit, with Redis opt-in when configured. In-memory fallback otherwise.', detail: 'Per-route buckets' },
               ]} 
             />
             <TechCard 

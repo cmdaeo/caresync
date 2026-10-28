@@ -20,7 +20,7 @@ export function dashboardPathForRole(role?: string): string {
 }
 
 /**
- * RBAC guard — sits *inside* ProtectedRoute (auth is already verified).
+ * RBAC guard - sits *inside* ProtectedRoute (auth is already verified).
  * If the user's role is not in `allowedRoles`, they are redirected
  * to their own role-appropriate dashboard instead of seeing a 403.
  */

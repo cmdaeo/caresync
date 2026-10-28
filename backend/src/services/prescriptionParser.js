@@ -154,7 +154,7 @@ function attemptFastParse(text) {
 
     if (confidence >= 2 && !isSentence) {
       let rawName = line.split(/,|\d+\s*(mg|g|ml)| - /)[0].trim();
-      rawName = rawName.replace(/^\d+\s+/, '').replace(/^[-–]\s*/, '');
+      rawName = rawName.replace(/^\d+\s+/, '').replace(/^[--]\s*/, '');
 
       const nameIsForm = normalizeTerm(rawName, VOCABULARY.forms) !== null;
       const nameIsUnit = /^unidade|blister|frasco/i.test(rawName);
@@ -363,13 +363,13 @@ async function parsePrescription(pdfBuffer, engine = 'regex', apiKey = null) {
   let mode = 'Fast Path (Regex)';
   let isHighConfidence = false;
 
-  // 2. Parse — explicit engine selection, no automatic fallback
+  // 2. Parse - explicit engine selection, no automatic fallback
   if (engine === 'ai') {
     logger.info('Prescription parser: AI mode selected by user');
     mode = 'Deep AI (Llama 3.3 via Groq)';
     results = await extractWithGroq(rawText, apiKey);
     if (results.length === 0) {
-      logger.warn('Prescription parser: AI returned 0 results — check Groq API key or quota');
+      logger.warn('Prescription parser: AI returned 0 results - check Groq API key or quota');
     }
   } else {
     logger.info('Prescription parser: Regex mode selected by user');

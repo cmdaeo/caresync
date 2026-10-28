@@ -46,7 +46,7 @@ module.exports = (sequelize) => {
   }, {
     tableName: 'consent_logs',
     timestamps: true,
-    updatedAt: false, // Consent logs are immutable — append-only
+    updatedAt: false, // Consent logs are immutable - append-only
     paranoid: false
   });
 

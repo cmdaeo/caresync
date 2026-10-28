@@ -20,7 +20,7 @@ export interface Medication {
   endDate: string | null
   /**
    * PRN ("Pro Re Nata" / As-Needed / SOS) flag.
-   * When true, the medication has no scheduled doses — patient takes it
+   * When true, the medication has no scheduled doses - patient takes it
    * ad-hoc via "Take Now". The calendar/SchedulePage skips these entries.
    */
   isPRN: boolean

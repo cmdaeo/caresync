@@ -1,4 +1,4 @@
-// PostgreSQL database configuration — Supabase via DATABASE_URL (all environments)
+// PostgreSQL database configuration - Supabase via DATABASE_URL (all environments)
 
 const { Sequelize } = require('sequelize');
 
@@ -29,7 +29,7 @@ const createConnection = () => {
         require: true,
         rejectUnauthorized: false,
       },
-      // Force IPv4 — prevents ETIMEDOUT on systems that resolve to IPv6
+      // Force IPv4 - prevents ETIMEDOUT on systems that resolve to IPv6
       family: 4,
     },
   });
@@ -38,7 +38,7 @@ const createConnection = () => {
 };
 
 // Single PostgreSQL database for all data.
-// Both exports point to the same instance — keeps existing require() calls
+// Both exports point to the same instance - keeps existing require() calls
 // working without changes. Schema separation is handled at the table level.
 const sequelize = createConnection();
 const sequelizePii = sequelize;

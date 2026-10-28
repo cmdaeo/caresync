@@ -21,7 +21,7 @@ module.exports = (sequelize) => {
     scheduledTime: {
       type: DataTypes.DATE,
       allowNull: false,
-      unique: false, // Prevent standalone UNIQUE — only the composite index should enforce uniqueness
+      unique: false, // Prevent standalone UNIQUE - only the composite index should enforce uniqueness
     },
     takenAt: {
       type: DataTypes.DATE,
@@ -47,7 +47,7 @@ module.exports = (sequelize) => {
     // scheduledTime. This is what makes Sequelize.findOrCreate() truly
     // atomic and what defeats the double-click race condition: even if
     // two parallel HTTP handlers race past the SELECT phase, only one
-    // INSERT can succeed — the second raises SequelizeUniqueConstraintError
+    // INSERT can succeed - the second raises SequelizeUniqueConstraintError
     // which we map back to a deterministic 409 Conflict.
     // ──────────────────────────────────────────────────────────────────
     indexes: [
